@@ -7,7 +7,7 @@ Migra la solución actual de Power Apps + listas de SharePoint a una app web.
 ## Stack
 - **Frontend:** React + Vite + TypeScript, React Router, TanStack Query, Tailwind CSS.
 - **Backend:** Node.js + NestJS (TypeScript), Prisma ORM.
-- **Base de datos:** PostgreSQL.
+- **Base de datos:** MySQL 8 (en local, el MySQL de WAMP). Prisma con `provider = "mysql"`.
 - **Autenticación:** JWT con `rol_app` e `id_empresa` en el token.
 - **Carga de Excel:** `exceljs` en el backend.
 - **Pruebas:** Vitest (frontend), Jest (backend).
@@ -56,6 +56,7 @@ Migra la solución actual de Power Apps + listas de SharePoint a una app web.
 ## Convenciones de código
 - Nombres de tablas y campos en español, tal como están en `docs/modelo-datos.md`.
 - Todo cambio de BD con migraciones de Prisma, nunca SQL manual.
+- Charset utf8mb4 (acentos y ñ). Cadena de conexión en `.env`: `DATABASE_URL="mysql://USUARIO:CONTRASEÑA@localhost:3306/transfer_app"`.
 - Validar entradas con DTOs + class-validator en el backend.
 - El diseño visual se toma de `prototipo/`; no cambiar el estilo sin que se pida.
 - Credenciales solo en `.env` (nunca en el código); mantener `.env.example` actualizado.
