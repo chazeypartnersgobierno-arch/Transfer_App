@@ -8,6 +8,7 @@ Fases en orden: Onboarding → Transferencia → Estabilización → Validación
 - Laravel 13 (PHP 8.3 o superior), un solo proyecto
 - Vistas: Blade + CSS + JavaScript (se reutilizan las vistas HTML del prototipo)
 - Base de datos: MySQL 8 (WAMP local), InnoDB, utf8mb4
+- Entorno local: Windows, PHP 8.4 en terminal. La app se corre con `php artisan serve`; de WAMP solo se usa MySQL (no configurar Apache ni virtual hosts)
 - Tablas con migraciones de Laravel y acceso a datos con Eloquent (no SQL a mano)
 - Login: manual, con la autenticación por sesión que trae Laravel (`Auth::attempt` + middleware `auth`) y las vistas propias del proyecto. No usar Breeze, Jetstream ni otros kits de inicio; no requiere JavaScript ni Node.js
 - Carga desde Excel: paquete Laravel Excel (maatwebsite/excel)
