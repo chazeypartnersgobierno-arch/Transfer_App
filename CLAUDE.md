@@ -32,7 +32,7 @@ Fases en orden: Onboarding → Transferencia → Estabilización → Validación
 ## Modelo de base de datos
 
 Todas las tablas tienen `id_<tabla>` INT AUTO_INCREMENT como PK.
-Salvo `fases`, `asistencias`, `sesiones` y `avances_validacion`, todas tienen `estado` BOOLEAN (1 activo, 0 baja).
+Salvo `fases`, `asistencias`, `sesiones`, `avances_validacion` y `accesos_solicitados`, todas tienen `estado` BOOLEAN (1 activo, 0 baja). En `accesos_solicitados`, `estado` es VARCHAR con el estado del acceso (ver "Campos de estado y rol") y esa tabla no tiene baja lógica.
 Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`avances_validacion` solo `fecha_creacion`).
 
 | Tabla | Campos | Relaciones |
