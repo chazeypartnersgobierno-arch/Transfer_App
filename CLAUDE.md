@@ -5,7 +5,7 @@ Fases en orden: Onboarding → Transferencia → Estabilización → Validación
 
 ## Stack
 
-- Laravel (PHP 8.2 o superior), un solo proyecto
+- Laravel 13 (PHP 8.3 o superior), un solo proyecto
 - Vistas: Blade + CSS + JavaScript (se reutilizan las vistas HTML del prototipo)
 - Base de datos: MySQL 8 (WAMP local), InnoDB, utf8mb4
 - Tablas con migraciones de Laravel y acceso a datos con Eloquent (no SQL a mano)
