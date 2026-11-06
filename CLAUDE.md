@@ -6,7 +6,8 @@ Fases en orden: Onboarding → Transferencia → Estabilización → Validación
 ## Stack
 
 - Laravel 13 (PHP 8.3 o superior), un solo proyecto
-- Vistas: Blade + CSS + JavaScript (se reutilizan las vistas HTML del prototipo)
+- Vistas: Blade + CSS + JavaScript, con Bootstrap 5 local en `public/vendor/bootstrap` (sin CDN, npm, Vite ni Node.js)
+- Diseño: paleta en variables en `public/css/app.css` (se carga después de Bootstrap; es la base de toda la app) y logo configurable en `config/marca.php`. El logo va siempre sobre fondo blanco
 - Base de datos: MySQL 8 (WAMP local), InnoDB, utf8mb4
 - Entorno local: Windows, PHP 8.4 en terminal. La app se corre con `php artisan serve`; de WAMP solo se usa MySQL (no configurar Apache ni virtual hosts)
 - Tablas con migraciones de Laravel y acceso a datos con Eloquent (no SQL a mano)
@@ -66,7 +67,7 @@ Estos campos son VARCHAR (no ENUM). Sus valores se definirán más adelante; no 
 - seguimientos.estado_actividad
 - sesiones.modalidad
 - participantes.rol
-- usuarios.rol_app
+- usuarios.rol_app (ya definido: ver "Roles de la app")
 - accesos_solicitados.estado
 
 En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida que el valor esté en la lista antes de guardar.
@@ -76,6 +77,18 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 - Todas las FK con ON DELETE RESTRICT.
 - `porcentaje_esperado`: solo 0, 25, 50, 75 o 100. `porcentaje_real`: de 0 a 100.
 - `fecha_fin` no puede ser menor que `fecha_inicio`.
+
+## Roles de la app
+
+Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centralizados en el enum `App\Enums\RolApp`. Las etiquetas solo se muestran en las vistas.
+
+| Código | Etiqueta | Permisos |
+|---|---|---|
+| admin | Administrador | Todo: usuarios, catálogos (empresas, fases, bloques, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
+| consultor | Consultor | Seguimientos, sesiones, asistencia y avances de validación (crear, editar, consultar); catálogos solo lectura |
+
+- Los permisos se validan en el servidor con los Gates `administrar` (solo admin) y `dar-seguimiento` (admin y consultor), no solo ocultando botones.
+- Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión. Cerrar la sesión de quien ya estaba dentro queda para el módulo de usuarios.
 
 ## Reglas de negocio
 

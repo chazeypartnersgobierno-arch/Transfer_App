@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Models\Usuario;
 
 return [
 
@@ -64,7 +64,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'model' => env('AUTH_MODEL', Usuario::class),
         ],
 
         // 'users' => [
@@ -113,5 +113,17 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Primer usuario (lo usa database/seeders/DatabaseSeeder.php)
+    |--------------------------------------------------------------------------
+    */
+
+    'primer_usuario' => [
+        'nombre' => env('PRIMER_USUARIO_NOMBRE'),
+        'correo' => env('PRIMER_USUARIO_CORREO'),
+        'contrasena' => env('PRIMER_USUARIO_CONTRASENA'),
+    ],
 
 ];

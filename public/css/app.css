@@ -1,0 +1,384 @@
+/*
+ * Estilos propios de la app. Se cargan después de Bootstrap para poder cambiar sus valores.
+ * Para replicar a otra empresa: edita solo el bloque "Paleta".
+ */
+
+:root {
+    /* ===== Paleta ===== */
+    --app-principal: #1B396A;
+    --app-principal-rgb: 27, 57, 106; /* el mismo color principal, en formato R, G, B */
+    --app-principal-hover: #142B50;
+    --app-seleccion: #E8EDF5; /* sobre este fondo usa --app-texto: el secundario no da contraste */
+    --app-fondo: #F5F7FA;
+    --app-fondo-acceso: #E5E7EB; /* gris de las pantallas de acceso: resalta la tarjeta blanca */
+    --app-superficie: #FFFFFF;
+    --app-texto: #1F2937;
+    --app-texto-rgb: 31, 41, 55;
+    --app-texto-secundario: #6B7280;
+    --app-texto-secundario-rgb: 107, 114, 128;
+    --app-borde: #D1D5DB; /* tarjetas y separadores */
+    --app-borde-control: var(--app-texto-secundario); /* inputs: el contorno debe distinguirse bien */
+    --app-exito: #15803D;
+    --app-exito-rgb: 21, 128, 61;
+    --app-error: #B91C1C;
+    --app-error-rgb: 185, 28, 28;
+    --app-advertencia: #B45309;
+    --app-advertencia-rgb: 180, 83, 9;
+    --app-acento-rgb: 32, 150, 168; /* #2096A8, del logo: solo decorativo, no lleva texto */
+    --app-reticula: rgba(255, 255, 255, .055);
+
+    /* ===== Conexión con las variables de Bootstrap ===== */
+    --bs-body-font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --bs-primary: var(--app-principal);
+    --bs-primary-rgb: var(--app-principal-rgb);
+    --bs-secondary: var(--app-texto-secundario);
+    --bs-secondary-rgb: var(--app-texto-secundario-rgb);
+    --bs-success: var(--app-exito);
+    --bs-success-rgb: var(--app-exito-rgb);
+    --bs-danger: var(--app-error);
+    --bs-danger-rgb: var(--app-error-rgb);
+    --bs-warning: var(--app-advertencia);
+    --bs-warning-rgb: var(--app-advertencia-rgb);
+
+    /* Bootstrap usa --bs-body-bg para tarjetas e inputs: debe seguir siendo blanco.
+       El fondo general de la página se define abajo, en body. */
+    --bs-body-bg: var(--app-superficie);
+    --bs-body-color: var(--app-texto);
+    --bs-body-color-rgb: var(--app-texto-rgb);
+    --bs-emphasis-color: var(--app-texto);
+    --bs-heading-color: var(--app-texto);
+    --bs-secondary-color: var(--app-texto-secundario);
+    --bs-border-color: var(--app-borde);
+    --bs-border-color-translucent: var(--app-borde);
+    --bs-link-color: var(--app-principal);
+    --bs-link-color-rgb: var(--app-principal-rgb);
+    --bs-link-hover-color: var(--app-principal-hover);
+    --bs-form-invalid-color: var(--app-error);
+    --bs-form-invalid-border-color: var(--app-error);
+
+    /* Alertas: fondo blanco y texto de color, para un aspecto sobrio y legible. */
+    --bs-success-text-emphasis: var(--app-exito);
+    --bs-success-bg-subtle: var(--app-superficie);
+    --bs-success-border-subtle: var(--app-exito);
+    --bs-danger-text-emphasis: var(--app-error);
+    --bs-danger-bg-subtle: var(--app-superficie);
+    --bs-danger-border-subtle: var(--app-error);
+    --bs-warning-text-emphasis: var(--app-advertencia);
+    --bs-warning-bg-subtle: var(--app-superficie);
+    --bs-warning-border-subtle: var(--app-advertencia);
+}
+
+body {
+    background-color: var(--app-fondo);
+}
+
+/* ===== Botones: Bootstrap fija sus colores aquí, no en --bs-primary ===== */
+.btn-primary {
+    --bs-btn-color: var(--app-superficie);
+    --bs-btn-bg: var(--app-principal);
+    --bs-btn-border-color: var(--app-principal);
+    --bs-btn-hover-color: var(--app-superficie);
+    --bs-btn-hover-bg: var(--app-principal-hover);
+    --bs-btn-hover-border-color: var(--app-principal-hover);
+    --bs-btn-focus-shadow-rgb: var(--app-principal-rgb);
+    --bs-btn-active-color: var(--app-superficie);
+    --bs-btn-active-bg: var(--app-principal-hover);
+    --bs-btn-active-border-color: var(--app-principal-hover);
+    --bs-btn-disabled-color: var(--app-superficie);
+    --bs-btn-disabled-bg: var(--app-principal);
+    --bs-btn-disabled-border-color: var(--app-principal);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--app-principal);
+    --bs-btn-border-color: var(--app-principal);
+    --bs-btn-hover-color: var(--app-superficie);
+    --bs-btn-hover-bg: var(--app-principal);
+    --bs-btn-hover-border-color: var(--app-principal);
+    --bs-btn-focus-shadow-rgb: var(--app-principal-rgb);
+    --bs-btn-active-color: var(--app-superficie);
+    --bs-btn-active-bg: var(--app-principal-hover);
+    --bs-btn-active-border-color: var(--app-principal-hover);
+    --bs-btn-disabled-color: var(--app-principal);
+    --bs-btn-disabled-border-color: var(--app-principal);
+}
+
+/* ===== Campos de formulario ===== */
+.form-control {
+    border-color: var(--app-borde-control);
+}
+
+.form-control:focus {
+    border-color: var(--app-principal);
+    box-shadow: 0 0 0 .25rem rgba(var(--app-principal-rgb), .18);
+}
+
+/* Bootstrap dibuja un icono rojo fijo que no sale de la paleta; el error ya se indica con borde y texto. */
+.form-control.is-invalid {
+    padding-right: .75rem;
+    background-image: none;
+}
+
+/* ===== Alertas ===== */
+.alert {
+    border-left-width: .25rem;
+}
+
+/* ===== Campo de contraseña ===== */
+.campo-clave {
+    position: relative;
+}
+
+.campo-clave .form-control {
+    padding-right: 3.25rem;
+}
+
+.ver-clave {
+    position: absolute;
+    top: .25rem;
+    right: .25rem;
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: .5rem;
+    background: transparent;
+    color: var(--app-texto-secundario);
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.ver-clave[hidden] {
+    display: none;
+}
+
+.ver-clave:hover {
+    background: var(--app-seleccion);
+    color: var(--app-principal);
+}
+
+.ver-clave:focus-visible {
+    outline: 2px solid var(--app-principal);
+    outline-offset: 1px;
+}
+
+.ver-clave .icono-ocultar,
+.ver-clave[aria-pressed="true"] .icono-ver {
+    display: none;
+}
+
+.ver-clave[aria-pressed="true"] .icono-ocultar {
+    display: block;
+}
+
+.aviso-mayus {
+    margin-top: .375rem;
+    color: var(--app-advertencia);
+    font-size: .875rem;
+}
+
+/* ===== Pantallas de acceso: tarjeta grande con contenido y marca ===== */
+.acceso-fondo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+    background-color: var(--app-fondo-acceso);
+}
+
+.acceso {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 60rem;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    background: var(--app-superficie);
+    box-shadow: 0 1.25rem 3rem rgba(var(--app-texto-rgb), .16);
+    animation: acceso-entrada .35s ease-out both;
+}
+
+@keyframes acceso-entrada {
+    from {
+        opacity: 0;
+        transform: translateY(.5rem);
+    }
+}
+
+.acceso-principal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.75rem;
+}
+
+.acceso-contenido {
+    width: 100%;
+    max-width: 22.5rem;
+}
+
+.acceso-titulo {
+    margin-bottom: .375rem;
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+
+.acceso-subtitulo {
+    margin-bottom: 1.75rem;
+    color: var(--app-texto-secundario);
+}
+
+.acceso .form-label {
+    margin-bottom: .375rem;
+    font-size: .9375rem;
+    font-weight: 500;
+}
+
+.acceso .form-control {
+    min-height: 3rem;
+    border-radius: .625rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.acceso .form-control:hover:not(:focus, .is-invalid) {
+    border-color: var(--app-texto);
+}
+
+.acceso .alert {
+    border-radius: .625rem;
+    font-size: .9375rem;
+}
+
+.btn-acceso {
+    min-height: 3rem;
+    border-radius: .625rem;
+    font-weight: 600;
+    transition: background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.btn-acceso:hover:not(:disabled) {
+    box-shadow: 0 .5rem 1.25rem rgba(var(--app-principal-rgb), .28);
+    transform: translateY(-1px);
+}
+
+.btn-acceso:active:not(:disabled) {
+    box-shadow: none;
+    transform: none;
+}
+
+/* Sección de marca: azul con retícula técnica y resplandor del color del logo. */
+.acceso-panel {
+    position: relative;
+    display: flex;
+    order: -1; /* en pantallas pequeñas va arriba */
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(150deg, var(--app-principal) 0%, var(--app-principal-hover) 100%);
+}
+
+.acceso-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--app-reticula) 1px, transparent 1px),
+        linear-gradient(90deg, var(--app-reticula) 1px, transparent 1px);
+    background-size: 2.75rem 2.75rem;
+    -webkit-mask-image: radial-gradient(ellipse at 85% 10%, #000 0%, transparent 70%);
+    mask-image: radial-gradient(ellipse at 85% 10%, #000 0%, transparent 70%);
+}
+
+.acceso-panel::after {
+    content: "";
+    position: absolute;
+    right: -14rem;
+    bottom: -16rem;
+    width: 34rem;
+    height: 34rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--app-acento-rgb), .38) 0%, transparent 68%);
+}
+
+.marca-interior {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+/* El logo va siempre sobre fondo blanco: sus colores no se leen sobre el azul principal. */
+.marca-logo-fondo {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: .875rem;
+    background: var(--app-superficie);
+}
+
+.marca-logo {
+    display: block;
+    width: 4rem;
+    height: auto;
+}
+
+.marca-nombre {
+    margin: 0;
+    color: var(--app-superficie);
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+
+@media (min-width: 768px) {
+    .acceso {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        min-height: 36rem;
+    }
+
+    .acceso-principal {
+        padding: 3rem;
+    }
+
+    .acceso-panel {
+        order: 0;
+    }
+
+    .marca-interior {
+        flex-direction: column;
+        gap: 1.75rem;
+        padding: 3rem 2rem;
+    }
+
+    .marca-logo-fondo {
+        width: 12.5rem;
+        height: 12.5rem;
+        border-radius: 1.5rem;
+        box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, .22);
+    }
+
+    .marca-logo {
+        width: 11rem;
+    }
+
+    .marca-nombre {
+        font-size: 1.875rem;
+    }
+}
+
+/* Respeta a quien pidió reducir las animaciones en su sistema. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
