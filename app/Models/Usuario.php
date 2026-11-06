@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RolApp;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
@@ -47,5 +48,18 @@ class Usuario extends Authenticatable
             'estado' => 'boolean',
             'rol_app' => RolApp::class,    // convierte 'admin' en RolApp::Admin
         ];
+    }
+
+    public function empresa(): BelongsTo
+    {
+        return $this->belongsTo(Empresa::class, 'id_empresa', 'id_empresa');
+    }
+
+    /**
+     * Los usuarios de Chazey no pertenecen a una empresa y ven todas.
+     */
+    public function esChazey(): bool
+    {
+        return $this->id_empresa === null;
     }
 }

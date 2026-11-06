@@ -13,6 +13,7 @@ Fases en orden: Onboarding → Transferencia → Estabilización → Validación
 - Tablas con migraciones de Laravel y acceso a datos con Eloquent (no SQL a mano)
 - Login: manual, con la autenticación por sesión que trae Laravel (`Auth::attempt` + middleware `auth`) y las vistas propias del proyecto. No usar Breeze, Jetstream ni otros kits de inicio; no requiere JavaScript ni Node.js
 - Carga desde Excel: paquete Laravel Excel (maatwebsite/excel)
+- Pruebas: `php artisan test`, sobre la base `transfer_app_testing` (`tests/TestCase.php` las detiene si apuntan a otra base)
 
 ## Convenciones de Laravel en este proyecto
 
@@ -87,11 +88,13 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 | admin | Administrador | Todo: usuarios, catálogos (empresas, fases, bloques, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
 | consultor | Consultor | Seguimientos, sesiones, asistencia y avances de validación (crear, editar, consultar); catálogos solo lectura |
 
-- Los permisos se validan en el servidor con los Gates `administrar` (solo admin) y `dar-seguimiento` (admin y consultor), no solo ocultando botones.
+- Los permisos se validan en el servidor con los Gates `administrar` (solo admin), `administrar-empresas` y `administrar-fases` (solo admin de Chazey, `id_empresa` NULL) y `dar-seguimiento` (admin y consultor), no solo ocultando botones.
+- Un usuario con empresa solo ve los datos de la suya; esto también se valida en el servidor.
 - Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión. Cerrar la sesión de quien ya estaba dentro queda para el módulo de usuarios.
 
 ## Reglas de negocio
 
+- Las fases son las mismas para todas las empresas. En la app solo se edita su nombre: no se agregan ni se quitan, y el orden y `tiene_sesiones` son fijos. La lógica usa `orden` y `tiene_sesiones`, nunca el nombre.
 - Cada actividad se registra una sola vez en `actividades`. Onboarding no lleva bloque; Transferencia, Estabilización y Validación sí, porque cambian por bloque.
 - Al crear un grupo, la app genera sus `seguimientos`: actividades de Onboarding (id_bloque NULL) + actividades del bloque del grupo.
 - Fases con `tiene_sesiones = 1` registran sesiones y asistencia. Validación no tiene sesiones: registra avances por fecha en `avances_validacion`.

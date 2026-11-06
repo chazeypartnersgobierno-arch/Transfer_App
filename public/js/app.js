@@ -1,5 +1,10 @@
 // Ayudas de los formularios. Son opcionales: sin JavaScript, todo sigue funcionando.
 
+// Envía el formulario al cambiar un filtro; sin JavaScript queda el botón Buscar.
+document.querySelectorAll('[data-enviar-al-cambiar]').forEach((campo) => {
+    campo.addEventListener('change', () => campo.form.requestSubmit());
+});
+
 // Botón para ver u ocultar la contraseña.
 document.querySelectorAll('[data-ver-clave]').forEach((boton) => {
     const campo = boton.parentElement.querySelector('input');

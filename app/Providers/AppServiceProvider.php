@@ -6,6 +6,7 @@ use App\Enums\RolApp;
 use App\Models\Usuario;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -31,12 +32,21 @@ class AppServiceProvider extends ServiceProvider
         // Usuarios, cambios en catálogos y carga desde Excel: solo admin.
         Gate::define('administrar', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin);
 
+        // Crear, editar, dar de baja y reactivar empresas: solo admin de Chazey.
+        Gate::define('administrar-empresas', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin && $usuario->esChazey());
+
+        // Cambiar el nombre de una fase: solo admin de Chazey, porque se ve en todas las empresas.
+        Gate::define('administrar-fases', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin && $usuario->esChazey());
+
         // Seguimientos, sesiones, asistencia y avances: admin y consultor.
         Gate::define('dar-seguimiento', fn (Usuario $usuario) => in_array(
             $usuario->rol_app,
             [RolApp::Admin, RolApp::Consultor],
             true
         ));
+
+        // Vista propia para los enlaces de paginación, con Bootstrap y en español.
+        Paginator::defaultView('paginacion');
 
         // Máximo 5 intentos de login por minuto para cada correo.
         RateLimiter::for('login', function (Request $request) {

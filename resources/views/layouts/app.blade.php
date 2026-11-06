@@ -43,11 +43,25 @@
                 <ul class="menu-lista">
                     <li><x-menu-enlace ruta="inicio" icono="inicio">Inicio</x-menu-enlace></li>
                 </ul>
+
+                <p class="menu-titulo">Catálogos</p>
+                <ul class="menu-lista">
+                    <li><x-menu-enlace ruta="empresas.index" activo-en="empresas.*" icono="empresa">Empresas</x-menu-enlace></li>
+                    <li><x-menu-enlace ruta="fases.index" activo-en="fases.*" icono="fase">Fases</x-menu-enlace></li>
+                </ul>
             </div>
         </nav>
 
         <main class="contenido">
             <div class="pagina">
+                {{-- Mensajes que deja la acción anterior, por ejemplo al guardar. --}}
+                @if (session('exito'))
+                    <x-alerta tipo="exito">{{ session('exito') }}</x-alerta>
+                @endif
+                @if (session('error'))
+                    <x-alerta tipo="error">{{ session('error') }}</x-alerta>
+                @endif
+
                 @yield('contenido')
             </div>
         </main>

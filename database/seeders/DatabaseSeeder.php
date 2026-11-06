@@ -10,11 +10,13 @@ use RuntimeException;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Crea el primer usuario (admin) con los datos de PRIMER_USUARIO_* en .env.
+     * Crea las fases y el primer usuario (admin) con los datos de PRIMER_USUARIO_* en .env.
      * Se puede ejecutar varias veces: si el correo ya existe, no cambia nada.
      */
     public function run(): void
     {
+        $this->call(FaseSeeder::class);
+
         $datos = config('auth.primer_usuario');
 
         if (empty($datos['nombre']) || empty($datos['correo']) || empty($datos['contrasena'])) {
