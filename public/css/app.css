@@ -373,6 +373,194 @@ body {
     }
 }
 
+/* ===== Layout principal: barra superior, menú lateral y contenido ===== */
+:root {
+    --app-alto-barra: 4.25rem;
+    --app-ancho-menu: 16rem;
+}
+
+/* Barra superior */
+.barra {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    height: var(--app-alto-barra);
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--app-borde);
+    background: var(--app-superficie);
+}
+
+/* object-fit recorta el espacio transparente de arriba y abajo que trae la imagen. */
+.barra-logo {
+    display: block;
+    width: 7.5rem;
+    height: 3.25rem;
+    object-fit: cover;
+}
+
+.barra-menu {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: .5rem;
+    background: transparent;
+    color: var(--app-principal);
+}
+
+.barra-menu:hover {
+    background: var(--app-seleccion);
+}
+
+.barra-usuario {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-left: auto;
+}
+
+.usuario-inicial {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: var(--app-seleccion);
+    color: var(--app-principal);
+    font-weight: 600;
+}
+
+.usuario-nombre {
+    font-size: .9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.usuario-rol {
+    color: var(--app-texto-secundario);
+    font-size: .8125rem;
+    line-height: 1.2;
+}
+
+.btn-salir {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 2.75rem;
+    border-radius: .5rem;
+}
+
+/* Menú lateral */
+.estructura {
+    display: flex;
+    min-height: calc(100vh - var(--app-alto-barra));
+}
+
+.menu {
+    --bs-offcanvas-width: var(--app-ancho-menu);
+    --bs-offcanvas-bg: var(--app-principal);
+    background: linear-gradient(180deg, var(--app-principal), var(--app-principal-hover)) !important;
+    color: var(--app-superficie);
+}
+
+/* Bootstrap dibuja la X en oscuro; sobre el azul debe verse clara. */
+.menu .btn-close {
+    filter: invert(1) grayscale(1) brightness(2);
+}
+
+.menu-lista {
+    display: grid;
+    gap: .125rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.menu-enlace {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-height: 2.75rem;
+    padding: .5rem .75rem;
+    border-radius: .5rem;
+    color: var(--app-superficie);
+    font-size: .9375rem;
+    text-decoration: none;
+    transition: background-color .15s ease;
+}
+
+.menu-enlace:hover {
+    background: rgba(255, 255, 255, .1);
+    color: var(--app-superficie);
+}
+
+.menu-enlace:focus-visible {
+    outline: 2px solid var(--app-superficie);
+    outline-offset: -2px;
+}
+
+.menu-enlace.activo,
+.menu-enlace.activo:hover {
+    background: var(--app-superficie);
+    color: var(--app-principal);
+    font-weight: 600;
+}
+
+.menu-enlace svg {
+    flex: none;
+}
+
+/* Contenido */
+.contenido {
+    flex: 1;
+    min-width: 0;
+    padding: 1.5rem 1rem;
+}
+
+.pagina {
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+.pagina-titulo {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+
+.pagina-subtitulo {
+    margin: .125rem 0 0;
+    color: var(--app-texto-secundario);
+}
+
+@media (min-width: 992px) {
+    .barra {
+        padding: 0 1.5rem;
+    }
+
+    .menu {
+        flex: none;
+        width: var(--app-ancho-menu);
+    }
+
+    .menu .offcanvas-body {
+        position: sticky;
+        top: var(--app-alto-barra);
+        padding: 1rem .75rem;
+    }
+
+    .contenido {
+        padding: 2rem;
+    }
+}
+
 /* Respeta a quien pidió reducir las animaciones en su sistema. */
 @media (prefers-reduced-motion: reduce) {
     *,
