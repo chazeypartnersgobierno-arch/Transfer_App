@@ -31,4 +31,9 @@ class Bloque extends Model
     {
         return $this->hasMany(Actividad::class, 'id_bloque', 'id_bloque');
     }
+
+    public function grupos(): HasMany
+    {
+        return $this->hasMany(Grupo::class, 'id_bloque', 'id_bloque');
+    }
 }

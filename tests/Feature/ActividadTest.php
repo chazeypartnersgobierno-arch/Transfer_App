@@ -536,7 +536,7 @@ class ActividadTest extends TestCase
         $url = "/bloques/{$bloque->id_bloque}/baja";
 
         $this->actingAs($admin)->from('/bloques')->patch($url)
-            ->assertSessionHas('error', 'No se puede dar de baja Uno: todavía tiene actividades activas.');
+            ->assertSessionHas('error', 'No se puede dar de baja Uno. Todavía tiene activos: actividades.');
         $this->assertTrue($bloque->fresh()->estado);
 
         $actividad->update(['estado' => false]);

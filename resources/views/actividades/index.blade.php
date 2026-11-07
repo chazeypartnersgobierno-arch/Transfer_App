@@ -89,11 +89,7 @@
                                             <a href="{{ route('actividades.editar', $actividad) }}" class="btn btn-sm btn-outline-primary">Editar</a>
                                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#baja-{{ $actividad->id_actividad }}">Dar de baja</button>
                                         @else
-                                            <form method="POST" action="{{ route('actividades.reactivar', $actividad) }}" class="d-flex flex-fill">
-                                                @csrf
-                                                @method('PATCH')
-                                                <x-boton variante="outline-primary" class="btn-sm flex-fill">Reactivar</x-boton>
-                                            </form>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reactivar-{{ $actividad->id_actividad }}">Reactivar</button>
                                         @endif
                                     </div>
                                 </td>
@@ -120,7 +116,20 @@
     @can('administrar')
         @foreach ($actividades->where('estado', true) as $actividad)
             <x-confirmar id="baja-{{ $actividad->id_actividad }}" titulo="Dar de baja" :accion="route('actividades.baja', $actividad)" boton="Dar de baja">
-                ¿Quieres dar de baja la actividad {{ $actividad->nombre }}? No se borra su información y podrás reactivarla después.
+                ¿Quieres dar de baja la actividad {{ $actividad->nombre }}?
+                {{ \App\Models\Seguimiento::avisoDeBaja($actividad->seguimientos_count) }} Podrás reactivarla después.
+            </x-confirmar>
+        @endforeach
+
+        @foreach ($actividades->where('estado', false) as $actividad)
+            <x-confirmar id="reactivar-{{ $actividad->id_actividad }}" titulo="Reactivar" :accion="route('actividades.reactivar', $actividad)" boton="Reactivar">
+                ¿Quieres reactivar la actividad {{ $actividad->nombre }}?
+                @if ($faltantes[$actividad->id_actividad] > 0)
+                    {{ \App\Models\Seguimiento::seGeneraran($faltantes[$actividad->id_actividad]) }} para los grupos activos que no la tienen.
+                @else
+                    No hace falta generar seguimientos nuevos.
+                @endif
+                Los existentes no cambian.
             </x-confirmar>
         @endforeach
     @endcan

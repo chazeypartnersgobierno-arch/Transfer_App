@@ -98,7 +98,12 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Onboarding se reconoce por `orden = 1` (`Fase::esOnboarding()`).
 - Al crear una actividad, la app rechaza otra con la misma empresa, fase, bloque, macroproceso, proceso, subproceso y nombre, aunque esté dada de baja. Al editar, empresa, fase y bloque quedan fijos.
 - Cada actividad se registra una sola vez en `actividades`. Onboarding no lleva bloque; Transferencia, Estabilización y Validación sí, porque cambian por bloque.
-- Al crear un grupo, la app genera sus `seguimientos`: actividades de Onboarding (id_bloque NULL) + actividades del bloque del grupo.
+- Al crear un grupo, la app genera sus `seguimientos`: actividades de Onboarding (id_bloque NULL) de su empresa + actividades del bloque del grupo. Toda la generación pasa por `App\Services\GeneradorDeSeguimientos`, en transacción (todo o nada).
+- Solo se generan combinaciones con grupo y actividad activos, y nunca se tocan los seguimientos existentes.
+- Al crear una actividad o al reactivar un grupo o una actividad, se generan los seguimientos que falten. Antes se muestra cuántos se generarán y se pide confirmación.
+- Al editar un grupo solo cambia el nombre. Si el bloque está mal, se da de baja y se crea uno nuevo.
+- Los seguimientos no bloquean la baja de un grupo o de una actividad y quedan intactos. Antes de la baja se muestra cuántos tiene y se pide confirmación.
+- Mientras el grupo o la actividad estén de baja, sus seguimientos no aparecen en las listas de trabajo ni cuentan en los porcentajes de avance (`Seguimiento::enTrabajo()`), pero se pueden consultar con un filtro.
 - Fases con `tiene_sesiones = 1` registran sesiones y asistencia. Validación no tiene sesiones: registra avances por fecha en `avances_validacion`.
 - El % actual de una actividad de Validación es su captura más reciente.
 - Un grupo terminó una fase cuando todos sus seguimientos de esa fase están en estado "Completada". Esto se calcula, no se guarda.

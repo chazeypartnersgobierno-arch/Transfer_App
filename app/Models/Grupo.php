@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Grupo extends Model
+{
+    protected $table = 'grupos';
+
+    protected $primaryKey = 'id_grupo';
+
+    const CREATED_AT = 'fecha_creacion';
+
+    const UPDATED_AT = 'fecha_actualizacion';
+
+    protected $fillable = ['id_bloque', 'nombre', 'estado'];
+
+    protected function casts(): array
+    {
+        return [
+            'estado' => 'boolean',
+        ];
+    }
+
+    public function bloque(): BelongsTo
+    {
+        return $this->belongsTo(Bloque::class, 'id_bloque', 'id_bloque');
+    }
+
+    public function seguimientos(): HasMany
+    {
+        return $this->hasMany(Seguimiento::class, 'id_grupo', 'id_grupo');
+    }
+
+    /**
+     * Un grupo no tiene id_empresa: su empresa es la de su bloque.
+     * Chazey ve todos; los demás, solo los de su empresa.
+     */
+    public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
+    {
+        return $usuario->esChazey()
+            ? $consulta
+            : $consulta->whereHas('bloque', fn ($q) => $q->where('id_empresa', $usuario->id_empresa));
+    }
+
+    /**
+     * Laravel llama a este método para convertir un {grupo} de la URL en un modelo.
+     * Si el grupo es de otra empresa, responde 404, como si no existiera.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::visiblePara(auth()->user())
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->first();
+    }
+}

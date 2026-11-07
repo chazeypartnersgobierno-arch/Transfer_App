@@ -5,6 +5,7 @@ use App\Http\Controllers\AplicativoController;
 use App\Http\Controllers\BloqueController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\FaseController;
+use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\LoginController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,7 @@ Route::middleware('auth')->group(function () {
 
     // Consultas de catálogos por empresa: cada usuario solo ve lo que le corresponde.
     Route::get('/bloques', [BloqueController::class, 'index'])->name('bloques.index');
+    Route::get('/grupos', [GrupoController::class, 'index'])->name('grupos.index');
     Route::get('/aplicativos', [AplicativoController::class, 'index'])->name('aplicativos.index');
     Route::get('/actividades', [ActividadController::class, 'index'])->name('actividades.index');
 
@@ -43,6 +45,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/bloques/{bloque}', [BloqueController::class, 'actualizar'])->name('bloques.actualizar');
         Route::patch('/bloques/{bloque}/baja', [BloqueController::class, 'darDeBaja'])->name('bloques.baja');
         Route::patch('/bloques/{bloque}/reactivar', [BloqueController::class, 'reactivar'])->name('bloques.reactivar');
+
+        Route::get('/grupos/crear', [GrupoController::class, 'crear'])->name('grupos.crear');
+        Route::post('/grupos', [GrupoController::class, 'guardar'])->name('grupos.guardar');
+        Route::get('/grupos/{grupo}/editar', [GrupoController::class, 'editar'])->name('grupos.editar');
+        Route::put('/grupos/{grupo}', [GrupoController::class, 'actualizar'])->name('grupos.actualizar');
+        Route::patch('/grupos/{grupo}/baja', [GrupoController::class, 'darDeBaja'])->name('grupos.baja');
+        Route::patch('/grupos/{grupo}/reactivar', [GrupoController::class, 'reactivar'])->name('grupos.reactivar');
 
         Route::get('/actividades/crear', [ActividadController::class, 'crear'])->name('actividades.crear');
         Route::post('/actividades', [ActividadController::class, 'guardar'])->name('actividades.guardar');

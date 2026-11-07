@@ -6,15 +6,18 @@ use App\Models\Actividad;
 use App\Models\Bloque;
 use App\Models\Empresa;
 use App\Models\Fase;
+use App\Models\Seguimiento;
+use App\Services\GeneradorDeSeguimientos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ActividadController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, GeneradorDeSeguimientos $generador): View
     {
         $usuario = $request->user();
         $buscar = is_string($request->query('buscar')) ? $request->query('buscar') : '';
@@ -41,6 +44,7 @@ class ActividadController extends Controller
 
         $actividades = Actividad::visiblePara($usuario)
             ->with(['empresa', 'fase', 'bloque']) // trae todo de una vez, sin una consulta por cada fila
+            ->withCount('seguimientos') // agrega seguimientos_count a cada actividad
             ->when(! $verBajas, fn ($consulta) => $consulta->where('estado', true))
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
             ->when($idFase !== null, fn ($consulta) => $consulta->where('id_fase', $idFase))
@@ -61,7 +65,12 @@ class ActividadController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('actividades.index', compact('actividades', 'buscar', 'verBajas', 'idEmpresa', 'idFase', 'idBloque', 'empresas', 'fases', 'bloques'));
+        // Para avisar, antes de reactivar, cuántos seguimientos se generarían.
+        $faltantes = $actividades->getCollection()
+            ->reject(fn (Actividad $actividad) => $actividad->estado)
+            ->mapWithKeys(fn (Actividad $actividad) => [$actividad->id_actividad => $generador->gruposFaltantes($actividad)->count()]);
+
+        return view('actividades.index', compact('actividades', 'buscar', 'verBajas', 'idEmpresa', 'idFase', 'idBloque', 'empresas', 'fases', 'bloques', 'faltantes'));
     }
 
     public function crear(Request $request): View|RedirectResponse
@@ -94,8 +103,17 @@ class ActividadController extends Controller
         ]);
     }
 
-    public function guardar(Request $request): RedirectResponse
+    /**
+     * Se guarda en dos pasos cuando la actividad generaría seguimientos: primero se avisa
+     * cuántos serían y solo se guarda si el usuario confirma (accion = confirmar).
+     */
+    public function guardar(Request $request, GeneradorDeSeguimientos $generador): View|RedirectResponse
     {
+        // "Corregir" vuelve al formulario con lo que había escrito.
+        if ($request->input('accion') === 'corregir') {
+            return redirect()->route('actividades.crear')->withInput($request->except('accion', '_token'));
+        }
+
         // Un usuario con empresa solo crea en la suya, aunque envíe otro valor.
         if (! $request->user()->esChazey()) {
             $request->merge(['id_empresa' => $request->user()->id_empresa]);
@@ -127,9 +145,31 @@ class ActividadController extends Controller
 
         $this->validarQueNoSeRepita($datos);
 
-        $actividad = Actividad::create($datos);
+        $porGenerar = $generador->gruposFaltantes(new Actividad($datos))->count();
 
-        return redirect()->route('actividades.index')->with('exito', "Se creó la actividad {$actividad->nombre}.");
+        if ($porGenerar > 0 && $request->input('accion') !== 'confirmar') {
+            return view('actividades.confirmar', [
+                'datos' => $datos,
+                'porGenerar' => $porGenerar,
+                'empresa' => Empresa::find($datos['id_empresa']),
+                'fase' => Fase::find($datos['id_fase']),
+                'bloque' => isset($datos['id_bloque']) ? Bloque::find($datos['id_bloque']) : null,
+            ]);
+        }
+
+        // Todo o nada: si falla la generación, tampoco queda la actividad.
+        [$actividad, $generados] = DB::transaction(function () use ($datos, $generador) {
+            $actividad = Actividad::create($datos);
+
+            // create() no trae el valor por defecto de la base de datos.
+            $actividad->refresh();
+
+            return [$actividad, $generador->generarParaActividad($actividad)];
+        });
+
+        $detalle = $generados > 0 ? ' '.Seguimiento::seGeneraron($generados).'.' : '';
+
+        return redirect()->route('actividades.index')->with('exito', "Se creó la actividad {$actividad->nombre}.{$detalle}");
     }
 
     public function editar(Actividad $actividad): View
@@ -162,16 +202,19 @@ class ActividadController extends Controller
     }
 
     /**
-     * No se borra nada: la baja solo cambia estado a 0.
+     * No se borra nada: la baja solo cambia estado a 0. Sus seguimientos quedan intactos.
      */
     public function darDeBaja(Actividad $actividad): RedirectResponse
     {
         $actividad->update(['estado' => false]);
 
-        return back()->with('exito', "Se dio de baja la actividad {$actividad->nombre}.");
+        return back()->with('exito', "Se dio de baja la actividad {$actividad->nombre}. Sus seguimientos quedaron intactos.");
     }
 
-    public function reactivar(Actividad $actividad): RedirectResponse
+    /**
+     * Al reactivar se generan los seguimientos que falten; los existentes no cambian.
+     */
+    public function reactivar(Actividad $actividad, GeneradorDeSeguimientos $generador): RedirectResponse
     {
         if (! $actividad->empresa->estado) {
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su empresa está dada de baja.");
@@ -182,9 +225,15 @@ class ActividadController extends Controller
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su bloque está dado de baja.");
         }
 
-        $actividad->update(['estado' => true]);
+        $generados = DB::transaction(function () use ($actividad, $generador) {
+            $actividad->update(['estado' => true]);
 
-        return back()->with('exito', "Se reactivó la actividad {$actividad->nombre}.");
+            return $generador->generarParaActividad($actividad);
+        });
+
+        $detalle = $generados > 0 ? ' '.Seguimiento::seGeneraron($generados).'.' : '';
+
+        return back()->with('exito', "Se reactivó la actividad {$actividad->nombre}.{$detalle}");
     }
 
     /**

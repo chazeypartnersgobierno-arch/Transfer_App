@@ -6,6 +6,7 @@ use App\Models\Bloque;
 use App\Models\Empresa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -88,8 +89,19 @@ class BloqueController extends Controller
      */
     public function darDeBaja(Bloque $bloque): RedirectResponse
     {
-        if ($bloque->actividades()->where('estado', true)->exists()) {
-            return back()->with('error', "No se puede dar de baja {$bloque->nombre}: todavía tiene actividades activas.");
+        // Revisa cada tipo de registro que depende del bloque y anota los que siguen activos.
+        $pendientes = [];
+
+        foreach (['grupos', 'actividades'] as $relacion) {
+            if ($bloque->{$relacion}()->where('estado', true)->exists()) {
+                $pendientes[] = $relacion;
+            }
+        }
+
+        if ($pendientes !== []) {
+            $lista = Arr::join($pendientes, ', ', ' y ');
+
+            return back()->with('error', "No se puede dar de baja {$bloque->nombre}. Todavía tiene activos: {$lista}.");
         }
 
         $bloque->update(['estado' => false]);

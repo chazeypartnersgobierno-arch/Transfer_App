@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\PerteneceAEmpresa;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Actividad extends Model
 {
@@ -44,6 +45,11 @@ class Actividad extends Model
     public function bloque(): BelongsTo
     {
         return $this->belongsTo(Bloque::class, 'id_bloque', 'id_bloque');
+    }
+
+    public function seguimientos(): HasMany
+    {
+        return $this->hasMany(Seguimiento::class, 'id_actividad', 'id_actividad');
     }
 
     /**
