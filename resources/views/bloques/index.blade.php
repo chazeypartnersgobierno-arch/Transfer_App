@@ -22,7 +22,7 @@
 
             @if ($empresas->isNotEmpty())
                 <label for="filtro_empresa" class="visually-hidden">Filtrar por empresa</label>
-                <select id="filtro_empresa" name="id_empresa" class="form-select filtro-empresa" data-enviar-al-cambiar>
+                <select id="filtro_empresa" name="id_empresa" class="form-select filtro" data-enviar-al-cambiar>
                     <option value="">Todas las empresas</option>
                     @foreach ($empresas as $id => $nombre)
                         <option value="{{ $id }}" @selected($id === $idEmpresa)>{{ $nombre }}</option>

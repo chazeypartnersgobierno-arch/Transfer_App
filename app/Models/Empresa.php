@@ -40,6 +40,11 @@ class Empresa extends Model
         return $this->hasMany(Aplicativo::class, 'id_empresa', 'id_empresa');
     }
 
+    public function actividades(): HasMany
+    {
+        return $this->hasMany(Actividad::class, 'id_empresa', 'id_empresa');
+    }
+
     /**
      * Filtra las empresas que un usuario puede ver: Chazey ve todas; los demás, solo la suya.
      * Se usa así: Empresa::visiblePara($usuario)->get()

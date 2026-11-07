@@ -95,6 +95,8 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 ## Reglas de negocio
 
 - Las fases son las mismas para todas las empresas. En la app solo se edita su nombre: no se agregan ni se quitan, y el orden y `tiene_sesiones` son fijos. La lógica usa `orden` y `tiene_sesiones`, nunca el nombre.
+- Onboarding se reconoce por `orden = 1` (`Fase::esOnboarding()`).
+- Al crear una actividad, la app rechaza otra con la misma empresa, fase, bloque, macroproceso, proceso, subproceso y nombre, aunque esté dada de baja. Al editar, empresa, fase y bloque quedan fijos.
 - Cada actividad se registra una sola vez en `actividades`. Onboarding no lleva bloque; Transferencia, Estabilización y Validación sí, porque cambian por bloque.
 - Al crear un grupo, la app genera sus `seguimientos`: actividades de Onboarding (id_bloque NULL) + actividades del bloque del grupo.
 - Fases con `tiene_sesiones = 1` registran sesiones y asistencia. Validación no tiene sesiones: registra avances por fecha en `avances_validacion`.

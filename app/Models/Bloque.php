@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bloque extends Model
 {
@@ -24,5 +25,10 @@ class Bloque extends Model
         return [
             'estado' => 'boolean',
         ];
+    }
+
+    public function actividades(): HasMany
+    {
+        return $this->hasMany(Actividad::class, 'id_bloque', 'id_bloque');
     }
 }

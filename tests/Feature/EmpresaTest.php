@@ -201,7 +201,7 @@ class EmpresaTest extends TestCase
 
         $this->actingAs($this->usuario())->from('/empresas')->patch("/empresas/{$empresa->id_empresa}/baja")
             ->assertRedirect('/empresas')
-            ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}: todavía tiene usuarios activos.");
+            ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}. Todavía tiene activos: usuarios.");
 
         $this->assertTrue($empresa->fresh()->estado);
     }
@@ -215,12 +215,12 @@ class EmpresaTest extends TestCase
         $url = "/empresas/{$empresa->id_empresa}/baja";
 
         $this->actingAs($admin)->from('/empresas')->patch($url)
-            ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}: todavía tiene bloques y aplicativos activos.");
+            ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}. Todavía tiene activos: bloques y aplicativos.");
         $this->assertTrue($empresa->fresh()->estado);
 
         $bloque->update(['estado' => false]);
         $this->actingAs($admin)->from('/empresas')->patch($url)
-            ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}: todavía tiene aplicativos activos.");
+            ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}. Todavía tiene activos: aplicativos.");
         $this->assertTrue($empresa->fresh()->estado);
 
         $aplicativo->update(['estado' => false]);

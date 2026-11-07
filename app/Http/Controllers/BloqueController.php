@@ -88,6 +88,10 @@ class BloqueController extends Controller
      */
     public function darDeBaja(Bloque $bloque): RedirectResponse
     {
+        if ($bloque->actividades()->where('estado', true)->exists()) {
+            return back()->with('error', "No se puede dar de baja {$bloque->nombre}: todavía tiene actividades activas.");
+        }
+
         $bloque->update(['estado' => false]);
 
         return back()->with('exito', "Se dio de baja el bloque {$bloque->nombre}.");

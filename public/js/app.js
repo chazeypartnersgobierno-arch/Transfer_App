@@ -5,6 +5,38 @@ document.querySelectorAll('[data-enviar-al-cambiar]').forEach((campo) => {
     campo.addEventListener('change', () => campo.form.requestSubmit());
 });
 
+// Formulario de actividad: el bloque depende de la fase y de la empresa elegidas.
+// Es solo una ayuda: las reglas reales se validan en el servidor.
+document.querySelectorAll('form[data-formulario-actividad]').forEach((formulario) => {
+    const empresa = formulario.querySelector('[name="id_empresa"]'); // no existe si el usuario tiene empresa
+    const fase = formulario.querySelector('[name="id_fase"]');
+    const bloque = formulario.querySelector('[name="id_bloque"]');
+    const campoBloque = formulario.querySelector('[data-campo-bloque]');
+
+    const actualizar = () => {
+        // Onboarding no lleva bloque: se oculta y deja de enviarse.
+        const sinBloque = 'sinBloque' in (fase.selectedOptions[0]?.dataset ?? {});
+        campoBloque.hidden = sinBloque;
+        bloque.disabled = sinBloque;
+        bloque.required = !sinBloque;
+
+        // Muestra solo los bloques de la empresa elegida.
+        bloque.querySelectorAll('option[data-empresa]').forEach((opcion) => {
+            const visible = !empresa || opcion.dataset.empresa === empresa.value;
+            opcion.hidden = !visible;
+            opcion.disabled = !visible;
+
+            if (!visible && opcion.selected) {
+                bloque.value = '';
+            }
+        });
+    };
+
+    empresa?.addEventListener('change', actualizar);
+    fase.addEventListener('change', actualizar);
+    actualizar();
+});
+
 // Botón para ver u ocultar la contraseña.
 document.querySelectorAll('[data-ver-clave]').forEach((boton) => {
     const campo = boton.parentElement.querySelector('input');

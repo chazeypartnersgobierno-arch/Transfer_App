@@ -645,10 +645,10 @@ body {
     max-width: 22rem;
 }
 
-.filtro-empresa {
-    flex: 1 1 12rem;
+.filtro {
+    flex: 1 1 10rem;
     width: auto;
-    max-width: 18rem;
+    max-width: 16rem;
 }
 
 .table {
@@ -754,6 +754,10 @@ body {
 /* En móvil, cada fila de la tabla se muestra como un bloque: nada queda cortado.
    Las columnas se indican con clases: celda-titulo, celda-estado, celda-detalle y celda-acciones. */
 @media (max-width: 767.98px) {
+    .filtro {
+        max-width: none;
+    }
+
     .tabla-apilada thead {
         position: absolute;
         width: 1px;

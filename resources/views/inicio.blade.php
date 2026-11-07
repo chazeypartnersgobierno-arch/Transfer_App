@@ -11,7 +11,7 @@
     </div>
 
     <div class="row g-3">
-        @foreach ([['empresas.index', 'empresa', 'Empresas'], ['fases.index', 'fase', 'Fases'], ['bloques.index', 'bloque', 'Bloques'], ['aplicativos.index', 'aplicativo', 'Aplicativos']] as [$ruta, $icono, $texto])
+        @foreach ([['empresas.index', 'empresa', 'Empresas'], ['fases.index', 'fase', 'Fases'], ['bloques.index', 'bloque', 'Bloques'], ['aplicativos.index', 'aplicativo', 'Aplicativos'], ['actividades.index', 'actividad', 'Actividades']] as [$ruta, $icono, $texto])
             <div class="col-sm-6 col-xl-4">
                 <a href="{{ route($ruta) }}" class="tarjeta tarjeta-acceso">
                     <span class="tarjeta-icono"><x-icono :nombre="$icono" :tamano="22" /></span>

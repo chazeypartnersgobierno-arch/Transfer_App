@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\AplicativoController;
 use App\Http\Controllers\BloqueController;
 use App\Http\Controllers\EmpresaController;
@@ -32,6 +33,7 @@ Route::middleware('auth')->group(function () {
     // Consultas de catálogos por empresa: cada usuario solo ve lo que le corresponde.
     Route::get('/bloques', [BloqueController::class, 'index'])->name('bloques.index');
     Route::get('/aplicativos', [AplicativoController::class, 'index'])->name('aplicativos.index');
+    Route::get('/actividades', [ActividadController::class, 'index'])->name('actividades.index');
 
     // Cambios en catálogos por empresa: solo admin. Quien no cumple el Gate recibe error 403.
     Route::middleware('can:administrar')->group(function () {
@@ -41,6 +43,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/bloques/{bloque}', [BloqueController::class, 'actualizar'])->name('bloques.actualizar');
         Route::patch('/bloques/{bloque}/baja', [BloqueController::class, 'darDeBaja'])->name('bloques.baja');
         Route::patch('/bloques/{bloque}/reactivar', [BloqueController::class, 'reactivar'])->name('bloques.reactivar');
+
+        Route::get('/actividades/crear', [ActividadController::class, 'crear'])->name('actividades.crear');
+        Route::post('/actividades', [ActividadController::class, 'guardar'])->name('actividades.guardar');
+        Route::get('/actividades/{actividad}/editar', [ActividadController::class, 'editar'])->name('actividades.editar');
+        Route::put('/actividades/{actividad}', [ActividadController::class, 'actualizar'])->name('actividades.actualizar');
+        Route::patch('/actividades/{actividad}/baja', [ActividadController::class, 'darDeBaja'])->name('actividades.baja');
+        Route::patch('/actividades/{actividad}/reactivar', [ActividadController::class, 'reactivar'])->name('actividades.reactivar');
 
         Route::get('/aplicativos/crear', [AplicativoController::class, 'crear'])->name('aplicativos.crear');
         Route::post('/aplicativos', [AplicativoController::class, 'guardar'])->name('aplicativos.guardar');

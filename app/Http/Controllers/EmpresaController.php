@@ -63,7 +63,7 @@ class EmpresaController extends Controller
         // Revisa cada tipo de registro que depende de la empresa y anota los que siguen activos.
         $pendientes = [];
 
-        foreach (['usuarios', 'bloques', 'aplicativos'] as $relacion) {
+        foreach (['usuarios', 'bloques', 'aplicativos', 'actividades'] as $relacion) {
             if ($empresa->{$relacion}()->where('estado', true)->exists()) {
                 $pendientes[] = $relacion;
             }
@@ -72,7 +72,7 @@ class EmpresaController extends Controller
         if ($pendientes !== []) {
             $lista = Arr::join($pendientes, ', ', ' y ');
 
-            return back()->with('error', "No se puede dar de baja {$empresa->nombre}: todavía tiene {$lista} activos.");
+            return back()->with('error', "No se puede dar de baja {$empresa->nombre}. Todavía tiene activos: {$lista}.");
         }
 
         $empresa->update(['estado' => false]);

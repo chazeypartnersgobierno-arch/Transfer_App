@@ -27,4 +27,13 @@ class Fase extends Model
             'tiene_sesiones' => 'boolean',
         ];
     }
+
+    /**
+     * Onboarding es la primera fase. Se reconoce por el orden porque el nombre se puede editar.
+     * Sus actividades no llevan bloque: aplican a todos.
+     */
+    public function esOnboarding(): bool
+    {
+        return $this->orden === 1;
+    }
 }
