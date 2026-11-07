@@ -13,6 +13,7 @@
 /.zed
 /auth.json
 /public/storage
+/storage/app/ejemplos/
 /storage/*.key
 /storage/pail
 /vendor
