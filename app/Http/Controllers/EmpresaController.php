@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Empresa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -59,8 +60,19 @@ class EmpresaController extends Controller
      */
     public function darDeBaja(Empresa $empresa): RedirectResponse
     {
-        if ($empresa->usuarios()->where('estado', true)->exists()) {
-            return back()->with('error', "No se puede dar de baja {$empresa->nombre}: todavía tiene usuarios activos.");
+        // Revisa cada tipo de registro que depende de la empresa y anota los que siguen activos.
+        $pendientes = [];
+
+        foreach (['usuarios', 'bloques', 'aplicativos'] as $relacion) {
+            if ($empresa->{$relacion}()->where('estado', true)->exists()) {
+                $pendientes[] = $relacion;
+            }
+        }
+
+        if ($pendientes !== []) {
+            $lista = Arr::join($pendientes, ', ', ' y ');
+
+            return back()->with('error', "No se puede dar de baja {$empresa->nombre}: todavía tiene {$lista} activos.");
         }
 
         $empresa->update(['estado' => false]);

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AplicativoController;
+use App\Http\Controllers\BloqueController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\FaseController;
 use App\Http\Controllers\LoginController;
@@ -25,6 +27,27 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:administrar-fases')->group(function () {
         Route::get('/fases/{fase}/editar', [FaseController::class, 'editar'])->name('fases.editar');
         Route::put('/fases/{fase}', [FaseController::class, 'actualizar'])->name('fases.actualizar');
+    });
+
+    // Consultas de catálogos por empresa: cada usuario solo ve lo que le corresponde.
+    Route::get('/bloques', [BloqueController::class, 'index'])->name('bloques.index');
+    Route::get('/aplicativos', [AplicativoController::class, 'index'])->name('aplicativos.index');
+
+    // Cambios en catálogos por empresa: solo admin. Quien no cumple el Gate recibe error 403.
+    Route::middleware('can:administrar')->group(function () {
+        Route::get('/bloques/crear', [BloqueController::class, 'crear'])->name('bloques.crear');
+        Route::post('/bloques', [BloqueController::class, 'guardar'])->name('bloques.guardar');
+        Route::get('/bloques/{bloque}/editar', [BloqueController::class, 'editar'])->name('bloques.editar');
+        Route::put('/bloques/{bloque}', [BloqueController::class, 'actualizar'])->name('bloques.actualizar');
+        Route::patch('/bloques/{bloque}/baja', [BloqueController::class, 'darDeBaja'])->name('bloques.baja');
+        Route::patch('/bloques/{bloque}/reactivar', [BloqueController::class, 'reactivar'])->name('bloques.reactivar');
+
+        Route::get('/aplicativos/crear', [AplicativoController::class, 'crear'])->name('aplicativos.crear');
+        Route::post('/aplicativos', [AplicativoController::class, 'guardar'])->name('aplicativos.guardar');
+        Route::get('/aplicativos/{aplicativo}/editar', [AplicativoController::class, 'editar'])->name('aplicativos.editar');
+        Route::put('/aplicativos/{aplicativo}', [AplicativoController::class, 'actualizar'])->name('aplicativos.actualizar');
+        Route::patch('/aplicativos/{aplicativo}/baja', [AplicativoController::class, 'darDeBaja'])->name('aplicativos.baja');
+        Route::patch('/aplicativos/{aplicativo}/reactivar', [AplicativoController::class, 'reactivar'])->name('aplicativos.reactivar');
     });
 
     // Cambios en empresas: quien no cumple el Gate recibe error 403.

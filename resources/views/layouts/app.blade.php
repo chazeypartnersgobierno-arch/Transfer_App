@@ -48,6 +48,8 @@
                 <ul class="menu-lista">
                     <li><x-menu-enlace ruta="empresas.index" activo-en="empresas.*" icono="empresa">Empresas</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="fases.index" activo-en="fases.*" icono="fase">Fases</x-menu-enlace></li>
+                    <li><x-menu-enlace ruta="bloques.index" activo-en="bloques.*" icono="bloque">Bloques</x-menu-enlace></li>
+                    <li><x-menu-enlace ruta="aplicativos.index" activo-en="aplicativos.*" icono="aplicativo">Aplicativos</x-menu-enlace></li>
                 </ul>
             </div>
         </nav>

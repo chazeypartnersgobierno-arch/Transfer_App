@@ -104,11 +104,13 @@ body {
 }
 
 /* ===== Campos de formulario ===== */
-.form-control {
+.form-control,
+.form-select {
     border-color: var(--app-borde-control);
 }
 
-.form-control:focus {
+.form-control:focus,
+.form-select:focus {
     border-color: var(--app-principal);
     box-shadow: 0 0 0 .25rem rgba(var(--app-principal-rgb), .18);
 }
@@ -117,6 +119,11 @@ body {
 .form-control.is-invalid {
     padding-right: .75rem;
     background-image: none;
+}
+
+.form-select.is-invalid:not([multiple]):not([size]) {
+    --bs-form-select-bg-icon: none;
+    padding-right: 2.25rem;
 }
 
 /* ===== Alertas ===== */
@@ -636,6 +643,12 @@ body {
 .buscador {
     flex: 1 1 12rem;
     max-width: 22rem;
+}
+
+.filtro-empresa {
+    flex: 1 1 12rem;
+    width: auto;
+    max-width: 18rem;
 }
 
 .table {
