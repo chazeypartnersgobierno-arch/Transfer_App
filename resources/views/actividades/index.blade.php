@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Actividades</h1>
-            <p class="pagina-subtitulo">Lo que se transfiere en cada fase. Las de Onboarding aplican a todos los bloques.</p>
+            <p class="pagina-subtitulo">Lo que se transfiere. Onboarding pasa por una fase; Transición, por Transferencia, Estabilización y Validación.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
@@ -30,11 +30,11 @@
                 </select>
             @endif
 
-            <label for="filtro_fase" class="visually-hidden">Filtrar por fase</label>
-            <select id="filtro_fase" name="id_fase" class="form-select filtro" data-enviar-al-cambiar>
-                <option value="">Todas las fases</option>
-                @foreach ($fases as $id => $nombre)
-                    <option value="{{ $id }}" @selected($id === $idFase)>{{ $nombre }}</option>
+            <label for="filtro_tipo" class="visually-hidden">Filtrar por tipo</label>
+            <select id="filtro_tipo" name="tipo" class="form-select filtro" data-enviar-al-cambiar>
+                <option value="">Todos los tipos</option>
+                @foreach (\App\Enums\TipoActividad::cases() as $opcion)
+                    <option value="{{ $opcion->value }}" @selected($opcion === $tipo)>{{ $opcion->value }}</option>
                 @endforeach
             </select>
 
@@ -60,7 +60,7 @@
                     <tr>
                         <th scope="col">Actividad</th>
                         <th scope="col">Proceso</th>
-                        <th scope="col">Fase</th>
+                        <th scope="col">Tipo</th>
                         <th scope="col">Bloque</th>
                         @if (auth()->user()->esChazey())
                             <th scope="col">Empresa</th>
@@ -76,7 +76,7 @@
                         <tr>
                             <td class="celda-titulo">{{ $actividad->nombre }}</td>
                             <td class="celda-detalle" data-etiqueta="Proceso">{{ $actividad->rutaDeProceso() ?: '—' }}</td>
-                            <td class="celda-detalle" data-etiqueta="Fase">{{ $actividad->fase->nombre }}</td>
+                            <td class="celda-detalle" data-etiqueta="Tipo">{{ $actividad->tipo->value }}</td>
                             <td class="celda-detalle" data-etiqueta="Bloque">{{ $actividad->bloque?->nombre ?? 'Todos' }}</td>
                             @if (auth()->user()->esChazey())
                                 <td class="celda-detalle" data-etiqueta="Empresa">{{ $actividad->empresa->nombre }}</td>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoActividad;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,8 +20,9 @@ class Seguimiento extends Model
     protected $fillable = [
         'id_actividad',
         'id_grupo',
+        'id_fase',
         'fecha_inicio',
-        'fecha_fin',
+        'fecha_fin', // fecha propuesta de cierre
         'estado_actividad',
         'documentacion',
         'comentarios',
@@ -37,8 +39,31 @@ class Seguimiento extends Model
         return [
             'fecha_inicio' => 'date',
             'fecha_fin' => 'date',
+            'fecha_cierre' => 'date',
+            'estado_actividad' => EstadoActividad::class,
             'estado' => 'boolean',
         ];
+    }
+
+    /**
+     * Laravel ejecuta booted() una vez por modelo. Aquí se registra una regla que corre
+     * antes de cada guardado: fecha_cierre se llena al pasar a Completada y se vacía
+     * al reabrir, sin importar qué pantalla haga el cambio.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Seguimiento $seguimiento) {
+            if ($seguimiento->isDirty('estado_actividad')) {
+                $seguimiento->fecha_cierre = $seguimiento->estado_actividad === EstadoActividad::Completada
+                    ? today()
+                    : null;
+            }
+        });
+    }
+
+    public function fase(): BelongsTo
+    {
+        return $this->belongsTo(Fase::class, 'id_fase', 'id_fase');
     }
 
     public function actividad(): BelongsTo

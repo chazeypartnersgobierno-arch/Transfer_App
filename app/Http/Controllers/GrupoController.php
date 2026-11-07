@@ -53,7 +53,7 @@ class GrupoController extends Controller
         // Para avisar, antes de reactivar, cuántos seguimientos se generarían.
         $faltantes = $grupos->getCollection()
             ->reject(fn (Grupo $grupo) => $grupo->estado)
-            ->mapWithKeys(fn (Grupo $grupo) => [$grupo->id_grupo => $generador->actividadesFaltantes($grupo)->count()]);
+            ->mapWithKeys(fn (Grupo $grupo) => [$grupo->id_grupo => $generador->faltantesDeGrupo($grupo)->count()]);
 
         return view('grupos.index', compact('grupos', 'buscar', 'verBajas', 'idEmpresa', 'idBloque', 'empresas', 'bloques', 'faltantes'));
     }

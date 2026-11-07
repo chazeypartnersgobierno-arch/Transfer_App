@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\RolApp;
+use App\Enums\TipoActividad;
 use App\Models\Actividad;
 use App\Models\Bloque;
 use App\Models\Empresa;
-use App\Models\Fase;
 use App\Models\Usuario;
 use Database\Seeders\FaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,28 +48,23 @@ class ActividadTest extends TestCase
         return Bloque::create(['id_empresa' => $empresa->id_empresa, 'nombre' => $nombre, 'estado' => $estado]);
     }
 
-    private function fase(int $orden): Fase
-    {
-        return Fase::where('orden', $orden)->sole();
-    }
-
-    private function actividad(Empresa $empresa, int $orden = 1, ?Bloque $bloque = null, array $extra = []): Actividad
+    private function actividad(Empresa $empresa, TipoActividad $tipo = TipoActividad::Onboarding, ?Bloque $bloque = null, array $extra = []): Actividad
     {
         return Actividad::create([
             'id_empresa' => $empresa->id_empresa,
-            'id_fase' => $this->fase($orden)->id_fase,
+            'tipo' => $tipo,
             'id_bloque' => $bloque?->id_bloque,
             'nombre' => 'Actividad uno',
             ...$extra,
         ]);
     }
 
-    /** Datos válidos para crear una actividad de Transferencia. */
+    /** Datos válidos para crear una actividad de Transición. */
     private function datos(Empresa $empresa, Bloque $bloque, array $cambios = []): array
     {
         return [
             'id_empresa' => $empresa->id_empresa,
-            'id_fase' => $this->fase(2)->id_fase,
+            'tipo' => 'Transición',
             'id_bloque' => $bloque->id_bloque,
             'nombre' => 'Conciliar cuentas',
             ...$cambios,
@@ -84,42 +79,44 @@ class ActividadTest extends TestCase
         $this->get("/actividades/{$actividad->id_actividad}/editar")->assertRedirect(route('login'));
     }
 
-    public function test_lista_muestra_datos_en_orden_de_fase_y_todos_en_onboarding(): void
+    public function test_lista_muestra_datos_en_el_orden_de_carga(): void
     {
         $empresa = $this->empresa();
         $bloque = $this->bloque($empresa);
-        $this->actividad($empresa, 4, $bloque, ['nombre' => 'A de validacion', 'macroproceso' => 'Finanzas', 'proceso' => 'Pagos', 'subproceso' => 'Cierre']);
-        $this->actividad($empresa, 2, $bloque, ['nombre' => 'B de transferencia']);
-        $this->actividad($empresa, 1, null, ['nombre' => 'C de onboarding']);
+        $this->actividad($empresa, TipoActividad::Transicion, $bloque, ['nombre' => 'Zeta primera', 'macroproceso' => 'Finanzas', 'proceso' => 'Pagos', 'subproceso' => 'Cierre']);
+        $this->actividad($empresa, TipoActividad::Onboarding, $bloque, ['nombre' => 'Media segunda']);
+        $this->actividad($empresa, TipoActividad::Transicion, null, ['nombre' => 'Alfa tercera']);
 
         $this->actingAs($this->usuario())->get('/actividades')
             ->assertOk()
-            ->assertSeeInOrder(['C de onboarding', 'B de transferencia', 'A de validacion'])
+            ->assertSeeInOrder(['Zeta primera', 'Media segunda', 'Alfa tercera'])
             ->assertSee('Finanzas › Pagos › Cierre')
-            ->assertSee('Todos')
+            ->assertSee('Transición')
+            ->assertSee('Onboarding')
+            ->assertSee('>Todos</td>', false)
             ->assertSee('Tesorería')
             ->assertSee('Empresa PROPIA')
             ->assertSee('Nueva actividad')
             ->assertSee('3 actividades');
     }
 
-    public function test_filtros_por_empresa_fase_y_bloque(): void
+    public function test_filtros_por_empresa_tipo_y_bloque(): void
     {
         $a = $this->empresa('AAA');
         $b = $this->empresa('BBB');
         $bloqueA1 = $this->bloque($a, 'Uno');
         $bloqueA2 = $this->bloque($a, 'Dos');
         $bloqueB = $this->bloque($b, 'Tres');
-        $this->actividad($a, 1, null, ['nombre' => 'En onboarding']);
-        $this->actividad($a, 2, $bloqueA1, ['nombre' => 'En bloque uno']);
-        $this->actividad($a, 2, $bloqueA2, ['nombre' => 'En bloque dos']);
-        $this->actividad($b, 3, $bloqueB, ['nombre' => 'De la otra']);
+        $this->actividad($a, TipoActividad::Onboarding, null, ['nombre' => 'En onboarding']);
+        $this->actividad($a, TipoActividad::Transicion, $bloqueA1, ['nombre' => 'En bloque uno']);
+        $this->actividad($a, TipoActividad::Transicion, $bloqueA2, ['nombre' => 'En bloque dos']);
+        $this->actividad($b, TipoActividad::Transicion, $bloqueB, ['nombre' => 'De la otra']);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get("/actividades?id_empresa={$b->id_empresa}")
             ->assertSee('De la otra')->assertDontSee('En onboarding');
 
-        $this->actingAs($admin)->get('/actividades?id_fase='.$this->fase(1)->id_fase)
+        $this->actingAs($admin)->get('/actividades?tipo=Onboarding')
             ->assertSee('En onboarding')->assertDontSee('En bloque uno');
 
         $this->actingAs($admin)->get("/actividades?id_bloque={$bloqueA1->id_bloque}")
@@ -130,13 +127,31 @@ class ActividadTest extends TestCase
             ->assertSee('De la otra');
     }
 
+    public function test_filtra_por_transicion_y_conserva_la_opcion_elegida(): void
+    {
+        $empresa = $this->empresa();
+        $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'De una fase']);
+        $this->actividad($empresa, TipoActividad::Transicion, null, ['nombre' => 'De tres fases']);
+        $admin = $this->usuario();
+
+        $this->actingAs($admin)->get('/actividades?tipo='.urlencode('Transición'))
+            ->assertOk()
+            ->assertSee('De tres fases')
+            ->assertDontSee('De una fase')
+            ->assertSee('1 actividad')
+            ->assertSee('<option value="Transición" selected>', false);
+
+        // Un valor que no está en la lista se ignora.
+        $this->actingAs($admin)->get('/actividades?tipo=Otro')->assertOk()->assertSee('2 actividades');
+    }
+
     public function test_busca_en_nombre_y_procesos_con_comodines_como_texto(): void
     {
         $empresa = $this->empresa();
-        $this->actividad($empresa, 1, null, ['nombre' => 'Primera']);
-        $this->actividad($empresa, 1, null, ['nombre' => 'Segunda', 'macroproceso' => 'Finanzas']);
-        $this->actividad($empresa, 1, null, ['nombre' => 'Tercera', 'proceso' => 'Pagos']);
-        $this->actividad($empresa, 1, null, ['nombre' => 'Cuarta', 'subproceso' => 'Cierre']);
+        $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Primera']);
+        $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Segunda', 'macroproceso' => 'Finanzas']);
+        $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Tercera', 'proceso' => 'Pagos']);
+        $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Cuarta', 'subproceso' => 'Cierre']);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/actividades?buscar=Primera')->assertSee('Primera')->assertDontSee('Segunda');
@@ -144,7 +159,7 @@ class ActividadTest extends TestCase
         $this->actingAs($admin)->get('/actividades?buscar=Pagos')->assertSee('Tercera')->assertDontSee('Primera');
         $this->actingAs($admin)->get('/actividades?buscar=Cierre')->assertSee('Cuarta')->assertDontSee('Primera');
         $this->actingAs($admin)->get('/actividades?buscar=%25')->assertDontSee('Primera');
-        $this->actingAs($admin)->get('/actividades?buscar[]=x&id_fase[]=y&id_bloque[]=z')->assertOk();
+        $this->actingAs($admin)->get('/actividades?buscar[]=x&tipo[]=y&id_bloque[]=z')->assertOk();
     }
 
     public function test_pagina_y_conserva_filtros(): void
@@ -152,7 +167,7 @@ class ActividadTest extends TestCase
         $empresa = $this->empresa();
 
         for ($i = 1; $i <= 16; $i++) {
-            $this->actividad($empresa, 1, null, ['nombre' => sprintf('Demo %02d', $i)]);
+            $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => sprintf('Demo %02d', $i)]);
         }
 
         $this->actingAs($this->usuario())->get('/actividades?buscar=Demo')
@@ -179,44 +194,64 @@ class ActividadTest extends TestCase
         $this->assertNull($actividad->subproceso);
     }
 
-    public function test_onboarding_no_guarda_bloque_aunque_lo_envien(): void
+    public function test_cualquier_tipo_puede_llevar_bloque(): void
     {
         $empresa = $this->empresa();
         $bloque = $this->bloque($empresa);
+        $admin = $this->usuario();
 
-        $this->actingAs($this->usuario())
-            ->post('/actividades', $this->datos($empresa, $bloque, ['id_fase' => $this->fase(1)->id_fase]))
-            ->assertSessionHasNoErrors();
+        foreach (['Onboarding', 'Transición'] as $tipo) {
+            $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['tipo' => $tipo]))
+                ->assertSessionHasNoErrors();
 
-        $this->assertNull(Actividad::sole()->id_bloque);
+            $this->assertSame($bloque->id_bloque, Actividad::where('tipo', $tipo)->sole()->id_bloque);
+        }
     }
 
-    public function test_onboarding_se_reconoce_aunque_cambie_de_nombre(): void
-    {
-        $empresa = $this->empresa();
-        $this->fase(1)->update(['nombre' => 'Inducción']);
-
-        $this->actingAs($this->usuario())->post('/actividades', [
-            'id_empresa' => $empresa->id_empresa,
-            'id_fase' => $this->fase(1)->id_fase,
-            'nombre' => 'Sin bloque',
-        ])->assertSessionHasNoErrors();
-
-        $this->assertNull(Actividad::sole()->id_bloque);
-    }
-
-    public function test_las_demas_fases_exigen_bloque(): void
+    public function test_cualquier_tipo_puede_aplicar_a_todos_los_bloques(): void
     {
         $empresa = $this->empresa();
         $admin = $this->usuario();
 
-        foreach ([2, 3, 4] as $orden) {
+        foreach (['Onboarding', 'Transición'] as $tipo) {
             $this->actingAs($admin)->post('/actividades', [
                 'id_empresa' => $empresa->id_empresa,
-                'id_fase' => $this->fase($orden)->id_fase,
-                'nombre' => 'Sin bloque',
+                'tipo' => $tipo,
+                'id_bloque' => 'todos',
+                'nombre' => 'Inducción general',
+            ])->assertSessionHasNoErrors();
+
+            $this->assertNull(Actividad::where('tipo', $tipo)->sole()->id_bloque);
+        }
+    }
+
+    public function test_el_bloque_se_elige_siempre_de_forma_explicita(): void
+    {
+        $empresa = $this->empresa();
+        $admin = $this->usuario();
+
+        foreach (['Onboarding', 'Transición'] as $tipo) {
+            $this->actingAs($admin)->post('/actividades', [
+                'id_empresa' => $empresa->id_empresa,
+                'tipo' => $tipo,
+                'nombre' => 'Sin elegir',
             ])->assertSessionHasErrors(['id_bloque' => 'Elige un bloque.']);
         }
+
+        $this->assertSame(0, Actividad::count());
+    }
+
+    public function test_el_tipo_debe_estar_en_la_lista(): void
+    {
+        $empresa = $this->empresa();
+        $bloque = $this->bloque($empresa);
+        $admin = $this->usuario();
+
+        $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['tipo' => 'Otro']))
+            ->assertSessionHasErrors(['tipo' => 'Elige un tipo de la lista.']);
+
+        $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['tipo' => ['x']]))
+            ->assertSessionHasErrors('tipo');
 
         $this->assertSame(0, Actividad::count());
     }
@@ -247,18 +282,12 @@ class ActividadTest extends TestCase
         $this->actingAs($admin)->post('/actividades', [])
             ->assertSessionHasErrors([
                 'id_empresa' => 'Elige una empresa.',
-                'id_fase' => 'Elige una fase.',
+                'tipo' => 'Elige un tipo.',
                 'nombre' => 'Escribe el nombre de la actividad.',
             ]);
 
         $this->actingAs($admin)->post('/actividades', $this->datos($inactiva, $bloque))
             ->assertSessionHasErrors(['id_empresa' => 'La empresa no existe o está dada de baja.']);
-
-        $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['id_fase' => 9999]))
-            ->assertSessionHasErrors(['id_fase' => 'Elige una fase de la lista.']);
-
-        $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['id_fase' => ['x']]))
-            ->assertSessionHasErrors('id_fase');
 
         $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['nombre' => str_repeat('A', 501)]))
             ->assertSessionHasErrors(['nombre' => 'El nombre no puede tener más de 500 caracteres.']);
@@ -290,7 +319,7 @@ class ActividadTest extends TestCase
     {
         $empresa = $this->empresa();
         $admin = $this->usuario();
-        $datos = ['id_empresa' => $empresa->id_empresa, 'id_fase' => $this->fase(1)->id_fase, 'nombre' => 'Inducción general'];
+        $datos = ['id_empresa' => $empresa->id_empresa, 'tipo' => 'Onboarding', 'id_bloque' => 'todos', 'nombre' => 'Inducción general'];
 
         $this->actingAs($admin)->post('/actividades', $datos)->assertSessionHasNoErrors();
         $this->actingAs($admin)->post('/actividades', $datos)->assertSessionHasErrors('nombre');
@@ -311,7 +340,7 @@ class ActividadTest extends TestCase
             'otro proceso' => $this->datos($empresa, $bloque, ['proceso' => 'Otro']),
             'otro macroproceso' => $this->datos($empresa, $bloque, ['macroproceso' => 'Otro']),
             'otro subproceso' => $this->datos($empresa, $bloque, ['subproceso' => 'Otro']),
-            'otra fase' => $this->datos($empresa, $bloque, ['id_fase' => $this->fase(3)->id_fase]),
+            'otro tipo' => $this->datos($empresa, $bloque, ['tipo' => 'Onboarding']),
             'otro bloque' => $this->datos($empresa, $this->bloque($empresa, 'Dos')),
             'otra empresa' => $this->datos($otra, $this->bloque($otra, 'Uno')),
         ];
@@ -333,7 +362,9 @@ class ActividadTest extends TestCase
         $this->actingAs($this->usuario())->get('/actividades/crear')
             ->assertOk()
             ->assertSee('data-formulario-actividad', false)
-            ->assertSee('data-sin-bloque="true"', false)
+            ->assertSee('Todos los bloques')
+            ->assertSee('name="tipo"', false)
+            ->assertDontSee('data-campo-bloque', false)
             ->assertSee('data-empresa="'.$empresa->id_empresa.'"', false)
             ->assertSee('value="'.$bloque->id_bloque.'"', false)
             ->assertSee('name="id_empresa"', false)
@@ -354,8 +385,8 @@ class ActividadTest extends TestCase
         $ajena = $this->empresa('AJENA');
         $bloquePropio = $this->bloque($propia, 'Bloque propio');
         $bloqueAjeno = $this->bloque($ajena, 'Bloque ajeno');
-        $this->actividad($propia, 1, null, ['nombre' => 'Actividad propia']);
-        $this->actividad($ajena, 1, null, ['nombre' => 'Actividad ajena']);
+        $this->actividad($propia, TipoActividad::Onboarding, null, ['nombre' => 'Actividad propia']);
+        $this->actividad($ajena, TipoActividad::Onboarding, null, ['nombre' => 'Actividad ajena']);
         $admin = $this->usuario(RolApp::Admin, $propia);
 
         $this->actingAs($admin)->get('/actividades')
@@ -432,15 +463,15 @@ class ActividadTest extends TestCase
         $otra = $this->empresa('BBB');
         $bloque = $this->bloque($empresa, 'Uno');
         $otroBloque = $this->bloque($empresa, 'Dos');
-        $actividad = $this->actividad($empresa, 2, $bloque);
+        $actividad = $this->actividad($empresa, TipoActividad::Transicion, $bloque);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get("/actividades/{$actividad->id_actividad}/editar")
             ->assertOk()
             ->assertSee('Empresa AAA')
-            ->assertSee('Transferencia')
+            ->assertSee('Transición')
             ->assertDontSee('name="id_empresa"', false)
-            ->assertDontSee('name="id_fase"', false)
+            ->assertDontSee('name="tipo"', false)
             ->assertDontSee('name="id_bloque"', false)
             ->assertDontSee('data-formulario-actividad', false);
 
@@ -450,7 +481,7 @@ class ActividadTest extends TestCase
             'proceso' => 'Proc',
             'subproceso' => 'Sub',
             'id_empresa' => $otra->id_empresa,
-            'id_fase' => $this->fase(3)->id_fase,
+            'tipo' => 'Onboarding',
             'id_bloque' => $otroBloque->id_bloque,
         ])->assertSessionHasNoErrors();
 
@@ -460,15 +491,15 @@ class ActividadTest extends TestCase
         $this->assertSame('Proc', $actividad->proceso);
         $this->assertSame('Sub', $actividad->subproceso);
         $this->assertSame($empresa->id_empresa, $actividad->id_empresa);
-        $this->assertSame($this->fase(2)->id_fase, $actividad->id_fase);
+        $this->assertSame(TipoActividad::Transicion, $actividad->tipo);
         $this->assertSame($bloque->id_bloque, $actividad->id_bloque);
     }
 
     public function test_al_editar_valida_repetidas_y_permite_guardar_sin_cambios(): void
     {
         $empresa = $this->empresa();
-        $this->actividad($empresa, 1, null, ['nombre' => 'Ocupada']);
-        $actividad = $this->actividad($empresa, 1, null, ['nombre' => 'Actual']);
+        $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Ocupada']);
+        $actividad = $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Actual']);
         $admin = $this->usuario();
         $url = "/actividades/{$actividad->id_actividad}";
 
@@ -502,7 +533,7 @@ class ActividadTest extends TestCase
     {
         $empresa = $this->empresa();
         $bloque = $this->bloque($empresa, 'Uno', false);
-        $conBloque = $this->actividad($empresa, 2, $bloque, ['nombre' => 'Con bloque', 'estado' => false]);
+        $conBloque = $this->actividad($empresa, TipoActividad::Transicion, $bloque, ['nombre' => 'Con bloque', 'estado' => false]);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->from('/actividades')->patch("/actividades/{$conBloque->id_actividad}/reactivar")
@@ -510,16 +541,16 @@ class ActividadTest extends TestCase
         $this->assertFalse($conBloque->fresh()->estado);
 
         $inactiva = $this->empresa('INACTIVA', false);
-        $deInactiva = $this->actividad($inactiva, 1, null, ['nombre' => 'De inactiva', 'estado' => false]);
+        $deInactiva = $this->actividad($inactiva, TipoActividad::Onboarding, null, ['nombre' => 'De inactiva', 'estado' => false]);
 
         $this->actingAs($admin)->from('/actividades')->patch("/actividades/{$deInactiva->id_actividad}/reactivar")
             ->assertSessionHas('error', 'No se puede reactivar De inactiva: su empresa está dada de baja.');
         $this->assertFalse($deInactiva->fresh()->estado);
     }
 
-    public function test_reactiva_una_de_onboarding_sin_bloque(): void
+    public function test_reactiva_una_sin_bloque(): void
     {
-        $actividad = $this->actividad($this->empresa(), 1, null, ['estado' => false]);
+        $actividad = $this->actividad($this->empresa(), TipoActividad::Onboarding, null, ['estado' => false]);
 
         $this->actingAs($this->usuario())->from('/actividades')->patch("/actividades/{$actividad->id_actividad}/reactivar")
             ->assertSessionHas('exito');
@@ -531,7 +562,7 @@ class ActividadTest extends TestCase
     {
         $empresa = $this->empresa();
         $bloque = $this->bloque($empresa, 'Uno');
-        $actividad = $this->actividad($empresa, 2, $bloque);
+        $actividad = $this->actividad($empresa, TipoActividad::Transicion, $bloque);
         $admin = $this->usuario();
         $url = "/bloques/{$bloque->id_bloque}/baja";
 

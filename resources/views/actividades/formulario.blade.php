@@ -1,4 +1,4 @@
-{{-- Se usa para crear y para editar. Al editar, empresa, fase y bloque quedan fijos. --}}
+{{-- Se usa para crear y para editar. Al editar, empresa, tipo y bloque quedan fijos. --}}
 @extends('layouts.app')
 
 @php
@@ -14,7 +14,7 @@
     </div>
 
     <div class="tarjeta tarjeta-formulario">
-        {{-- data-formulario-actividad: app.js muestra y filtra el bloque según la empresa y la fase. --}}
+        {{-- data-formulario-actividad: app.js muestra solo los bloques de la empresa elegida. --}}
         <form method="POST" action="{{ $esNueva ? route('actividades.guardar') : route('actividades.actualizar', $actividad) }}" @if ($esNueva) data-formulario-actividad @endif>
             @csrf
 
@@ -28,28 +28,20 @@
                     @enderror
                 @endif
 
-                {{-- data-sin-bloque marca la fase que no lleva bloque. --}}
-                <x-lista
-                    name="id_fase"
-                    label="Fase"
-                    :opciones="$fases->pluck('nombre', 'id_fase')"
-                    :value="old('id_fase')"
-                    :datos="$fases->filter->esOnboarding()->mapWithKeys(fn ($fase) => [$fase->id_fase => ['data-sin-bloque' => 'true']])->all()"
-                    vacia="Elige una fase"
-                    required
-                />
+                <x-lista name="tipo" label="Tipo" :opciones="\App\Enums\TipoActividad::opciones()" :value="old('tipo')" vacia="Elige un tipo" required />
+                <p class="ayuda-campo">Onboarding genera 1 seguimiento por grupo. Transición genera 3: Transferencia, Estabilización y Validación.</p>
 
                 {{-- data-empresa indica de qué empresa es cada bloque. --}}
-                <div data-campo-bloque>
-                    <x-lista
-                        name="id_bloque"
-                        label="Bloque"
-                        :opciones="$bloques->pluck('nombre', 'id_bloque')"
-                        :value="old('id_bloque')"
-                        :datos="$bloques->mapWithKeys(fn ($bloque) => [$bloque->id_bloque => ['data-empresa' => $bloque->id_empresa]])->all()"
-                        vacia="Elige un bloque"
-                    />
-                </div>
+                <x-lista
+                    name="id_bloque"
+                    label="Bloque"
+                    :opciones="['todos' => 'Todos los bloques'] + $bloques->pluck('nombre', 'id_bloque')->all()"
+                    :value="old('id_bloque')"
+                    :datos="$bloques->mapWithKeys(fn ($bloque) => [$bloque->id_bloque => ['data-empresa' => $bloque->id_empresa]])->all()"
+                    vacia="Elige un bloque"
+                    required
+                />
+                <p class="ayuda-campo">"Todos los bloques" aplica a todos los grupos de la empresa, por ejemplo una inducción general.</p>
             @else
                 @method('PUT')
             @endif
@@ -66,8 +58,8 @@
                         <dd>{{ $actividad->empresa->nombre }}</dd>
                     </div>
                     <div>
-                        <dt>Fase</dt>
-                        <dd>{{ $actividad->fase->nombre }}</dd>
+                        <dt>Tipo</dt>
+                        <dd>{{ $actividad->tipo->value }}</dd>
                     </div>
                     <div>
                         <dt>Bloque</dt>

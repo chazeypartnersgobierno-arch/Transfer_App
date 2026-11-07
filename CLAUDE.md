@@ -43,19 +43,19 @@ Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`av
 | fases | nombre, orden, tiene_sesiones | — |
 | bloques | nombre | id_empresa → empresas |
 | grupos | nombre | id_bloque → bloques |
-| actividades | macroproceso, proceso, subproceso, nombre | id_empresa → empresas, id_fase → fases, id_bloque → bloques (NULL = Onboarding, aplica a todos) |
+| actividades | tipo, macroproceso, proceso, subproceso, nombre | id_empresa → empresas, id_bloque → bloques (NULL = aplica a todos los grupos de la empresa) |
 | aplicativos | nombre | id_empresa → empresas |
 | participantes | nombre, apellidos, correo, rol, fecha_ingreso, comentarios | id_grupo → grupos |
 | usuarios | nombre, correo, contrasena_hash, rol_app | id_empresa → empresas (NULL = usuario Chazey, ve todas), id_participante → participantes (NULL) |
 | accesos_solicitados | fecha_solicitud, fecha_otorgado (NULL), estado, comentarios | id_participante → participantes, id_aplicativo → aplicativos |
-| seguimientos | fecha_inicio, fecha_fin, estado_actividad, documentacion, comentarios, responsable, experto, documentador, lider_transferencia, lider_transferencia_gbs | id_actividad → actividades, id_grupo → grupos |
+| seguimientos | fecha_inicio, fecha_fin (propuesta de cierre), fecha_cierre, estado_actividad, documentacion, comentarios, responsable, experto, documentador, lider_transferencia, lider_transferencia_gbs | id_actividad → actividades, id_grupo → grupos, id_fase → fases |
 | sesiones | fecha, tema, modalidad, comentarios | id_seguimiento → seguimientos |
 | asistencias | asistio, comentarios | id_sesion → sesiones, id_participante → participantes |
 | avances_validacion | fecha_corte, porcentaje_esperado, porcentaje_real, comentarios | id_seguimiento → seguimientos, id_usuario → usuarios |
 
 ### Valores únicos (no se repiten)
 
-- seguimientos: id_actividad + id_grupo
+- seguimientos: id_actividad + id_grupo + id_fase
 - asistencias: id_sesion + id_participante
 - avances_validacion: id_seguimiento + fecha_corte
 - participantes.correo, usuarios.correo, empresas.sigla
@@ -63,21 +63,24 @@ Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`av
 
 ### Campos de estado y rol
 
-Estos campos son VARCHAR (no ENUM). Sus valores se definirán más adelante; no los inventes:
+Estos campos son VARCHAR (no ENUM). Sus valores son los de esta lista; no inventes otros:
 
-- seguimientos.estado_actividad
-- sesiones.modalidad
-- participantes.rol
-- usuarios.rol_app (ya definido: ver "Roles de la app")
-- accesos_solicitados.estado
+- actividades.tipo: Onboarding, Transición (`App\Enums\TipoActividad`)
+- seguimientos.estado_actividad: Pendiente, En curso, Completada (`App\Enums\EstadoActividad`). Sin valor se considera Pendiente. "Retrasado" no se guarda: se calcula cuando hoy es posterior a `fecha_fin` y el estado no es Completada
+- sesiones.modalidad: Presencial, Virtual, Híbrida
+- accesos_solicitados.estado: Solicitado, En trámite, Otorgado, Rechazado
+- usuarios.rol_app: ver "Roles de la app"
 
 En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida que el valor esté en la lista antes de guardar.
+
+`participantes.rol` es la excepción: por ahora es texto libre, obligatorio y de hasta 50 caracteres.
 
 ### Otras reglas
 
 - Todas las FK con ON DELETE RESTRICT.
 - `porcentaje_esperado`: solo 0, 25, 50, 75 o 100. `porcentaje_real`: de 0 a 100.
 - `fecha_fin` no puede ser menor que `fecha_inicio`.
+- `fecha_cierre` se llena sola al pasar a Completada y se vacía al reabrir; vuelve a llenarse al pasar otra vez a Completada.
 
 ## Roles de la app
 
@@ -95,10 +98,12 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 ## Reglas de negocio
 
 - Las fases son las mismas para todas las empresas. En la app solo se edita su nombre: no se agregan ni se quitan, y el orden y `tiene_sesiones` son fijos. La lógica usa `orden` y `tiene_sesiones`, nunca el nombre.
-- Onboarding se reconoce por `orden = 1` (`Fase::esOnboarding()`).
-- Al crear una actividad, la app rechaza otra con la misma empresa, fase, bloque, macroproceso, proceso, subproceso y nombre, aunque esté dada de baja. Al editar, empresa, fase y bloque quedan fijos.
-- Cada actividad se registra una sola vez en `actividades`. Onboarding no lleva bloque; Transferencia, Estabilización y Validación sí, porque cambian por bloque.
-- Al crear un grupo, la app genera sus `seguimientos`: actividades de Onboarding (id_bloque NULL) de su empresa + actividades del bloque del grupo. Toda la generación pasa por `App\Services\GeneradorDeSeguimientos`, en transacción (todo o nada).
+- La fase va en el seguimiento, no en la actividad. El tipo de la actividad decide sus fases: Onboarding genera 1 seguimiento por grupo (fase de orden 1); Transición genera 3 por grupo (fases de orden 2, 3 y 4: Transferencia, Estabilización y Validación). Cada fase conserva sus reglas: Validación no tiene sesiones y lleva % esperado y real.
+- Actividad con bloque: se genera solo para los grupos de ese bloque. Actividad sin bloque ("Todos los bloques"): se genera para todos los grupos de la empresa. Vale para ambos tipos, y el bloque siempre se elige de forma explícita.
+- Las actividades se muestran en el orden en que se cargaron (por `id_actividad`); la carga las inserta en el orden del archivo.
+- Al crear una actividad, la app rechaza otra con la misma empresa, tipo, bloque, macroproceso, proceso, subproceso y nombre, aunque esté dada de baja. Al editar, empresa, tipo y bloque quedan fijos.
+- Cada actividad se registra una sola vez en `actividades`.
+- Al crear un grupo, la app genera sus `seguimientos` según las reglas anteriores. Toda la generación pasa por `App\Services\GeneradorDeSeguimientos`, en transacción (todo o nada).
 - Solo se generan combinaciones con grupo y actividad activos, y nunca se tocan los seguimientos existentes.
 - Al crear una actividad o al reactivar un grupo o una actividad, se generan los seguimientos que falten. Antes se muestra cuántos se generarán y se pide confirmación.
 - Al editar un grupo solo cambia el nombre. Si el bloque está mal, se da de baja y se crea uno nuevo.
@@ -108,3 +113,13 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - El % actual de una actividad de Validación es su captura más reciente.
 - Un grupo terminó una fase cuando todos sus seguimientos de esa fase están en estado "Completada". Esto se calcula, no se guarda.
 - Los datos se cargan desde Excel; después los usuarios solo dan seguimiento.
+
+## Carga desde Excel
+
+- La empresa se elige en pantalla. La app genera la plantilla, con las hojas Instrucciones, Actividades y Participantes.
+- Actividades: Macroproceso, Proceso, Subproceso, Actividad, Bloque, Tipo. Actividad, Bloque y Tipo son obligatorios; Bloque acepta "Todos". El ID y las fechas se ignoran: las fechas se capturan en pantalla en cada seguimiento.
+- Participantes: Nombre, Apellidos, Correo, Fecha de ingreso, Bloque, Grupo, Rol. Un correo existente se marca como duplicado y no se vuelve a insertar.
+- Se carga una sola vez por bloque y tipo: se rechaza la carga si el bloque ya tiene actividades de ese tipo, incluidas las dadas de baja o creadas a mano, indicando cuántas existen. Se calcula con una consulta. Los cambios posteriores se hacen en pantalla.
+- Las filas repetidas en el archivo son error. Bloques y grupos inexistentes también: no se crean solos.
+- Vista previa antes de guardar: registros nuevos, duplicados y con error, con el detalle por hoja y fila. Con errores no se puede confirmar. Todo se guarda en una transacción.
+- Las capacitaciones quedan para un módulo aparte: la Tarea es el nombre de la capacitación, un proceso puede tener varias y probablemente tendrán sesiones y asistencia.

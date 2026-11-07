@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TipoActividad;
 use App\Models\Concerns\PerteneceAEmpresa;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,8 +22,8 @@ class Actividad extends Model
 
     protected $fillable = [
         'id_empresa',
-        'id_fase',
         'id_bloque',
+        'tipo',
         'macroproceso',
         'proceso',
         'subproceso',
@@ -33,15 +34,14 @@ class Actividad extends Model
     protected function casts(): array
     {
         return [
+            'tipo' => TipoActividad::class,
             'estado' => 'boolean',
         ];
     }
 
-    public function fase(): BelongsTo
-    {
-        return $this->belongsTo(Fase::class, 'id_fase', 'id_fase');
-    }
-
+    /**
+     * Sin bloque (NULL), la actividad aplica a todos los grupos de la empresa.
+     */
     public function bloque(): BelongsTo
     {
         return $this->belongsTo(Bloque::class, 'id_bloque', 'id_bloque');

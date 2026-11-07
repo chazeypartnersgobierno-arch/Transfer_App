@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoActividad;
 use App\Models\Actividad;
 use App\Models\Bloque;
 use App\Models\Empresa;
-use App\Models\Fase;
 use App\Models\Seguimiento;
 use App\Services\GeneradorDeSeguimientos;
 use Illuminate\Http\RedirectResponse;
@@ -17,17 +17,21 @@ use Illuminate\View\View;
 
 class ActividadController extends Controller
 {
+    /**
+     * Valor de la opción "Todos los bloques" en el formulario.
+     */
+    private const TODOS_LOS_BLOQUES = 'todos';
+
     public function index(Request $request, GeneradorDeSeguimientos $generador): View
     {
         $usuario = $request->user();
         $buscar = is_string($request->query('buscar')) ? $request->query('buscar') : '';
         $verBajas = $request->boolean('ver_bajas');
         $idEmpresa = $this->numeroDeLaUrl($request, 'id_empresa');
-        $idFase = $this->numeroDeLaUrl($request, 'id_fase');
+        $tipo = is_string($request->query('tipo')) ? TipoActividad::tryFrom($request->query('tipo')) : null;
 
         // Solo Chazey ve varias empresas, así que solo a Chazey se le muestra ese filtro.
         $empresas = $usuario->esChazey() ? Empresa::orderBy('nombre')->pluck('nombre', 'id_empresa') : collect();
-        $fases = Fase::orderBy('orden')->pluck('nombre', 'id_fase');
 
         // Si no se eligió empresa, Chazey ve bloques de varias: la sigla ayuda a distinguirlos.
         $conSigla = $usuario->esChazey() && $idEmpresa === null;
@@ -43,11 +47,11 @@ class ActividadController extends Controller
         $idBloque = $idBloque !== null && $bloques->has($idBloque) ? $idBloque : null;
 
         $actividades = Actividad::visiblePara($usuario)
-            ->with(['empresa', 'fase', 'bloque']) // trae todo de una vez, sin una consulta por cada fila
+            ->with(['empresa', 'bloque']) // trae todo de una vez, sin una consulta por cada fila
             ->withCount('seguimientos') // agrega seguimientos_count a cada actividad
             ->when(! $verBajas, fn ($consulta) => $consulta->where('estado', true))
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
-            ->when($idFase !== null, fn ($consulta) => $consulta->where('id_fase', $idFase))
+            ->when($tipo !== null, fn ($consulta) => $consulta->where('tipo', $tipo))
             ->when($idBloque !== null, fn ($consulta) => $consulta->where('id_bloque', $idBloque))
             ->when($buscar !== '', function ($consulta) use ($buscar) {
                 // addcslashes: para que % y _ se busquen como texto normal.
@@ -59,18 +63,17 @@ class ActividadController extends Controller
                     ->orWhere('proceso', 'like', $texto)
                     ->orWhere('subproceso', 'like', $texto));
             })
-            // Primero por el orden de la fase y luego por nombre.
-            ->orderBy(Fase::select('orden')->whereColumn('fases.id_fase', 'actividades.id_fase'))
-            ->orderBy('nombre')
+            // En el orden en que se cargaron.
+            ->orderBy('id_actividad')
             ->paginate(15)
             ->withQueryString();
 
         // Para avisar, antes de reactivar, cuántos seguimientos se generarían.
         $faltantes = $actividades->getCollection()
             ->reject(fn (Actividad $actividad) => $actividad->estado)
-            ->mapWithKeys(fn (Actividad $actividad) => [$actividad->id_actividad => $generador->gruposFaltantes($actividad)->count()]);
+            ->mapWithKeys(fn (Actividad $actividad) => [$actividad->id_actividad => $generador->faltantesDeActividad($actividad)->count()]);
 
-        return view('actividades.index', compact('actividades', 'buscar', 'verBajas', 'idEmpresa', 'idFase', 'idBloque', 'empresas', 'fases', 'bloques', 'faltantes'));
+        return view('actividades.index', compact('actividades', 'buscar', 'verBajas', 'idEmpresa', 'tipo', 'idBloque', 'empresas', 'bloques', 'faltantes'));
     }
 
     public function crear(Request $request): View|RedirectResponse
@@ -85,9 +88,6 @@ class ActividadController extends Controller
             return redirect()->route('actividades.index')->with('error', 'Primero registra una empresa activa.');
         }
 
-        // Fases de la base de datos, para saber en pantalla cuál no lleva bloque.
-        $fases = Fase::orderBy('orden')->get();
-
         // Bloques activos de empresas activas. app.js muestra solo los de la empresa elegida.
         $bloques = Bloque::visiblePara($usuario)
             ->where('estado', true)
@@ -98,7 +98,6 @@ class ActividadController extends Controller
         return view('actividades.formulario', [
             'actividad' => new Actividad,
             'empresas' => $empresas,
-            'fases' => $fases,
             'bloques' => $bloques,
         ]);
     }
@@ -120,15 +119,13 @@ class ActividadController extends Controller
         }
 
         $idEmpresa = is_numeric($request->input('id_empresa')) ? (int) $request->input('id_empresa') : 0;
-        $fase = is_numeric($request->input('id_fase')) ? Fase::find((int) $request->input('id_fase')) : null;
 
-        // Onboarding no lleva bloque, aunque se envíe uno. Las demás fases lo exigen.
-        if ($fase?->esOnboarding()) {
-            $request->merge(['id_bloque' => null]);
-        }
+        // El bloque se elige siempre: uno de la lista o "Todos", para que nadie deje
+        // el campo vacío por descuido y genere seguimientos en toda la empresa.
+        $aplicaATodos = $request->input('id_bloque') === self::TODOS_LOS_BLOQUES;
 
-        $reglaDeBloque = $fase?->esOnboarding()
-            ? ['nullable']
+        $reglaDeBloque = $aplicaATodos
+            ? ['required']
             : [
                 'required',
                 'integer',
@@ -138,21 +135,25 @@ class ActividadController extends Controller
 
         $datos = $request->validate([
             'id_empresa' => ['required', 'integer', Rule::exists('empresas', 'id_empresa')->where('estado', true)],
-            'id_fase' => ['required', 'integer', Rule::exists('fases', 'id_fase')],
+            'tipo' => ['required', Rule::enum(TipoActividad::class)],
             'id_bloque' => $reglaDeBloque,
             ...$this->reglasDeTextos(),
         ], $this->mensajes());
 
+        // Sin bloque (NULL) significa que aplica a todos los grupos de la empresa.
+        if ($aplicaATodos) {
+            $datos['id_bloque'] = null;
+        }
+
         $this->validarQueNoSeRepita($datos);
 
-        $porGenerar = $generador->gruposFaltantes(new Actividad($datos))->count();
+        $porGenerar = $generador->faltantesDeActividad(new Actividad($datos))->count();
 
         if ($porGenerar > 0 && $request->input('accion') !== 'confirmar') {
             return view('actividades.confirmar', [
                 'datos' => $datos,
                 'porGenerar' => $porGenerar,
                 'empresa' => Empresa::find($datos['id_empresa']),
-                'fase' => Fase::find($datos['id_fase']),
                 'bloque' => isset($datos['id_bloque']) ? Bloque::find($datos['id_bloque']) : null,
             ]);
         }
@@ -177,13 +178,12 @@ class ActividadController extends Controller
         return view('actividades.formulario', [
             'actividad' => $actividad,
             'empresas' => collect(),
-            'fases' => collect(),
             'bloques' => collect(),
         ]);
     }
 
     /**
-     * Solo se pueden cambiar los textos: empresa, fase y bloque quedan fijos al crearla.
+     * Solo se pueden cambiar los textos: empresa, tipo y bloque quedan fijos al crearla.
      */
     public function actualizar(Request $request, Actividad $actividad): RedirectResponse
     {
@@ -192,7 +192,7 @@ class ActividadController extends Controller
         $this->validarQueNoSeRepita([
             ...$datos,
             'id_empresa' => $actividad->id_empresa,
-            'id_fase' => $actividad->id_fase,
+            'tipo' => $actividad->tipo->value,
             'id_bloque' => $actividad->id_bloque,
         ], $actividad);
 
@@ -220,7 +220,7 @@ class ActividadController extends Controller
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su empresa está dada de baja.");
         }
 
-        // Las actividades de Onboarding no tienen bloque.
+        // Una actividad sin bloque aplica a todos los grupos de la empresa.
         if ($actividad->bloque && ! $actividad->bloque->estado) {
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su bloque está dado de baja.");
         }
@@ -238,14 +238,14 @@ class ActividadController extends Controller
 
     /**
      * Cada actividad se registra una sola vez. La tabla no lo impide por sí sola, así que
-     * se revisa aquí: se repite si coinciden empresa, fase, bloque, procesos y nombre,
+     * se revisa aquí: se repite si coinciden empresa, tipo, bloque, procesos y nombre,
      * incluso con una dada de baja.
      */
     private function validarQueNoSeRepita(array $datos, ?Actividad $actividad = null): void
     {
         $repetida = Actividad::query()
             ->where('id_empresa', $datos['id_empresa'])
-            ->where('id_fase', $datos['id_fase'])
+            ->where('tipo', $datos['tipo'])
             ->where('id_bloque', $datos['id_bloque'] ?? null)
             ->where('macroproceso', $datos['macroproceso'] ?? null)
             ->where('proceso', $datos['proceso'] ?? null)
@@ -277,9 +277,8 @@ class ActividadController extends Controller
             'id_empresa.required' => 'Elige una empresa.',
             'id_empresa.integer' => 'Elige una empresa de la lista.',
             'id_empresa.exists' => 'La empresa no existe o está dada de baja.',
-            'id_fase.required' => 'Elige una fase.',
-            'id_fase.integer' => 'Elige una fase de la lista.',
-            'id_fase.exists' => 'Elige una fase de la lista.',
+            'tipo.required' => 'Elige un tipo.',
+            'tipo.enum' => 'Elige un tipo de la lista.',
             'id_bloque.required' => 'Elige un bloque.',
             'id_bloque.integer' => 'Elige un bloque de la lista.',
             'id_bloque.exists' => 'El bloque no existe, está dado de baja o es de otra empresa.',

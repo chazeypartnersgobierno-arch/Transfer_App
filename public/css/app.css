@@ -606,6 +606,13 @@ body {
     padding: 1.5rem;
 }
 
+/* Texto de ayuda bajo una lista desplegable o un campo. */
+.ayuda-campo {
+    margin: -.5rem 0 1rem;
+    color: var(--app-texto-secundario);
+    font-size: .875rem;
+}
+
 .datos-fijos {
     display: flex;
     flex-wrap: wrap;

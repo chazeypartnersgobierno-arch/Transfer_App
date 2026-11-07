@@ -11,6 +11,9 @@
     <div class="tarjeta tarjeta-formulario">
         <x-alerta tipo="advertencia">
             {{ \App\Models\Seguimiento::seGeneraran($porGenerar) }} en los grupos activos a los que aplica esta actividad.
+            @if ($datos['tipo'] === \App\Enums\TipoActividad::Transicion->value)
+                Cada grupo recibe uno por cada fase: Transferencia, Estabilización y Validación.
+            @endif
         </x-alerta>
 
         <dl class="datos-fijos mb-3">
@@ -19,8 +22,8 @@
                 <dd>{{ $empresa->nombre }}</dd>
             </div>
             <div>
-                <dt>Fase</dt>
-                <dd>{{ $fase->nombre }}</dd>
+                <dt>Tipo</dt>
+                <dd>{{ $datos['tipo'] }}</dd>
             </div>
             <div>
                 <dt>Bloque</dt>
@@ -41,6 +44,11 @@
                     <input type="hidden" name="{{ $campo }}" value="{{ $valor }}">
                 @endif
             @endforeach
+
+            {{-- Sin bloque significa "Todos los bloques"; el formulario lo envía con ese valor. --}}
+            @if ($datos['id_bloque'] === null)
+                <input type="hidden" name="id_bloque" value="todos">
+            @endif
 
             <div class="formulario-acciones">
                 <x-boton variante="outline-primary" name="accion" value="corregir">Corregir</x-boton>
