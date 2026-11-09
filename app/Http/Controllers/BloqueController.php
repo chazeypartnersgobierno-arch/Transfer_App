@@ -37,9 +37,9 @@ class BloqueController extends Controller
 
     public function crear(Request $request): View|RedirectResponse
     {
-        $empresas = $this->empresasParaElegir($request);
+        $empresas = $this->empresasParaElegir();
 
-        if ($request->user()->esChazey() && $empresas->isEmpty()) {
+        if ($empresas->isEmpty()) {
             return redirect()->route('bloques.index')->with('error', 'Primero registra una empresa activa.');
         }
 
@@ -48,11 +48,6 @@ class BloqueController extends Controller
 
     public function guardar(Request $request): RedirectResponse
     {
-        // Un usuario con empresa solo crea en la suya, aunque envíe otro valor.
-        if (! $request->user()->esChazey()) {
-            $request->merge(['id_empresa' => $request->user()->id_empresa]);
-        }
-
         $idEmpresa = is_numeric($request->input('id_empresa')) ? (int) $request->input('id_empresa') : 0;
 
         $datos = $request->validate([
@@ -121,13 +116,11 @@ class BloqueController extends Controller
     }
 
     /**
-     * Empresas activas para la lista del formulario. Un usuario con empresa no elige.
+     * Empresas activas para la lista del formulario. Solo el admin (siempre de Chazey) crea.
      */
-    private function empresasParaElegir(Request $request)
+    private function empresasParaElegir()
     {
-        return $request->user()->esChazey()
-            ? Empresa::where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_empresa')
-            : collect();
+        return Empresa::where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_empresa');
     }
 
     /**

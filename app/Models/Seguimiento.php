@@ -4,12 +4,12 @@ namespace App\Models;
 
 use App\Enums\EstadoActividad;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 class Seguimiento extends Model
 {
@@ -168,9 +168,11 @@ class Seguimiento extends Model
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
+        // La empresa sale del propio registro (actividad.bloque.empresa), nunca de la asignación del usuario:
+        // si a un consultor lo cambian de empresa, lo que capturó se queda en la empresa original.
         return $usuario->esChazey()
             ? $consulta
-            : $consulta->whereHas('actividad', fn ($q) => $q->where('id_empresa', $usuario->id_empresa));
+            : $consulta->whereHas('actividad.bloque', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
     }
 
     /**

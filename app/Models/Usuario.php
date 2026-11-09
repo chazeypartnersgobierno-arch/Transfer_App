@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RolApp;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
@@ -29,8 +29,6 @@ class Usuario extends Authenticatable
 
     // Campos que se pueden llenar de una sola vez con create().
     protected $fillable = [
-        'id_empresa',
-        'id_participante',
         'nombre',
         'correo',
         'contrasena_hash',
@@ -50,16 +48,33 @@ class Usuario extends Authenticatable
         ];
     }
 
-    public function empresa(): BelongsTo
+    /**
+     * Historial de empresas a las que se ha asignado (solo consultores).
+     */
+    public function asignaciones(): HasMany
     {
-        return $this->belongsTo(Empresa::class, 'id_empresa', 'id_empresa');
+        return $this->hasMany(AsignacionEmpresa::class, 'id_usuario', 'id_usuario');
     }
 
     /**
-     * Los usuarios de Chazey no pertenecen a una empresa y ven todas.
+     * El administrador siempre es de Chazey y ve todas las empresas.
      */
     public function esChazey(): bool
     {
-        return $this->id_empresa === null;
+        return $this->rol_app === RolApp::Admin;
+    }
+
+    /**
+     * Empresas cuyos datos ve un consultor: las de sus asignaciones activas.
+     * Hoy es como máximo una (ver App\Services\AsignadorDeEmpresas), pero se devuelve
+     * una lista para que permitir varias no obligue a cambiar las consultas.
+     * Sin asignación activa la lista queda vacía y el consultor no ve datos.
+     * Se consulta en cada llamada para que un cambio de asignación se note de inmediato.
+     *
+     * @return list<int>
+     */
+    public function idsEmpresasVisibles(): array
+    {
+        return $this->asignaciones()->activas()->pluck('id_empresa')->all();
     }
 }

@@ -25,9 +25,12 @@ class Empresa extends Model
         ];
     }
 
-    public function usuarios(): HasMany
+    /**
+     * Historial de consultores asignados a la empresa (usa ->activas() para los vigentes).
+     */
+    public function asignaciones(): HasMany
     {
-        return $this->hasMany(Usuario::class, 'id_empresa', 'id_empresa');
+        return $this->hasMany(AsignacionEmpresa::class, 'id_empresa', 'id_empresa');
     }
 
     public function bloques(): HasMany
@@ -51,7 +54,7 @@ class Empresa extends Model
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
-        return $usuario->esChazey() ? $consulta : $consulta->whereKey($usuario->id_empresa);
+        return $usuario->esChazey() ? $consulta : $consulta->whereKey($usuario->idsEmpresasVisibles());
     }
 
     /**

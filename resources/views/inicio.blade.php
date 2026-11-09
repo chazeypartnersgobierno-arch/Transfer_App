@@ -3,6 +3,11 @@
 @section('titulo', 'Inicio')
 
 @php
+    // El admin ve todas las empresas; el consultor, las de su asignación activa.
+    $empresasDelConsultor = auth()->user()->esChazey()
+        ? collect()
+        : \App\Models\Empresa::whereKey(auth()->user()->idsEmpresasVisibles())->orderBy('nombre')->pluck('nombre');
+
     $accesos = [];
 
     // El seguimiento va primero: es el trabajo diario. La ruta también está protegida en el servidor.
@@ -30,9 +35,18 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Hola, {{ auth()->user()->nombre }}</h1>
-            <p class="pagina-subtitulo">Elige por dónde quieres empezar.</p>
+            <p class="pagina-subtitulo">
+                @if ($empresasDelConsultor->isNotEmpty())
+                    Trabajas con {{ $empresasDelConsultor->implode(', ') }}.
+                @endif
+                Elige por dónde quieres empezar.
+            </p>
         </div>
     </div>
+
+    @if (! auth()->user()->esChazey() && $empresasDelConsultor->isEmpty())
+        <x-alerta tipo="advertencia">No tienes una empresa asignada, así que por ahora no verás datos. Pide al administrador que te asigne una.</x-alerta>
+    @endif
 
     <div class="row g-3">
         @foreach ($accesos as [$ruta, $icono, $texto])

@@ -19,12 +19,13 @@ trait PerteneceAEmpresa
     }
 
     /**
-     * Filtra los registros que un usuario puede ver: Chazey ve todos; los demás, solo los de su empresa.
+     * Filtra los registros que un usuario puede ver: Chazey (admin) ve todos; el consultor,
+     * solo los de las empresas de su asignación activa.
      * Se usa así: Bloque::visiblePara($usuario)->get()
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
-        return $usuario->esChazey() ? $consulta : $consulta->where('id_empresa', $usuario->id_empresa);
+        return $usuario->esChazey() ? $consulta : $consulta->whereIn('id_empresa', $usuario->idsEmpresasVisibles());
     }
 
     /**

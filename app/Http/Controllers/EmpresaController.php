@@ -61,13 +61,15 @@ class EmpresaController extends Controller
     public function darDeBaja(Empresa $empresa): RedirectResponse
     {
         // Revisa cada tipo de registro que depende de la empresa y anota los que siguen activos.
-        $pendientes = [];
+        // "usuarios" son los consultores activos con asignación activa a esta empresa.
+        $consultas = [
+            'usuarios' => $empresa->asignaciones()->activas()->whereHas('usuario', fn ($q) => $q->where('estado', true)),
+            'bloques' => $empresa->bloques()->where('estado', true),
+            'aplicativos' => $empresa->aplicativos()->where('estado', true),
+            'actividades' => $empresa->actividades()->where('estado', true),
+        ];
 
-        foreach (['usuarios', 'bloques', 'aplicativos', 'actividades'] as $relacion) {
-            if ($empresa->{$relacion}()->where('estado', true)->exists()) {
-                $pendientes[] = $relacion;
-            }
-        }
+        $pendientes = array_keys(array_filter($consultas, fn ($consulta) => $consulta->exists()));
 
         if ($pendientes !== []) {
             $lista = Arr::join($pendientes, ', ', ' y ');

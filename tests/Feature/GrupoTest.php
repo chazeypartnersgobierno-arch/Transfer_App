@@ -40,13 +40,12 @@ class GrupoTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
-        ]);
+        ]), $empresa);
     }
 
     private function crearEmpresa(string $sigla, bool $estado = true): Empresa
@@ -210,61 +209,25 @@ class GrupoTest extends TestCase
         $this->assertSame(2, Grupo::where('nombre', 'Compartido')->count());
     }
 
-    public function test_admin_de_empresa_solo_ve_y_crea_en_la_suya(): void
-    {
-        $ajena = $this->crearEmpresa('AJENA');
-        $bloqueAjeno = $this->crearBloque($ajena, 'Bloque ajeno');
-        $this->grupo($this->bloque, 'Grupo propio');
-        $grupoAjeno = $this->grupo($bloqueAjeno, 'Grupo ajeno');
-        $admin = $this->usuario(RolApp::Admin, $this->empresa);
-
-        $this->actingAs($admin)->get('/grupos')
-            ->assertSee('Grupo propio')
-            ->assertSee('Tesorería')
-            ->assertDontSee('Grupo ajeno')
-            ->assertDontSee('Bloque ajeno')
-            ->assertDontSee('Todas las empresas');
-
-        $this->actingAs($admin)->get("/grupos?id_empresa={$ajena->id_empresa}")->assertDontSee('Grupo ajeno');
-
-        $this->actingAs($admin)->get('/grupos/crear')
-            ->assertOk()
-            ->assertSee('Tesorería')
-            ->assertDontSee('(PROPIA)')
-            ->assertDontSee('Bloque ajeno');
-
-        $this->actingAs($admin)->post('/grupos', ['id_bloque' => $bloqueAjeno->id_bloque, 'nombre' => 'Intruso'])
-            ->assertSessionHasErrors('id_bloque');
-        $this->assertFalse(Grupo::where('nombre', 'Intruso')->exists());
-
-        $url = "/grupos/{$grupoAjeno->id_grupo}";
-        $this->actingAs($admin)->get("{$url}/editar")->assertNotFound();
-        $this->actingAs($admin)->put($url, ['nombre' => 'X'])->assertNotFound();
-        $this->actingAs($admin)->patch("{$url}/baja")->assertNotFound();
-        $this->actingAs($admin)->patch("{$url}/reactivar")->assertNotFound();
-        $this->assertSame('Grupo ajeno', $grupoAjeno->fresh()->nombre);
-        $this->assertTrue($grupoAjeno->fresh()->estado);
-    }
-
     public function test_consultor_ve_pero_no_cambia_nada(): void
     {
         $grupo = $this->grupo();
         $url = "/grupos/{$grupo->id_grupo}";
 
-        foreach ([$this->usuario(RolApp::Consultor), $this->usuario(RolApp::Consultor, $this->empresa)] as $consultor) {
-            $this->actingAs($consultor)->get('/grupos')
-                ->assertOk()
-                ->assertSee('Grupo uno')
-                ->assertDontSee('Nuevo grupo')
-                ->assertDontSee('Dar de baja');
+        $consultor = $this->usuario(RolApp::Consultor, $this->empresa);
 
-            $this->actingAs($consultor)->get('/grupos/crear')->assertForbidden();
-            $this->actingAs($consultor)->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'X'])->assertForbidden();
-            $this->actingAs($consultor)->get("{$url}/editar")->assertForbidden();
-            $this->actingAs($consultor)->put($url, ['nombre' => 'X'])->assertForbidden();
-            $this->actingAs($consultor)->patch("{$url}/baja")->assertForbidden();
-            $this->actingAs($consultor)->patch("{$url}/reactivar")->assertForbidden();
-        }
+        $this->actingAs($consultor)->get('/grupos')
+            ->assertOk()
+            ->assertSee('Grupo uno')
+            ->assertDontSee('Nuevo grupo')
+            ->assertDontSee('Dar de baja');
+
+        $this->actingAs($consultor)->get('/grupos/crear')->assertForbidden();
+        $this->actingAs($consultor)->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'X'])->assertForbidden();
+        $this->actingAs($consultor)->get("{$url}/editar")->assertForbidden();
+        $this->actingAs($consultor)->put($url, ['nombre' => 'X'])->assertForbidden();
+        $this->actingAs($consultor)->patch("{$url}/baja")->assertForbidden();
+        $this->actingAs($consultor)->patch("{$url}/reactivar")->assertForbidden();
 
         $this->assertSame(1, Grupo::count());
         $this->assertSame('Grupo uno', $grupo->fresh()->nombre);

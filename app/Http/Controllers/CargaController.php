@@ -33,24 +33,15 @@ class CargaController extends Controller
         // Aprovecha para borrar los archivos viejos, por si la tarea programada no corre.
         $archivos->limpiarViejos();
 
-        // Solo Chazey elige empresa; un usuario con empresa trabaja con la suya.
-        $empresas = $request->user()->esChazey()
-            ? Empresa::where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_empresa')
-            : collect();
+        // La carga solo la hace el admin (siempre de Chazey): elige la empresa en pantalla.
+        $empresas = Empresa::where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_empresa');
 
-        return view('carga.index', [
-            'empresas' => $empresas,
-            'empresaPropia' => $request->user()->empresa,
-        ]);
+        return view('carga.index', ['empresas' => $empresas]);
     }
 
     public function plantilla(Request $request): BinaryFileResponse|RedirectResponse
     {
         $empresa = $this->empresaElegida($request);
-
-        if ($empresa === null) {
-            return redirect()->route('carga.index')->with('error', 'Tu empresa está dada de baja: no se puede generar la plantilla.');
-        }
 
         $archivo = 'plantilla_carga_'.Str::slug($empresa->sigla, '_').'.xlsx';
 
@@ -63,10 +54,6 @@ class CargaController extends Controller
     public function subir(Request $request, ArchivosDeCarga $archivos): RedirectResponse
     {
         $empresa = $this->empresaElegida($request);
-
-        if ($empresa === null) {
-            return redirect()->route('carga.index')->with('error', 'Tu empresa está dada de baja: no se puede cargar información.');
-        }
 
         $request->validate([
             // mimes revisa el contenido del archivo, no solo su extensión.
@@ -142,14 +129,10 @@ class CargaController extends Controller
     }
 
     /**
-     * Empresa activa con la que se trabaja: la elegida por Chazey o la del usuario.
+     * Empresa activa elegida en pantalla.
      */
-    private function empresaElegida(Request $request): ?Empresa
+    private function empresaElegida(Request $request): Empresa
     {
-        if (! $request->user()->esChazey()) {
-            return Empresa::where('estado', true)->find($request->user()->id_empresa);
-        }
-
         $datos = $request->validate([
             'id_empresa' => ['required', 'integer', Rule::exists('empresas', 'id_empresa')->where('estado', true)],
         ], [
@@ -162,19 +145,15 @@ class CargaController extends Controller
     }
 
     /**
-     * La carga guardada en la sesión, si su archivo sigue ahí y el usuario todavía
-     * puede cargar a esa empresa (activa y, si no es Chazey, la suya).
+     * La carga guardada en la sesión, si su archivo sigue ahí y la empresa sigue activa.
      *
      * @return array{0: ?Empresa, 1: ?string}
      */
     private function cargaPendiente(Request $request, ArchivosDeCarga $archivos): array
     {
         $pendiente = $request->session()->get(self::SESION);
-        $usuario = $request->user();
-
         $empresa = Empresa::where('estado', true)->find($pendiente['id_empresa'] ?? null);
-        $permitida = $empresa !== null && ($usuario->esChazey() || $usuario->id_empresa === $empresa->id_empresa);
-        $ruta = $permitida ? $archivos->ruta($pendiente['archivo'] ?? null) : null;
+        $ruta = $empresa !== null ? $archivos->ruta($pendiente['archivo'] ?? null) : null;
 
         return [$empresa, $ruta];
     }

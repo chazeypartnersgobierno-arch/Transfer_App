@@ -70,13 +70,12 @@ class CargaDesdeExcelTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
-        ]);
+        ]), $empresa);
     }
 
     /**
@@ -146,20 +145,6 @@ class CargaDesdeExcelTest extends TestCase
         $this->actingAs($consultor)->post('/carga/confirmar')->assertForbidden();
         $this->actingAs($consultor)->post('/carga/cancelar')->assertForbidden();
         $this->assertSame([], $this->archivosPendientes());
-    }
-
-    public function test_el_admin_de_una_empresa_carga_solo_en_la_suya(): void
-    {
-        $ajena = Empresa::create(['nombre' => 'Ajena', 'sigla' => 'AJE']);
-        Bloque::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Solo ajeno']);
-        $admin = $this->usuario(RolApp::Admin, $this->empresa);
-
-        // Pide la empresa ajena, pero se revisa contra la suya: "Solo ajeno" no existe ahí.
-        $this->subir($this->archivo([['', '', '', 'Tarea', 'Solo ajeno', 'Onboarding']]), $admin, $ajena);
-
-        $this->actingAs($admin)->get('/carga/vista-previa')
-            ->assertSee('Empresa Uno')
-            ->assertSee('El bloque «Solo ajeno» no existe en esta empresa.');
     }
 
     public function test_la_pantalla_muestra_el_formulario_para_subir(): void

@@ -42,13 +42,12 @@ class CatalogoPorEmpresaTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
-        ]);
+        ]), $empresa);
     }
 
     private function empresa(string $sigla = 'PROPIA', bool $estado = true): Empresa
@@ -161,67 +160,6 @@ class CatalogoPorEmpresaTest extends TestCase
     }
 
     #[DataProvider('catalogos')]
-    public function test_admin_de_empresa_solo_ve_y_crea_en_la_suya(string $ruta, string $modelo): void
-    {
-        $propia = $this->empresa('PROPIA');
-        $ajena = $this->empresa('AJENA');
-        $this->registro($modelo, $propia, 'Registro propio');
-        $this->registro($modelo, $ajena, 'Registro ajeno');
-        $admin = $this->usuario(RolApp::Admin, $propia);
-
-        $this->actingAs($admin)->get("/{$ruta}")
-            ->assertOk()
-            ->assertSee('Registro propio')
-            ->assertDontSee('Registro ajeno')
-            ->assertDontSee('Todas las empresas');
-
-        // Pedir la empresa ajena en el filtro no muestra nada de ella.
-        $this->actingAs($admin)->get("/{$ruta}?id_empresa={$ajena->id_empresa}")->assertDontSee('Registro ajeno');
-
-        $this->actingAs($admin)->get("/{$ruta}/crear")
-            ->assertOk()
-            ->assertSee($this->textoNuevo($ruta))
-            ->assertDontSee('name="id_empresa"', false);
-
-        // Aunque manipule el formulario, se guarda en su propia empresa.
-        $this->actingAs($admin)->post("/{$ruta}", ['id_empresa' => $ajena->id_empresa, 'nombre' => 'Manipulado'])
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame($propia->id_empresa, $modelo::where('nombre', 'Manipulado')->sole()->id_empresa);
-    }
-
-    #[DataProvider('catalogos')]
-    public function test_admin_de_empresa_recibe_404_con_registros_ajenos(string $ruta, string $modelo): void
-    {
-        $propia = $this->empresa('PROPIA');
-        $ajeno = $this->registro($modelo, $this->empresa('AJENA'), 'Ajeno');
-        $admin = $this->usuario(RolApp::Admin, $propia);
-        $url = "/{$ruta}/{$ajeno->getKey()}";
-
-        $this->actingAs($admin)->get("{$url}/editar")->assertNotFound();
-        $this->actingAs($admin)->put($url, ['nombre' => 'X'])->assertNotFound();
-        $this->actingAs($admin)->patch("{$url}/baja")->assertNotFound();
-        $this->actingAs($admin)->patch("{$url}/reactivar")->assertNotFound();
-
-        $this->assertSame('Ajeno', $ajeno->fresh()->nombre);
-        $this->assertTrue($ajeno->fresh()->estado);
-    }
-
-    #[DataProvider('catalogos')]
-    public function test_admin_de_empresa_edita_los_suyos(string $ruta, string $modelo): void
-    {
-        $propia = $this->empresa('PROPIA');
-        $registro = $this->registro($modelo, $propia);
-        $admin = $this->usuario(RolApp::Admin, $propia);
-
-        $this->actingAs($admin)->get("/{$ruta}/{$registro->getKey()}/editar")->assertOk();
-        $this->actingAs($admin)->put("/{$ruta}/{$registro->getKey()}", ['nombre' => 'Nuevo nombre'])
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame('Nuevo nombre', $registro->fresh()->nombre);
-    }
-
-    #[DataProvider('catalogos')]
     public function test_consultor_ve_pero_no_cambia_nada(string $ruta, string $modelo): void
     {
         $propia = $this->empresa('PROPIA');
@@ -229,30 +167,35 @@ class CatalogoPorEmpresaTest extends TestCase
         $registro = $this->registro($modelo, $propia, 'Registro propio');
         $this->registro($modelo, $ajena, 'Registro ajeno');
 
-        $deChazey = $this->usuario(RolApp::Consultor);
-        $deEmpresa = $this->usuario(RolApp::Consultor, $propia);
+        $consultor = $this->usuario(RolApp::Consultor, $propia);
+        $sinAsignacion = $this->usuario(RolApp::Consultor);
 
-        $this->actingAs($deChazey)->get("/{$ruta}")
+        // Solo ve lo de la empresa de su asignación activa.
+        $this->actingAs($consultor)->get("/{$ruta}")
             ->assertOk()
             ->assertSee('Registro propio')
-            ->assertSee('Registro ajeno')
+            ->assertDontSee('Registro ajeno')
+            ->assertDontSee('Todas las empresas')
             ->assertDontSee($this->textoNuevo($ruta))
             ->assertDontSee('Dar de baja');
 
-        $this->actingAs($deEmpresa)->get("/{$ruta}")
-            ->assertSee('Registro propio')
+        // Pedir la empresa ajena en el filtro no muestra nada de ella.
+        $this->actingAs($consultor)->get("/{$ruta}?id_empresa={$ajena->id_empresa}")->assertDontSee('Registro ajeno');
+
+        // Sin asignación activa no ve nada.
+        $this->actingAs($sinAsignacion)->get("/{$ruta}")
+            ->assertOk()
+            ->assertDontSee('Registro propio')
             ->assertDontSee('Registro ajeno');
 
         $url = "/{$ruta}/{$registro->getKey()}";
 
-        foreach ([$deChazey, $deEmpresa] as $consultor) {
-            $this->actingAs($consultor)->get("/{$ruta}/crear")->assertForbidden();
-            $this->actingAs($consultor)->post("/{$ruta}", ['id_empresa' => $propia->id_empresa, 'nombre' => 'X'])->assertForbidden();
-            $this->actingAs($consultor)->get("{$url}/editar")->assertForbidden();
-            $this->actingAs($consultor)->put($url, ['nombre' => 'X'])->assertForbidden();
-            $this->actingAs($consultor)->patch("{$url}/baja")->assertForbidden();
-            $this->actingAs($consultor)->patch("{$url}/reactivar")->assertForbidden();
-        }
+        $this->actingAs($consultor)->get("/{$ruta}/crear")->assertForbidden();
+        $this->actingAs($consultor)->post("/{$ruta}", ['id_empresa' => $propia->id_empresa, 'nombre' => 'X'])->assertForbidden();
+        $this->actingAs($consultor)->get("{$url}/editar")->assertForbidden();
+        $this->actingAs($consultor)->put($url, ['nombre' => 'X'])->assertForbidden();
+        $this->actingAs($consultor)->patch("{$url}/baja")->assertForbidden();
+        $this->actingAs($consultor)->patch("{$url}/reactivar")->assertForbidden();
 
         $this->assertSame('Registro propio', $registro->fresh()->nombre);
         $this->assertTrue($registro->fresh()->estado);

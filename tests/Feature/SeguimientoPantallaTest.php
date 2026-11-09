@@ -46,13 +46,12 @@ class SeguimientoPantallaTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
-        ]);
+        ]), $empresa);
     }
 
     private function actividad(string $nombre, ?Bloque $bloque = null, TipoActividad $tipo = TipoActividad::Onboarding, bool $estado = true): Actividad

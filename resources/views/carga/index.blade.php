@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    @if ($empresas->isEmpty() && $empresaPropia === null)
+    @if ($empresas->isEmpty())
         <x-alerta tipo="advertencia">Primero registra una empresa activa.</x-alerta>
     @else
         <div class="tarjeta tarjeta-formulario mb-3">

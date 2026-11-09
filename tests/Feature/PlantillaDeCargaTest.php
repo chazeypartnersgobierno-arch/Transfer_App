@@ -35,13 +35,12 @@ class PlantillaDeCargaTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
-        ]);
+        ]), $empresa);
     }
 
     private function bloque(string $nombre, ?Empresa $empresa = null, bool $estado = true): Bloque
@@ -140,36 +139,6 @@ class PlantillaDeCargaTest extends TestCase
 
         $this->actingAs($admin)->from('/carga')->get('/carga/plantilla?id_empresa[]=1')
             ->assertSessionHasErrors('id_empresa');
-    }
-
-    public function test_el_admin_de_una_empresa_descarga_solo_la_suya(): void
-    {
-        $ajena = Empresa::create(['nombre' => 'Empresa Ajena', 'sigla' => 'AJE']);
-        $this->bloque('Bloque propio');
-        $this->bloque('Bloque ajeno', $ajena);
-        $admin = $this->usuario(RolApp::Admin, $this->empresa);
-
-        $this->actingAs($admin)->get('/carga')
-            ->assertOk()
-            ->assertDontSee('name="id_empresa"', false)
-            ->assertSee('Empresa Uno');
-
-        // Aunque pida otra empresa, recibe la suya.
-        $respuesta = $this->actingAs($admin)->get("/carga/plantilla?id_empresa={$ajena->id_empresa}");
-        $respuesta->assertDownload('plantilla_carga_uno.xlsx');
-
-        $libro = $this->abrir($respuesta);
-        $this->assertSame(['Bloque propio'], $this->lista($libro, 'A'));
-    }
-
-    public function test_si_la_empresa_del_admin_esta_de_baja_no_genera(): void
-    {
-        $admin = $this->usuario(RolApp::Admin, $this->empresa);
-        $this->empresa->update(['estado' => false]);
-
-        $this->actingAs($admin)->get('/carga/plantilla')
-            ->assertRedirect(route('carga.index'))
-            ->assertSessionHas('error', 'Tu empresa está dada de baja: no se puede generar la plantilla.');
     }
 
     public function test_la_plantilla_tiene_las_hojas_y_columnas_acordadas(): void

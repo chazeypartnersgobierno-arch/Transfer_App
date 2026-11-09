@@ -28,8 +28,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nombre' => $datos['nombre'],
                 'contrasena_hash' => $datos['contrasena'], // el modelo la convierte en hash
-                'rol_app' => RolApp::Admin,
-                // id_empresa queda en NULL: usuario Chazey, ve todas las empresas.
+                'rol_app' => RolApp::Admin, // el admin es de Chazey: ve todas las empresas
             ]
         );
     }

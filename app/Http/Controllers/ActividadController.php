@@ -75,11 +75,10 @@ class ActividadController extends Controller
     {
         $usuario = $request->user();
 
-        $empresas = $usuario->esChazey()
-            ? Empresa::where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_empresa')
-            : collect();
+        // Solo el admin (siempre de Chazey) crea: elige entre las empresas activas.
+        $empresas = Empresa::where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_empresa');
 
-        if ($usuario->esChazey() && $empresas->isEmpty()) {
+        if ($empresas->isEmpty()) {
             return redirect()->route('actividades.index')->with('error', 'Primero registra una empresa activa.');
         }
 
@@ -106,11 +105,6 @@ class ActividadController extends Controller
         // "Corregir" vuelve al formulario con lo que había escrito.
         if ($request->input('accion') === 'corregir') {
             return redirect()->route('actividades.crear')->withInput($request->except('accion', '_token'));
-        }
-
-        // Un usuario con empresa solo crea en la suya, aunque envíe otro valor.
-        if (! $request->user()->esChazey()) {
-            $request->merge(['id_empresa' => $request->user()->id_empresa]);
         }
 
         $idEmpresa = is_numeric($request->input('id_empresa')) ? (int) $request->input('id_empresa') : 0;

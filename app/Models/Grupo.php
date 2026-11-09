@@ -49,7 +49,7 @@ class Grupo extends Model
     {
         return $usuario->esChazey()
             ? $consulta
-            : $consulta->whereHas('bloque', fn ($q) => $q->where('id_empresa', $usuario->id_empresa));
+            : $consulta->whereHas('bloque', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
     }
 
     /**

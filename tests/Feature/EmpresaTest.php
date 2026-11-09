@@ -20,14 +20,13 @@ class EmpresaTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
             'estado' => $estado,
-        ]);
+        ]), $empresa);
     }
 
     private function empresa(string $sigla = 'EJE1', bool $estado = true): Empresa
@@ -119,10 +118,10 @@ class EmpresaTest extends TestCase
         $this->assertSame('EJE2', $otra->fresh()->sigla);
     }
 
-    public function test_consultor_de_chazey_ve_todo_pero_no_cambia_nada(): void
+    public function test_consultor_ve_su_empresa_pero_no_cambia_nada(): void
     {
         $empresa = $this->empresa('EJE1');
-        $consultor = $this->usuario(RolApp::Consultor);
+        $consultor = $this->usuario(RolApp::Consultor, $empresa);
         $url = "/empresas/{$empresa->id_empresa}";
 
         $this->actingAs($consultor)->get('/empresas')
@@ -143,39 +142,23 @@ class EmpresaTest extends TestCase
         $this->assertSame(1, Empresa::count());
     }
 
-    public function test_usuario_de_una_empresa_solo_ve_la_suya(): void
+    public function test_consultor_solo_ve_la_empresa_de_su_asignacion_activa(): void
     {
         $propia = $this->empresa('PROPIA');
         $this->empresa('AJENA');
 
-        foreach ([RolApp::Admin, RolApp::Consultor] as $rol) {
-            $this->actingAs($this->usuario($rol, $propia))->get('/empresas')
-                ->assertOk()
-                ->assertSee('PROPIA')
-                ->assertDontSee('AJENA')
-                ->assertDontSee('Nueva empresa')
-                ->assertDontSee('Dar de baja');
-        }
-    }
+        $this->actingAs($this->usuario(RolApp::Consultor, $propia))->get('/empresas')
+            ->assertOk()
+            ->assertSee('PROPIA')
+            ->assertDontSee('AJENA')
+            ->assertDontSee('Nueva empresa')
+            ->assertDontSee('Dar de baja');
 
-    public function test_admin_de_una_empresa_no_administra_empresas(): void
-    {
-        $propia = $this->empresa('PROPIA');
-        $ajena = $this->empresa('AJENA');
-        $admin = $this->usuario(RolApp::Admin, $propia);
-
-        // La propia existe para este usuario, pero no tiene permiso: 403.
-        $this->actingAs($admin)->get('/empresas/crear')->assertForbidden();
-        $this->actingAs($admin)->get("/empresas/{$propia->id_empresa}/editar")->assertForbidden();
-        $this->actingAs($admin)->patch("/empresas/{$propia->id_empresa}/baja")->assertForbidden();
-
-        // La ajena es como si no existiera: 404.
-        $this->actingAs($admin)->get("/empresas/{$ajena->id_empresa}/editar")->assertNotFound();
-        $this->actingAs($admin)->put("/empresas/{$ajena->id_empresa}", ['nombre' => 'X', 'sigla' => 'X'])->assertNotFound();
-        $this->actingAs($admin)->patch("/empresas/{$ajena->id_empresa}/baja")->assertNotFound();
-
-        $this->assertTrue($ajena->fresh()->estado);
-        $this->assertSame('Empresa AJENA', $ajena->fresh()->nombre);
+        // Sin asignación activa no ve ninguna.
+        $this->actingAs($this->usuario(RolApp::Consultor))->get('/empresas')
+            ->assertOk()
+            ->assertDontSee('PROPIA')
+            ->assertDontSee('AJENA');
     }
 
     public function test_dar_de_baja_no_borra_y_reactivar_la_recupera(): void

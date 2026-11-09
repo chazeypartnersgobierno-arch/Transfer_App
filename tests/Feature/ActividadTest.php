@@ -29,13 +29,12 @@ class ActividadTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
-        ]);
+        ]), $empresa);
     }
 
     private function empresa(string $sigla = 'PROPIA', bool $estado = true): Empresa
@@ -382,57 +381,6 @@ class ActividadTest extends TestCase
             ->assertSessionHas('error', 'Primero registra una empresa activa.');
     }
 
-    public function test_admin_de_empresa_solo_ve_y_crea_en_la_suya(): void
-    {
-        $propia = $this->empresa('PROPIA');
-        $ajena = $this->empresa('AJENA');
-        $bloquePropio = $this->bloque($propia, 'Bloque propio');
-        $bloqueAjeno = $this->bloque($ajena, 'Bloque ajeno');
-        $this->actividad($propia, TipoActividad::Onboarding, null, ['nombre' => 'Actividad propia']);
-        $this->actividad($ajena, TipoActividad::Onboarding, null, ['nombre' => 'Actividad ajena']);
-        $admin = $this->usuario(RolApp::Admin, $propia);
-
-        $this->actingAs($admin)->get('/actividades')
-            ->assertSee('Actividad propia')
-            ->assertSee('Bloque propio')
-            ->assertDontSee('Actividad ajena')
-            ->assertDontSee('Bloque ajeno')
-            ->assertDontSee('Todas las empresas');
-
-        $this->actingAs($admin)->get("/actividades?id_empresa={$ajena->id_empresa}")->assertDontSee('Actividad ajena');
-
-        $this->actingAs($admin)->get('/actividades/crear')
-            ->assertOk()
-            ->assertDontSee('name="id_empresa"', false)
-            ->assertSee('Bloque propio')
-            ->assertDontSee('Bloque ajeno');
-
-        // Aunque manipule el formulario, se guarda en su empresa.
-        $this->actingAs($admin)->post('/actividades', $this->datos($ajena, $bloquePropio, ['nombre' => 'Manipulada']))
-            ->assertSessionHasNoErrors();
-        $this->assertSame($propia->id_empresa, Actividad::where('nombre', 'Manipulada')->sole()->id_empresa);
-
-        // Tampoco puede usar un bloque ajeno.
-        $this->actingAs($admin)->post('/actividades', $this->datos($propia, $bloqueAjeno, ['nombre' => 'Con ajeno']))
-            ->assertSessionHasErrors('id_bloque');
-    }
-
-    public function test_admin_de_empresa_recibe_404_con_actividades_ajenas(): void
-    {
-        $propia = $this->empresa('PROPIA');
-        $ajena = $this->actividad($this->empresa('AJENA'));
-        $admin = $this->usuario(RolApp::Admin, $propia);
-        $url = "/actividades/{$ajena->id_actividad}";
-
-        $this->actingAs($admin)->get("{$url}/editar")->assertNotFound();
-        $this->actingAs($admin)->put($url, ['nombre' => 'X'])->assertNotFound();
-        $this->actingAs($admin)->patch("{$url}/baja")->assertNotFound();
-        $this->actingAs($admin)->patch("{$url}/reactivar")->assertNotFound();
-
-        $this->assertSame('Actividad uno', $ajena->fresh()->nombre);
-        $this->assertTrue($ajena->fresh()->estado);
-    }
-
     public function test_consultor_ve_pero_no_cambia_nada(): void
     {
         $empresa = $this->empresa();
@@ -440,20 +388,20 @@ class ActividadTest extends TestCase
         $bloque = $this->bloque($empresa);
         $url = "/actividades/{$actividad->id_actividad}";
 
-        foreach ([$this->usuario(RolApp::Consultor), $this->usuario(RolApp::Consultor, $empresa)] as $consultor) {
-            $this->actingAs($consultor)->get('/actividades')
-                ->assertOk()
-                ->assertSee('Actividad uno')
-                ->assertDontSee('Nueva actividad')
-                ->assertDontSee('Dar de baja');
+        $consultor = $this->usuario(RolApp::Consultor, $empresa);
 
-            $this->actingAs($consultor)->get('/actividades/crear')->assertForbidden();
-            $this->actingAs($consultor)->post('/actividades', $this->datos($empresa, $bloque))->assertForbidden();
-            $this->actingAs($consultor)->get("{$url}/editar")->assertForbidden();
-            $this->actingAs($consultor)->put($url, ['nombre' => 'X'])->assertForbidden();
-            $this->actingAs($consultor)->patch("{$url}/baja")->assertForbidden();
-            $this->actingAs($consultor)->patch("{$url}/reactivar")->assertForbidden();
-        }
+        $this->actingAs($consultor)->get('/actividades')
+            ->assertOk()
+            ->assertSee('Actividad uno')
+            ->assertDontSee('Nueva actividad')
+            ->assertDontSee('Dar de baja');
+
+        $this->actingAs($consultor)->get('/actividades/crear')->assertForbidden();
+        $this->actingAs($consultor)->post('/actividades', $this->datos($empresa, $bloque))->assertForbidden();
+        $this->actingAs($consultor)->get("{$url}/editar")->assertForbidden();
+        $this->actingAs($consultor)->put($url, ['nombre' => 'X'])->assertForbidden();
+        $this->actingAs($consultor)->patch("{$url}/baja")->assertForbidden();
+        $this->actingAs($consultor)->patch("{$url}/reactivar")->assertForbidden();
 
         $this->assertSame(1, Actividad::count());
         $this->assertSame('Actividad uno', $actividad->fresh()->nombre);

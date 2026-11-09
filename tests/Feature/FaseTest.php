@@ -20,13 +20,12 @@ class FaseTest extends TestCase
     {
         $this->contador++;
 
-        return Usuario::create([
+        return $this->asignarEmpresa(Usuario::create([
             'nombre' => 'Prueba',
             'correo' => "u{$this->contador}@prueba.test",
             'contrasena_hash' => 'clave-de-prueba',
             'rol_app' => $rol,
-            'id_empresa' => $empresa?->id_empresa,
-        ]);
+        ]), $empresa);
     }
 
     private function fase(int $orden = 1): Fase
@@ -145,7 +144,6 @@ class FaseTest extends TestCase
 
         $usuarios = [
             $this->usuario(RolApp::Consultor),
-            $this->usuario(RolApp::Admin, $empresa),
             $this->usuario(RolApp::Consultor, $empresa),
         ];
 

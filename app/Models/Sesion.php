@@ -47,9 +47,11 @@ class Sesion extends Model
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
+        // La empresa sale del propio registro (seguimiento.actividad.bloque.empresa), nunca de la asignación del usuario:
+        // si a un consultor lo cambian de empresa, lo que capturó se queda en la empresa original.
         return $usuario->esChazey()
             ? $consulta
-            : $consulta->whereHas('seguimiento.actividad', fn ($q) => $q->where('id_empresa', $usuario->id_empresa));
+            : $consulta->whereHas('seguimiento.actividad.bloque', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
     }
 
     /**

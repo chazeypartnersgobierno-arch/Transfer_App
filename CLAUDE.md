@@ -34,7 +34,7 @@ Fases en orden: Onboarding → Transferencia → Validación → Estabilización
 ## Modelo de base de datos
 
 Todas las tablas tienen `id_<tabla>` INT AUTO_INCREMENT como PK.
-Salvo `fases`, `asistencias`, `sesiones`, `avances_validacion` y `accesos_solicitados`, todas tienen `estado` BOOLEAN (1 activo, 0 baja). En `accesos_solicitados`, `estado` es VARCHAR con el estado del acceso (ver "Campos de estado y rol") y esa tabla no tiene baja lógica.
+Salvo `fases`, `asistencias`, `sesiones`, `avances_validacion`, `accesos_solicitados` y `usuario_empresa`, todas tienen `estado` BOOLEAN (1 activo, 0 baja). En `accesos_solicitados`, `estado` es VARCHAR con el estado del acceso (ver "Campos de estado y rol") y esa tabla no tiene baja lógica. `usuario_empresa` usa `activa` en lugar de `estado`: sus filas no se borran, se cierran.
 Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`avances_validacion` solo `fecha_creacion`).
 
 | Tabla | Campos | Relaciones |
@@ -46,7 +46,8 @@ Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`av
 | actividades | tipo, macroproceso, proceso, subproceso, nombre | id_empresa → empresas, id_bloque → bloques (obligatorio) |
 | aplicativos | nombre | id_empresa → empresas |
 | participantes | nombre, apellidos, correo, rol, fecha_ingreso, comentarios | id_grupo → grupos |
-| usuarios | nombre, correo, contrasena_hash, rol_app | id_empresa → empresas (NULL = usuario Chazey, ve todas), id_participante → participantes (NULL) |
+| usuarios | nombre, correo, contrasena_hash, rol_app | — (la empresa del consultor va en `usuario_empresa`; los participantes no son usuarios) |
+| usuario_empresa | fecha_inicio, fecha_fin (NULL mientras está activa), activa | id_usuario → usuarios, id_empresa → empresas |
 | accesos_solicitados | fecha_solicitud, fecha_otorgado (NULL), estado, comentarios | id_participante → participantes, id_aplicativo → aplicativos |
 | seguimientos | fecha_inicio, fecha_fin (propuesta de cierre), fecha_cierre, estado_actividad, documentacion, comentarios, responsable, experto, documentador, lider_transferencia, lider_transferencia_gbs | id_actividad → actividades, id_grupo → grupos, id_fase → fases |
 | sesiones | fecha, tema, modalidad, comentarios | id_seguimiento → seguimientos |
@@ -94,9 +95,19 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 | admin | Administrador | Todo: usuarios, catálogos (empresas, fases, bloques, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
 | consultor | Consultor | Seguimientos, sesiones, asistencia y avances de validación (crear, editar, consultar); catálogos solo lectura |
 
-- Los permisos se validan en el servidor con los Gates `administrar` (solo admin), `administrar-empresas` y `administrar-fases` (solo admin de Chazey, `id_empresa` NULL) y `dar-seguimiento` (admin y consultor), no solo ocultando botones.
-- Un usuario con empresa solo ve los datos de la suya; esto también se valida en el servidor.
+- Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla) y `dar-seguimiento` (admin y consultor), no solo ocultando botones.
+- El administrador siempre es de Chazey y ve todas las empresas (`Usuario::esChazey()`). No existen admins de empresa.
+- El consultor solo ve los datos de las empresas de su asignación activa (`Usuario::idsEmpresasVisibles()`); sin asignación activa no ve datos. Esto también se valida en el servidor.
 - Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión. Cerrar la sesión de quien ya estaba dentro queda para el módulo de usuarios.
+
+## Asignaciones de empresa
+
+- Solo el administrador gestiona las asignaciones. Solo los consultores se asignan; el admin no lleva asignaciones.
+- Toda asignación pasa por `App\Services\AsignadorDeEmpresas`, en transacción. No se borran: se cierran (`activa = 0`, `fecha_fin` = hoy).
+- Regla actual: un consultor tiene UNA asignación activa. Al asignarlo a otra empresa, la anterior se cierra. La regla vive solo en `AsignadorDeEmpresas::cerrarLasAnteriores()`; para permitir varias se quita esa llamada (la visibilidad ya trabaja con una lista de empresas).
+- `fecha_inicio` es hoy por defecto, editable por el admin para registrar asignaciones que empezaron antes; no puede ser futura. No se asigna a una empresa de baja ni a la misma empresa que ya está activa.
+- Los datos pertenecen a la empresa, no al usuario: la empresa de un seguimiento (y de sus sesiones, asistencias y avances) sale de su cadena `seguimiento → actividad → bloque → empresa`, nunca de la asignación del usuario. Al cambiar a un consultor de empresa, lo que capturó se queda en la empresa original.
+- La baja de una empresa se bloquea mientras tenga consultores activos con asignación activa a ella.
 
 ## Reglas de negocio
 

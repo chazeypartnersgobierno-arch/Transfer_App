@@ -32,11 +32,12 @@ class AppServiceProvider extends ServiceProvider
         // Usuarios, cambios en catálogos y carga desde Excel: solo admin.
         Gate::define('administrar', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin);
 
-        // Crear, editar, dar de baja y reactivar empresas: solo admin de Chazey.
-        Gate::define('administrar-empresas', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin && $usuario->esChazey());
+        // Crear, editar, dar de baja y reactivar empresas: solo admin (siempre es de Chazey).
+        // Hoy es la misma regla que "administrar"; se conserva el nombre por si vuelven a diferir.
+        Gate::define('administrar-empresas', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin);
 
-        // Cambiar el nombre de una fase: solo admin de Chazey, porque se ve en todas las empresas.
-        Gate::define('administrar-fases', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin && $usuario->esChazey());
+        // Cambiar el nombre de una fase: solo admin, porque se ve en todas las empresas.
+        Gate::define('administrar-fases', fn (Usuario $usuario) => $usuario->rol_app === RolApp::Admin);
 
         // Seguimientos, sesiones, asistencia y avances: admin y consultor.
         Gate::define('dar-seguimiento', fn (Usuario $usuario) => in_array(
