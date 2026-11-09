@@ -53,6 +53,14 @@
                     <li><x-menu-enlace ruta="aplicativos.index" activo-en="aplicativos.*" icono="aplicativo">Aplicativos</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="actividades.index" activo-en="actividades.*" icono="actividad">Actividades</x-menu-enlace></li>
                 </ul>
+
+                {{-- Solo para admin; la ruta también está protegida en el servidor. --}}
+                @can('administrar')
+                    <p class="menu-titulo">Administración</p>
+                    <ul class="menu-lista">
+                        <li><x-menu-enlace ruta="carga.index" activo-en="carga.*" icono="carga">Carga desde Excel</x-menu-enlace></li>
+                    </ul>
+                @endcan
             </div>
         </nav>
 

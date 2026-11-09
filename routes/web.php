@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\AplicativoController;
 use App\Http\Controllers\BloqueController;
+use App\Http\Controllers\CargaController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\FaseController;
 use App\Http\Controllers\GrupoController;
@@ -39,6 +40,9 @@ Route::middleware('auth')->group(function () {
 
     // Cambios en catálogos por empresa: solo admin. Quien no cumple el Gate recibe error 403.
     Route::middleware('can:administrar')->group(function () {
+        Route::get('/carga', [CargaController::class, 'index'])->name('carga.index');
+        Route::get('/carga/plantilla', [CargaController::class, 'plantilla'])->name('carga.plantilla');
+
         Route::get('/bloques/crear', [BloqueController::class, 'crear'])->name('bloques.crear');
         Route::post('/bloques', [BloqueController::class, 'guardar'])->name('bloques.guardar');
         Route::get('/bloques/{bloque}/editar', [BloqueController::class, 'editar'])->name('bloques.editar');

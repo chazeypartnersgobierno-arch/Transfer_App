@@ -606,6 +606,16 @@ body {
     padding: 1.5rem;
 }
 
+.tarjeta-titulo {
+    margin-bottom: .5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.texto-secundario {
+    color: var(--app-texto-secundario);
+}
+
 /* Texto de ayuda bajo una lista desplegable o un campo. */
 .ayuda-campo {
     margin: -.5rem 0 1rem;
