@@ -1,11 +1,13 @@
 {{--
     Editar un seguimiento. Actividad, grupo y fase quedan fijos.
-    Si el grupo o la actividad están de baja, la pantalla es solo de consulta.
+    Si el grupo o la actividad están de baja, o si su fase todavía no se habilita para el grupo
+    ($bloqueo, ver App\Services\AvanceDeFases), la pantalla es solo de consulta.
 --}}
 @extends('layouts.app')
 
 @php
-    $editable = $seguimiento->estaEnTrabajo();
+    $enTrabajo = $seguimiento->estaEnTrabajo();
+    $editable = $enTrabajo && $bloqueo === null;
     $titulo = $editable ? 'Editar seguimiento' : 'Consultar seguimiento';
     // A dónde volver: la lista con los filtros con los que se abrió esta pantalla.
     $lista = route('seguimientos.index');
@@ -23,9 +25,13 @@
         </div>
     </div>
 
-    @unless ($editable)
+    @unless ($enTrabajo)
         <x-alerta tipo="advertencia">El grupo o la actividad están dados de baja: este seguimiento solo se puede consultar.</x-alerta>
     @endunless
+
+    @if ($bloqueo)
+        <x-fase-bloqueada :mensaje="$bloqueo" />
+    @endif
 
     <div class="tarjeta tarjeta-formulario">
         <dl class="datos-fijos mb-3">
@@ -37,7 +43,10 @@
             @endif
             <div>
                 <dt>Grupo</dt>
-                <dd>{{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}</dd>
+                <dd>
+                    {{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}
+                    <a href="{{ route('grupos.fases', $seguimiento->grupo) }}" class="ms-1">Ver fases del grupo</a>
+                </dd>
             </div>
             <div>
                 <dt>Empresa</dt>

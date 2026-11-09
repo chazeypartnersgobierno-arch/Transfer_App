@@ -16,8 +16,8 @@ class FaseSeeder extends Seeder
         $fases = [
             ['nombre' => 'Onboarding', 'orden' => 1, 'tiene_sesiones' => true],
             ['nombre' => 'Transferencia', 'orden' => 2, 'tiene_sesiones' => true],
-            ['nombre' => 'Estabilización', 'orden' => 3, 'tiene_sesiones' => true],
-            ['nombre' => 'Validación', 'orden' => 4, 'tiene_sesiones' => false],
+            ['nombre' => 'Validación', 'orden' => 3, 'tiene_sesiones' => false],
+            ['nombre' => 'Estabilización', 'orden' => 4, 'tiene_sesiones' => true],
         ];
 
         foreach ($fases as $fase) {

@@ -8,6 +8,7 @@ use App\Http\Controllers\CargaController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\EquipoDeBloqueController;
 use App\Http\Controllers\FaseController;
+use App\Http\Controllers\FasesDelGrupoController;
 use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\SeguimientoController;
@@ -91,6 +92,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/seguimientos/{seguimiento}/sesiones', [SesionController::class, 'guardar'])->name('sesiones.guardar');
         Route::get('/sesiones/{sesion}/editar', [SesionController::class, 'editar'])->name('sesiones.editar');
         Route::put('/sesiones/{sesion}', [SesionController::class, 'actualizar'])->name('sesiones.actualizar');
+
+        // Fases del grupo en pestañas: avance secuencial (ver App\Services\AvanceDeFases).
+        Route::get('/grupos/{grupo}/fases', [FasesDelGrupoController::class, 'mostrar'])->name('grupos.fases');
 
         // Avances de validación (solo fases sin sesiones). No se borran: se corrigen editándolos.
         Route::get('/seguimientos/{seguimiento}/avances/crear', [AvanceValidacionController::class, 'crear'])->name('avances.crear');

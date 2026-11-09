@@ -670,6 +670,59 @@ body {
     gap: .25rem 1rem;
 }
 
+/* Avance secuencial de fases: pestañas, fase actual y aviso con candado */
+.pestanas-fases {
+    flex-wrap: nowrap;
+    overflow-x: auto; /* en teléfono las pestañas se recorren de lado, sin mover la página */
+    border-bottom-color: var(--app-borde);
+}
+
+.pestanas-fases .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    white-space: nowrap;
+}
+
+.pestanas-fases .nav-link svg {
+    flex: none;
+}
+
+/* La fase actual: borde superior del color principal, aunque no sea la pestaña abierta. */
+.pestanas-fases .nav-link.fase-actual {
+    box-shadow: inset 0 3px 0 var(--app-principal);
+    font-weight: 600;
+}
+
+.fase-actual-etiqueta {
+    background: var(--app-seleccion);
+    color: var(--app-texto);
+    font-weight: 600;
+}
+
+.pestanas-contenido {
+    padding: 1rem;
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.aviso-bloqueo {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+}
+
+.aviso-bloqueo svg {
+    flex: none;
+    margin-top: .125rem;
+}
+
+.fase-bloqueada-marca {
+    color: var(--app-advertencia);
+    vertical-align: -2px;
+}
+
 /* Vista previa de la carga desde Excel */
 .resumen-carga {
     display: grid;

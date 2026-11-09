@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
 use App\Models\Seguimiento;
+use App\Services\AvanceDeFases;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -87,9 +88,16 @@ class SeguimientoController extends Controller
 
         $estados = EstadoActividad::opciones() + [self::RETRASADO => self::RETRASADO];
 
+        // Seguimientos de la página cuya fase todavía no se habilita para su grupo (una consulta por grupo).
+        $avanceDeFases = app(AvanceDeFases::class);
+        $bloqueados = $seguimientos->getCollection()
+            ->filter(fn (Seguimiento $s) => ! $avanceDeFases->faseHabilitada($s->fase, $s->grupo))
+            ->pluck('id_seguimiento')
+            ->flip();
+
         return view('seguimientos.index', compact(
             'seguimientos', 'buscar', 'verBajas', 'idEmpresa', 'idBloque', 'idGrupo', 'idFase', 'estado',
-            'empresas', 'bloques', 'grupos', 'fases', 'estados'
+            'empresas', 'bloques', 'grupos', 'fases', 'estados', 'bloqueados'
         ));
     }
 
@@ -111,7 +119,11 @@ class SeguimientoController extends Controller
             'avances' => fn ($q) => $q->with('usuario')->orderByDesc('fecha_corte'),
         ]);
 
-        return view('seguimientos.formulario', ['seguimiento' => $seguimiento]);
+        return view('seguimientos.formulario', [
+            'seguimiento' => $seguimiento,
+            // Si su fase no está habilitada para el grupo, el mensaje con el candado (y solo se consulta).
+            'bloqueo' => app(AvanceDeFases::class)->bloqueoDe($seguimiento),
+        ]);
     }
 
     /**
@@ -123,6 +135,11 @@ class SeguimientoController extends Controller
         if (! $seguimiento->estaEnTrabajo()) {
             return redirect()->route('seguimientos.editar', $seguimiento)
                 ->with('error', 'Este seguimiento es de un grupo o una actividad dados de baja: solo se puede consultar.');
+        }
+
+        // La misma regla que en la pantalla: no se confía solo en la vista.
+        if ($bloqueo = app(AvanceDeFases::class)->bloqueoDe($seguimiento)) {
+            return redirect()->route('seguimientos.editar', $seguimiento)->with('error', $bloqueo);
         }
 
         $datos = $request->validate([
@@ -147,10 +164,21 @@ class SeguimientoController extends Controller
 
         $this->validarQueLasCapturasSigan($seguimiento, $datos);
 
+        $estabaCompleta = app(AvanceDeFases::class)->faseCompleta($seguimiento->fase, $seguimiento->grupo);
+
         $seguimiento->update($datos);
 
-        return redirect()->to($this->urlDeRegreso($request))
+        $respuesta = redirect()->to($this->urlDeRegreso($request))
             ->with('exito', "Se guardó el seguimiento de {$seguimiento->actividad->nombre} ({$seguimiento->grupo->nombre}, {$seguimiento->fase->nombre}).");
+
+        // Se permite reabrir una fase completa, pero se avisa: las fases siguientes vuelven a bloquearse.
+        // Un objeto nuevo, para calcular con el estado ya guardado.
+        if ($estabaCompleta && ! app(AvanceDeFases::class)->faseCompleta($seguimiento->fase, $seguimiento->grupo)) {
+            $respuesta->with('aviso', "{$seguimiento->fase->nombre} del grupo {$seguimiento->grupo->nombre} ya no está completa: "
+                .'las fases siguientes quedan bloqueadas hasta que se vuelva a completar. Lo ya capturado en ellas no se pierde.');
+        }
+
+        return $respuesta;
     }
 
     /**

@@ -45,8 +45,8 @@ class FaseTest extends TestCase
             [
                 ['Onboarding', 1, true],
                 ['Transferencia', 2, true],
-                ['Estabilización', 3, true],
-                ['Validación', 4, false],
+                ['Validación', 3, false],
+                ['Estabilización', 4, true],
             ],
             Fase::orderBy('orden')->get()->map(fn (Fase $f) => [$f->nombre, $f->orden, $f->tiene_sesiones])->all()
         );
@@ -77,7 +77,7 @@ class FaseTest extends TestCase
 
         $this->actingAs($this->usuario())->get('/fases')
             ->assertOk()
-            ->assertSeeInOrder(['Onboarding', 'Transferencia', 'Estabilización', 'Validación'])
+            ->assertSeeInOrder(['Onboarding', 'Transferencia', 'Validación', 'Estabilización'])
             ->assertSee('Editar');
     }
 
@@ -99,7 +99,7 @@ class FaseTest extends TestCase
 
     public function test_solo_cambia_el_nombre_aunque_envien_otros_datos(): void
     {
-        $fase = $this->fase(4);
+        $fase = $this->fase(3);
 
         $this->actingAs($this->usuario())->put("/fases/{$fase->id_fase}", [
             'nombre' => 'Cierre',
@@ -109,7 +109,7 @@ class FaseTest extends TestCase
 
         $fase->refresh();
         $this->assertSame('Cierre', $fase->nombre);
-        $this->assertSame(4, $fase->orden);
+        $this->assertSame(3, $fase->orden);
         $this->assertFalse($fase->tiene_sesiones);
     }
 

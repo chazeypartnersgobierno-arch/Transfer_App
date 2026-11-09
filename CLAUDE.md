@@ -1,7 +1,7 @@
 # Transfer_App
 
 App web para dar seguimiento a la transferencia del conocimiento (primer cliente: EPM; debe servir para otras empresas).
-Fases en orden: Onboarding → Transferencia → Estabilización → Validación.
+Fases en orden: Onboarding → Transferencia → Validación → Estabilización.
 
 ## Stack
 
@@ -100,8 +100,8 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 
 ## Reglas de negocio
 
-- Las fases son las mismas para todas las empresas. En la app solo se edita su nombre: no se agregan ni se quitan, y el orden y `tiene_sesiones` son fijos. La lógica usa `orden` y `tiene_sesiones`, nunca el nombre.
-- La fase va en el seguimiento, no en la actividad. El tipo de la actividad decide sus fases: Onboarding genera 1 seguimiento por grupo (fase de orden 1); Transición genera 3 por grupo (fases de orden 2, 3 y 4: Transferencia, Estabilización y Validación). Cada fase conserva sus reglas: Validación no tiene sesiones y lleva % esperado y real.
+- Las fases son las mismas para todas las empresas. En la app solo se edita su nombre: no se agregan ni se quitan, y el orden y `tiene_sesiones` son fijos. La lógica usa `orden` y `tiene_sesiones`, nunca el nombre. El orden se define solo en `fases.orden`: para cambiarlo se hace una migración de datos (como `2026_11_10_000001_poner_validacion_antes_de_estabilizacion`) y se actualiza `FaseSeeder`.
+- La fase va en el seguimiento, no en la actividad. El tipo de la actividad decide sus fases: Onboarding genera 1 seguimiento por grupo (fase de orden 1); Transición genera 3 por grupo (fases de orden 2, 3 y 4: Transferencia, Validación y Estabilización). Cada fase conserva sus reglas: Validación no tiene sesiones y lleva % esperado y real.
 - Toda actividad lleva un bloque real de su empresa, también las de Onboarding (cada bloque tiene su propio Onboarding). Se genera solo para los grupos de ese bloque. No existe la opción "Todos los bloques".
 - Las actividades se muestran en el orden en que se cargaron (por `id_actividad`); la carga las inserta en el orden del archivo.
 - Al crear una actividad, la app rechaza otra con la misma empresa, tipo, bloque, macroproceso, proceso, subproceso y nombre, aunque esté dada de baja. Al editar, empresa, tipo y bloque quedan fijos.
@@ -120,7 +120,11 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - El % actual de una actividad de Validación es su captura más reciente (la de fecha de corte mayor).
 - Los avances de validación se capturan un grupo (un seguimiento) a la vez. La fecha de corte debe estar entre la `fecha_inicio` y la `fecha_fin` del seguimiento (ambas incluidas) y no puede ser futura; sin las dos fechas no se registran avances. Un seguimiento con avances no puede quitar sus fechas ni cambiarlas dejando avances fuera.
 - No hay dos avances con la misma fecha de corte en un seguimiento: si ya existe, se avisa y se corrige editando el existente. Los avances no se borran: se corrigen editándolos, e `id_usuario` queda con quien hizo la última captura o corrección.
-- Un grupo terminó una fase cuando todos sus seguimientos de esa fase están en estado "Completada". Esto se calcula, no se guarda.
+- Un grupo terminó una fase cuando todos sus seguimientos en trabajo de esa fase están en estado "Completada". Esto se calcula, no se guarda. Una fase sin seguimientos cuenta como completa.
+- Avance secuencial (`App\Services\AvanceDeFases`): la primera fase siempre está habilitada; cada una de las demás se habilita para un grupo cuando todas las anteriores están completas para ese grupo. Cada grupo avanza por su cuenta, sin depender de los otros grupos del bloque.
+- En una fase no habilitada, sus seguimientos solo se consultan: no se editan, ni se crean o editan sesiones o avances. Se valida en el servidor y se muestra un aviso con candado que dice qué fase falta concluir y cuántas de sus actividades están terminadas. El equipo del bloque sí se edita.
+- Se permite reabrir una fase completa (pasar un seguimiento de Completada a otro estado), con un aviso: las fases siguientes vuelven a bloquearse y lo ya capturado en ellas queda intacto, solo de consulta.
+- La pantalla Fases del grupo muestra las fases en pestañas, en orden: completas con ✔, la actual resaltada y las bloqueadas deshabilitadas con candado. Una fase bloqueada no carga sus actividades.
 - Los datos se cargan desde Excel; después los usuarios solo dan seguimiento.
 
 ## Carga desde Excel

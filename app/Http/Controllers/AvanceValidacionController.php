@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AvanceValidacion;
 use App\Models\Seguimiento;
+use App\Services\AvanceDeFases;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 /**
  * Avances de validación de un seguimiento. Admin y consultor (Gate dar-seguimiento).
  *
- * - Solo en fases sin sesiones (tiene_sesiones = 0, es decir, Validación).
+ * - Solo en fases sin sesiones (tiene_sesiones = 0, es decir, Validación) y habilitadas para el grupo (ver AvanceDeFases).
  * - Se captura un grupo (un seguimiento) a la vez.
  * - La fecha de corte debe estar entre la fecha de inicio y la fecha fin del seguimiento y no puede ser futura.
  * - Una sola captura por seguimiento y fecha de corte: si ya existe, se corrige editando la existente.
@@ -28,7 +29,7 @@ class AvanceValidacionController extends Controller
             return redirect()->route('seguimientos.editar', $seguimiento)->with('error', $motivo);
         }
 
-        return view('avances.formulario', ['avance' => new AvanceValidacion, 'seguimiento' => $seguimiento]);
+        return view('avances.formulario', ['avance' => new AvanceValidacion, 'seguimiento' => $seguimiento, 'bloqueo' => null]);
     }
 
     public function guardar(Request $request, Seguimiento $seguimiento): RedirectResponse
@@ -52,7 +53,11 @@ class AvanceValidacionController extends Controller
     {
         $avance->load('usuario');
 
-        return view('avances.formulario', ['avance' => $avance, 'seguimiento' => $avance->seguimiento]);
+        return view('avances.formulario', [
+            'avance' => $avance,
+            'seguimiento' => $avance->seguimiento,
+            'bloqueo' => app(AvanceDeFases::class)->bloqueoDe($avance->seguimiento),
+        ]);
     }
 
     public function actualizar(Request $request, AvanceValidacion $avance): RedirectResponse
@@ -62,6 +67,10 @@ class AvanceValidacionController extends Controller
         if (! $seguimiento->estaEnTrabajo()) {
             return redirect()->route('avances.editar', $avance)
                 ->with('error', 'Este avance es de un grupo o una actividad dados de baja: solo se puede consultar.');
+        }
+
+        if ($bloqueo = app(AvanceDeFases::class)->bloqueoDe($seguimiento)) {
+            return redirect()->route('avances.editar', $avance)->with('error', $bloqueo);
         }
 
         if (! $seguimiento->tieneFechas()) {
@@ -90,6 +99,10 @@ class AvanceValidacionController extends Controller
 
         if (! $seguimiento->estaEnTrabajo()) {
             return 'Este seguimiento es de un grupo o una actividad dados de baja: solo se puede consultar.';
+        }
+
+        if ($bloqueo = app(AvanceDeFases::class)->bloqueoDe($seguimiento)) {
+            return $bloqueo;
         }
 
         if (! $seguimiento->tieneFechas()) {

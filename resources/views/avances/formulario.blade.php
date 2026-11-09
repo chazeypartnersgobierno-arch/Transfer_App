@@ -6,7 +6,9 @@
 
 @php
     $esNuevo = ! $avance->exists;
-    $editable = $seguimiento->estaEnTrabajo();
+    $enTrabajo = $seguimiento->estaEnTrabajo();
+    // $bloqueo: la fase todavía no se habilita para el grupo (ver App\Services\AvanceDeFases). Solo se consulta.
+    $editable = $enTrabajo && $bloqueo === null;
     $titulo = $esNuevo ? 'Nuevo avance' : ($editable ? 'Editar avance' : 'Consultar avance');
     // El calendario solo deja elegir fechas del seguimiento y nunca después de hoy. El servidor también lo valida.
     $maximo = $seguimiento->fecha_fin === null ? null : $seguimiento->fecha_fin->min(today());
@@ -23,9 +25,13 @@
         </div>
     </div>
 
-    @unless ($editable)
+    @unless ($enTrabajo)
         <x-alerta tipo="advertencia">El grupo o la actividad están dados de baja: este avance solo se puede consultar.</x-alerta>
     @endunless
+
+    @if ($bloqueo)
+        <x-fase-bloqueada :mensaje="$bloqueo" />
+    @endif
 
     @if ($existente)
         <x-alerta tipo="advertencia">Ya hay un avance con esa fecha de corte. <a href="{{ route('avances.editar', $existente) }}">Abrir el avance existente para corregirlo</a>.</x-alerta>

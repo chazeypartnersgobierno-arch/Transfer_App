@@ -7,7 +7,9 @@
 
 @php
     $esNueva = ! $sesion->exists;
-    $editable = $seguimiento->estaEnTrabajo();
+    $enTrabajo = $seguimiento->estaEnTrabajo();
+    // $bloqueo: la fase todavía no se habilita para el grupo (ver App\Services\AvanceDeFases). Solo se consulta.
+    $editable = $enTrabajo && $bloqueo === null;
     $titulo = $esNueva ? 'Nueva sesión' : ($editable ? 'Editar sesión' : 'Consultar sesión');
     $repetidas = session('repetidas', []);
     // Al crear, el grupo de origen viene elegido; después de un error, lo que se había elegido.
@@ -24,9 +26,13 @@
         </div>
     </div>
 
-    @unless ($editable)
+    @unless ($enTrabajo)
         <x-alerta tipo="advertencia">El grupo o la actividad están dados de baja: esta sesión solo se puede consultar.</x-alerta>
     @endunless
+
+    @if ($bloqueo)
+        <x-fase-bloqueada :mensaje="$bloqueo" />
+    @endif
 
     @if ($repetidas !== [])
         <x-alerta tipo="advertencia">
@@ -87,12 +93,17 @@
 
                     <div class="lista-grupos">
                         @foreach ($opciones as $opcion)
+                            {{-- Un grupo sin fechas o con la fase bloqueada aparece, pero no se puede elegir. --}}
+                            @php($sePuedeElegir = $opcion->tieneFechas() && ! isset($bloqueos[$opcion->id_seguimiento]))
                             <div class="form-check">
-                                <input id="grupo_{{ $opcion->id_seguimiento }}" type="checkbox" name="seguimientos[]" value="{{ $opcion->id_seguimiento }}" class="form-check-input" data-elegir-grupo @checked($opcion->tieneFechas() && $elegidos->contains($opcion->id_seguimiento)) @disabled(! $opcion->tieneFechas())>
+                                <input id="grupo_{{ $opcion->id_seguimiento }}" type="checkbox" name="seguimientos[]" value="{{ $opcion->id_seguimiento }}" class="form-check-input" data-elegir-grupo @checked($sePuedeElegir && $elegidos->contains($opcion->id_seguimiento)) @disabled(! $sePuedeElegir)>
                                 <label for="grupo_{{ $opcion->id_seguimiento }}" class="form-check-label">
                                     {{ $opcion->grupo->nombre }}
                                     <span class="texto-secundario">({{ $opcion->grupo->participantes->count() }} {{ $opcion->grupo->participantes->count() === 1 ? 'participante' : 'participantes' }})</span>
                                     <span class="d-block texto-secundario small">{{ ucfirst($opcion->rangoDeFechas()) }}</span>
+                                    @isset($bloqueos[$opcion->id_seguimiento])
+                                        <span class="d-block texto-secundario small"><x-icono nombre="candado" :tamano="14" /> {{ $bloqueos[$opcion->id_seguimiento] }}</span>
+                                    @endisset
                                 </label>
                             </div>
                         @endforeach

@@ -28,7 +28,7 @@ class AvanceValidacionTest extends TestCase
 
     private Actividad $actividad;
 
-    /** Seguimiento de la fase Validación (orden 4), del 1 al 31 de marzo de 2027. */
+    /** Seguimiento de la fase Validación (orden 3), del 1 al 31 de marzo de 2027. */
     private Seguimiento $seguimiento;
 
     private Usuario $admin;
@@ -67,7 +67,7 @@ class AvanceValidacionTest extends TestCase
         ]);
     }
 
-    private function seguimiento(int $orden = 4, array $extra = []): Seguimiento
+    private function seguimiento(int $orden = 3, array $extra = []): Seguimiento
     {
         return Seguimiento::create([
             'id_actividad' => $this->actividad->id_actividad,

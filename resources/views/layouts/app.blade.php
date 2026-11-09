@@ -80,6 +80,9 @@
                 @if (session('error'))
                     <x-alerta tipo="error">{{ session('error') }}</x-alerta>
                 @endif
+                @if (session('aviso'))
+                    <x-alerta tipo="advertencia">{{ session('aviso') }}</x-alerta>
+                @endif
 
                 @yield('contenido')
             </div>

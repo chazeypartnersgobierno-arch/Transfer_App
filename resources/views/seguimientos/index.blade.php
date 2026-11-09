@@ -90,6 +90,7 @@
                 <tbody>
                     @forelse ($seguimientos as $seguimiento)
                         @php($enTrabajo = $seguimiento->estaEnTrabajo())
+                        @php($bloqueado = $bloqueados->has($seguimiento->id_seguimiento))
                         <tr>
                             <td class="celda-titulo">
                                 {{ $seguimiento->actividad->nombre }}
@@ -97,11 +98,16 @@
                                     <div class="texto-secundario small">{{ $seguimiento->actividad->rutaDeProceso() }}</div>
                                 @endif
                             </td>
-                            <td class="celda-detalle" data-etiqueta="Grupo">{{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}</td>
+                            <td class="celda-detalle" data-etiqueta="Grupo"><a href="{{ route('grupos.fases', $seguimiento->grupo) }}" title="Ver las fases del grupo">{{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}</a></td>
                             @if (auth()->user()->esChazey())
                                 <td class="celda-detalle" data-etiqueta="Empresa">{{ $seguimiento->grupo->bloque->empresa->nombre }}</td>
                             @endif
-                            <td class="celda-detalle" data-etiqueta="Fase">{{ $seguimiento->fase->nombre }}</td>
+                            <td class="celda-detalle" data-etiqueta="Fase">
+                                {{ $seguimiento->fase->nombre }}
+                                @if ($bloqueado)
+                                    <span class="fase-bloqueada-marca" title="Fase bloqueada: falta concluir la fase anterior"><x-icono nombre="candado" :tamano="14" /><span class="visually-hidden">Bloqueada</span></span>
+                                @endif
+                            </td>
                             <td class="celda-detalle" data-etiqueta="Inicio">{{ $seguimiento->fecha_inicio?->format('d/m/Y') ?? '—' }}</td>
                             <td class="celda-detalle" data-etiqueta="Fin">{{ $seguimiento->fecha_fin?->format('d/m/Y') ?? '—' }}</td>
                             <td class="celda-estado">
@@ -118,7 +124,7 @@
                             @endif
                             <td class="celda-acciones">
                                 <div class="acciones">
-                                    <a href="{{ route('seguimientos.editar', $seguimiento) }}" class="btn btn-sm btn-outline-primary">{{ $enTrabajo ? 'Editar' : 'Consultar' }}</a>
+                                    <a href="{{ route('seguimientos.editar', $seguimiento) }}" class="btn btn-sm btn-outline-primary">{{ $enTrabajo && ! $bloqueado ? 'Editar' : 'Consultar' }}</a>
                                 </div>
                             </td>
                         </tr>

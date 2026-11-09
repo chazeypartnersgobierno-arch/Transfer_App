@@ -8,6 +8,7 @@ use App\Models\Participante;
 use App\Models\Seguimiento;
 use App\Models\Sesion;
 use App\Models\Usuario;
+use App\Services\AvanceDeFases;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ use Illuminate\View\View;
  *   grupo (por seguimiento), cada una con su propia asistencia, todo en una transacción.
  * - Las sesiones no se borran: se corrigen editándolas.
  * - Si ya hay una sesión con la misma fecha en el seguimiento, se avisa y se pide confirmación.
+ * - Solo en fases habilitadas para el grupo (la anterior debe estar completa, ver AvanceDeFases).
  *
  * La asistencia viaja en el formulario como asistencia[id_seguimiento][id_participante][asistio|comentarios].
  */
@@ -34,11 +36,16 @@ class SesionController extends Controller
             return redirect()->route('seguimientos.editar', $seguimiento)->with('error', $motivo);
         }
 
+        $opciones = $this->seguimientosParaElegir($request->user(), $seguimiento);
+
         return view('sesiones.formulario', [
             'sesion' => new Sesion,
             'seguimiento' => $seguimiento,
-            'opciones' => $this->seguimientosParaElegir($request->user(), $seguimiento),
+            'opciones' => $opciones,
             'asistencias' => collect(),
+            'bloqueo' => null,
+            // Grupos de la lista cuya fase todavía no se habilita: se muestran sin poder elegirlos.
+            'bloqueos' => $this->bloqueosDe($opciones),
         ]);
     }
 
@@ -59,6 +66,16 @@ class SesionController extends Controller
         ], $this->mensajes());
 
         $elegidos = $opciones->only(array_map('intval', $datos['seguimientos']));
+
+        // Cada grupo avanza por su cuenta: la fase debe estar habilitada en todos los elegidos.
+        $bloqueados = $this->bloqueosDe($elegidos);
+
+        if ($bloqueados !== []) {
+            throw ValidationException::withMessages([
+                'seguimientos' => 'La fase todavía no está habilitada para: '
+                    .$elegidos->only(array_keys($bloqueados))->map(fn (Seguimiento $s) => "{$s->grupo->nombre} ({$bloqueados[$s->id_seguimiento]})")->implode(' '),
+            ]);
+        }
 
         // Cada grupo tiene sus propias fechas: la sesión debe caer dentro de las de todos.
         $this->validarRango($datos['fecha'], $elegidos);
@@ -102,6 +119,8 @@ class SesionController extends Controller
             'seguimiento' => $seguimiento,
             'opciones' => new Collection([$seguimiento]),
             'asistencias' => $asistencias,
+            'bloqueo' => app(AvanceDeFases::class)->bloqueoDe($seguimiento),
+            'bloqueos' => [],
         ]);
     }
 
@@ -112,6 +131,10 @@ class SesionController extends Controller
         if (! $seguimiento->estaEnTrabajo()) {
             return redirect()->route('sesiones.editar', $sesion)
                 ->with('error', 'Esta sesión es de un grupo o una actividad dados de baja: solo se puede consultar.');
+        }
+
+        if ($bloqueo = app(AvanceDeFases::class)->bloqueoDe($seguimiento)) {
+            return redirect()->route('sesiones.editar', $sesion)->with('error', $bloqueo);
         }
 
         if (! $seguimiento->tieneFechas()) {
@@ -157,6 +180,10 @@ class SesionController extends Controller
             return 'Este seguimiento es de un grupo o una actividad dados de baja: solo se puede consultar.';
         }
 
+        if ($bloqueo = app(AvanceDeFases::class)->bloqueoDe($seguimiento)) {
+            return $bloqueo;
+        }
+
         if (! $seguimiento->tieneFechas()) {
             return 'Primero captura la fecha de inicio y la fecha fin del seguimiento: las sesiones deben quedar dentro de esas fechas.';
         }
@@ -184,6 +211,22 @@ class SesionController extends Controller
             ->get()
             ->sortBy(fn (Seguimiento $s) => [$s->id_seguimiento !== $seguimiento->id_seguimiento, $s->grupo->nombre])
             ->values();
+    }
+
+    /**
+     * Mensaje de bloqueo de cada seguimiento cuya fase no está habilitada para su grupo: id_seguimiento => mensaje.
+     *
+     * @param  \Illuminate\Support\Collection<int, Seguimiento>  $seguimientos
+     * @return array<int, string>
+     */
+    private function bloqueosDe(\Illuminate\Support\Collection $seguimientos): array
+    {
+        $avance = app(AvanceDeFases::class);
+
+        return $seguimientos
+            ->mapWithKeys(fn (Seguimiento $s) => [$s->id_seguimiento => $avance->bloqueoDe($s)])
+            ->filter()
+            ->all();
     }
 
     /**

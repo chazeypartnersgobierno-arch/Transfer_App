@@ -140,7 +140,7 @@ class SesionTest extends TestCase
 
     public function test_validacion_no_registra_sesiones(): void
     {
-        $validacion = $this->seguimiento($this->grupo1, 4);
+        $validacion = $this->seguimiento($this->grupo1, 3);
 
         $this->actingAs($this->admin)->get("/seguimientos/{$validacion->id_seguimiento}/editar")
             ->assertDontSee('Nueva sesión')
