@@ -94,7 +94,11 @@ class SesionController extends Controller
         // Todo o nada: si una sesión o asistencia falla, no queda ninguna.
         DB::transaction(function () use ($elegidos, $datos, $request) {
             foreach ($elegidos as $elegido) {
-                $sesion = Sesion::create([...$this->datosDeSesion($datos), 'id_seguimiento' => $elegido->id_seguimiento]);
+                $sesion = Sesion::create([
+                    ...$this->datosDeSesion($datos),
+                    'id_seguimiento' => $elegido->id_seguimiento,
+                    'id_usuario' => $request->user()->id_usuario,
+                ]);
                 $this->guardarAsistencia($sesion, $elegido->grupo->participantes, $request->input("asistencia.{$elegido->id_seguimiento}", []));
             }
         });
@@ -159,7 +163,8 @@ class SesionController extends Controller
         $participantes = $this->participantesDeLaSesion($sesion, $sesion->asistencias()->pluck('id_participante')->all());
 
         DB::transaction(function () use ($sesion, $datos, $participantes, $request, $seguimiento) {
-            $sesion->update($this->datosDeSesion($datos));
+            // id_usuario queda con quien hizo la última corrección.
+            $sesion->update([...$this->datosDeSesion($datos), 'id_usuario' => $request->user()->id_usuario]);
             $this->guardarAsistencia($sesion, $participantes, $request->input("asistencia.{$seguimiento->id_seguimiento}", []));
         });
 

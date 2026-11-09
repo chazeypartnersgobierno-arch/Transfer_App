@@ -22,7 +22,8 @@ class Sesion extends Model
 
     const UPDATED_AT = 'fecha_actualizacion';
 
-    protected $fillable = ['id_seguimiento', 'fecha', 'tema', 'modalidad', 'comentarios'];
+    // id_usuario: autor de la última captura o corrección (también de su asistencia).
+    protected $fillable = ['id_seguimiento', 'id_usuario', 'fecha', 'tema', 'modalidad', 'comentarios'];
 
     protected function casts(): array
     {
@@ -35,6 +36,14 @@ class Sesion extends Model
     public function seguimiento(): BelongsTo
     {
         return $this->belongsTo(Seguimiento::class, 'id_seguimiento', 'id_seguimiento');
+    }
+
+    /**
+     * Quien hizo la última captura o corrección. Puede ser NULL en sesiones anteriores a este dato.
+     */
+    public function autor(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'id_usuario', 'id_usuario');
     }
 
     public function asistencias(): HasMany

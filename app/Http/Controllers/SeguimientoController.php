@@ -110,8 +110,10 @@ class SeguimientoController extends Controller
             'actividad',
             'grupo.bloque.empresa',
             'fase',
-            // Cada sesión con cuántos registros de asistencia tiene y cuántos asistieron.
+            'autor',
+            // Cada sesión con su autor, cuántos registros de asistencia tiene y cuántos asistieron.
             'sesiones' => fn ($q) => $q
+                ->with('autor')
                 ->withCount(['asistencias', 'asistencias as asistentes_count' => fn ($a) => $a->where('asistio', true)])
                 ->orderByDesc('fecha')
                 ->orderByDesc('id_sesion'),
@@ -166,7 +168,8 @@ class SeguimientoController extends Controller
 
         $estabaCompleta = app(AvanceDeFases::class)->faseCompleta($seguimiento->fase, $seguimiento->grupo);
 
-        $seguimiento->update($datos);
+        // id_usuario queda con quien hizo la última captura o corrección.
+        $seguimiento->update([...$datos, 'id_usuario' => $request->user()->id_usuario]);
 
         $respuesta = redirect()->to($this->urlDeRegreso($request))
             ->with('exito', "Se guardó el seguimiento de {$seguimiento->actividad->nombre} ({$seguimiento->grupo->nombre}, {$seguimiento->fase->nombre}).");

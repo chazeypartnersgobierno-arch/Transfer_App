@@ -201,6 +201,11 @@ class AsignacionEmpresaTest extends TestCase
         $this->actingAs($otro)->get('/seguimientos')->assertSee('Conciliar UNO');
         $this->actingAs($this->usuario(RolApp::Admin))->get('/seguimientos')->assertSee('Conciliar UNO');
         $this->assertSame('Ana', $seguimiento->fresh()->experto);
+
+        // Su nombre sigue como autor de la captura.
+        $this->assertSame($consultor->id_usuario, $seguimiento->fresh()->id_usuario);
+        $this->actingAs($this->usuario(RolApp::Admin))->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")
+            ->assertSeeInOrder(['Última captura', 'Prueba']);
     }
 
     public function test_el_admin_ve_todas_las_empresas_sin_asignaciones(): void

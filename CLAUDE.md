@@ -49,8 +49,8 @@ Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`av
 | usuarios | nombre, correo, contrasena_hash, rol_app | — (la empresa del consultor va en `usuario_empresa`; los participantes no son usuarios) |
 | usuario_empresa | fecha_inicio, fecha_fin (NULL mientras está activa), activa | id_usuario → usuarios, id_empresa → empresas |
 | accesos_solicitados | fecha_solicitud, fecha_otorgado (NULL), estado, comentarios | id_participante → participantes, id_aplicativo → aplicativos |
-| seguimientos | fecha_inicio, fecha_fin (propuesta de cierre), fecha_cierre, estado_actividad, documentacion, comentarios, responsable, experto, documentador, lider_transferencia, lider_transferencia_gbs | id_actividad → actividades, id_grupo → grupos, id_fase → fases |
-| sesiones | fecha, tema, modalidad, comentarios | id_seguimiento → seguimientos |
+| seguimientos | fecha_inicio, fecha_fin (propuesta de cierre), fecha_cierre, estado_actividad, documentacion, comentarios, responsable, experto, documentador, lider_transferencia, lider_transferencia_gbs | id_actividad → actividades, id_grupo → grupos, id_fase → fases, id_usuario → usuarios (NULL, autor) |
+| sesiones | fecha, tema, modalidad, comentarios | id_seguimiento → seguimientos, id_usuario → usuarios (NULL, autor) |
 | asistencias | asistio, comentarios | id_sesion → sesiones, id_participante → participantes |
 | avances_validacion | fecha_corte, porcentaje_esperado, porcentaje_real, comentarios | id_seguimiento → seguimientos, id_usuario → usuarios |
 
@@ -98,7 +98,10 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla) y `dar-seguimiento` (admin y consultor), no solo ocultando botones.
 - El administrador siempre es de Chazey y ve todas las empresas (`Usuario::esChazey()`). No existen admins de empresa.
 - El consultor solo ve los datos de las empresas de su asignación activa (`Usuario::idsEmpresasVisibles()`); sin asignación activa no ve datos. Esto también se valida en el servidor.
-- Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión. Cerrar la sesión de quien ya estaba dentro queda para el módulo de usuarios.
+- Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión, y si ya estaba dentro sale en su siguiente clic (middleware `activo`, `App\Http\Middleware\UsuarioActivo`).
+- El correo del usuario se guarda en minúsculas y no se repite, aunque el otro esté de baja. La contraseña la pone el admin al crear (opcional al editar, mínimo 8 caracteres) y cada usuario la cambia en "Mi contraseña" escribiendo la actual.
+- Un admin no puede quitarse su propio rol ni darse de baja. Si un consultor pasa a admin, sus asignaciones se cierran; si un admin pasa a consultor, se le elige empresa en el mismo formulario.
+- Autor: `seguimientos.id_usuario` y `sesiones.id_usuario` guardan quien hizo la última captura o corrección (como en `avances_validacion`). La asistencia toma el autor de su sesión. Los seguimientos generados por la app quedan sin autor y la pantalla Equipo del bloque no cambia el autor.
 
 ## Asignaciones de empresa
 

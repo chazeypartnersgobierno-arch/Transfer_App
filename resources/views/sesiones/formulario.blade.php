@@ -23,6 +23,9 @@
         <div>
             <h1 class="pagina-titulo">{{ $titulo }}</h1>
             <p class="pagina-subtitulo">{{ $seguimiento->actividad->nombre }} · {{ $seguimiento->fase->nombre }}</p>
+            @if (! $esNueva && $sesion->autor)
+                <p class="texto-secundario mb-0">Última captura o corrección: {{ $sesion->autor->nombre }}.</p>
+            @endif
         </div>
     </div>
 

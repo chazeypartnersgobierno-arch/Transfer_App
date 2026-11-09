@@ -64,6 +64,10 @@
                 <dt>Fecha de cierre</dt>
                 <dd>{{ $seguimiento->fecha_cierre?->format('d/m/Y') ?? 'Se llena sola al pasar a Completada' }}</dd>
             </div>
+            <div>
+                <dt>Última captura</dt>
+                <dd>{{ $seguimiento->autor?->nombre ?? 'Nadie lo ha editado todavía' }}</dd>
+            </div>
         </dl>
 
         {{-- Equipo del bloque: igual en todos sus seguimientos, por eso aquí solo se muestra. --}}
@@ -153,6 +157,7 @@
                             <th scope="col">Tema</th>
                             <th scope="col">Modalidad</th>
                             <th scope="col">Asistencia</th>
+                            <th scope="col">Capturó</th>
                             <th scope="col" class="text-end">Acciones</th>
                         </tr>
                     </thead>
@@ -163,6 +168,7 @@
                                 <td class="celda-detalle" data-etiqueta="Tema">{{ $sesion->tema }}</td>
                                 <td class="celda-detalle" data-etiqueta="Modalidad">{{ $sesion->modalidad->value }}</td>
                                 <td class="celda-detalle" data-etiqueta="Asistencia">{{ $sesion->asistentes_count }} de {{ $sesion->asistencias_count }}</td>
+                                <td class="celda-detalle" data-etiqueta="Capturó">{{ $sesion->autor?->nombre ?? '—' }}</td>
                                 <td class="celda-acciones">
                                     <div class="acciones">
                                         <a href="{{ route('sesiones.editar', $sesion) }}" class="btn btn-sm btn-outline-primary">{{ $editable ? 'Editar' : 'Consultar' }}</a>
@@ -171,7 +177,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="tabla-vacia">Todavía no hay sesiones.</td>
+                                <td colspan="6" class="tabla-vacia">Todavía no hay sesiones.</td>
                             </tr>
                         @endforelse
                     </tbody>

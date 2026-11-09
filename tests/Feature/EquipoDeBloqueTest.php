@@ -141,8 +141,9 @@ class EquipoDeBloqueTest extends TestCase
             $this->assertSame(self::EQUIPO, $this->equipoDe($seguimiento));
         }
 
-        // El experto es individual y otro bloque no cambia.
+        // El experto es individual y otro bloque no cambia. El equipo no cuenta como captura: no hay autor.
         $this->assertSame('Experto propio', $propios[0]->fresh()->experto);
+        $this->assertNull($propios[0]->fresh()->id_usuario);
         $this->assertSame('No cambia', $deOtroBloque->fresh()->responsable);
         $this->assertNull($deOtroBloque->fresh()->documentador);
 

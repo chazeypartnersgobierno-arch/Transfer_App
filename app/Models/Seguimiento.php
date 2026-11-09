@@ -38,6 +38,7 @@ class Seguimiento extends Model
         'id_actividad',
         'id_grupo',
         'id_fase',
+        'id_usuario', // autor de la última captura o corrección
         'fecha_inicio',
         'fecha_fin', // fecha propuesta de cierre
         'estado_actividad',
@@ -81,6 +82,15 @@ class Seguimiento extends Model
     public function fase(): BelongsTo
     {
         return $this->belongsTo(Fase::class, 'id_fase', 'id_fase');
+    }
+
+    /**
+     * Quien hizo la última captura o corrección. NULL mientras nadie lo haya editado.
+     * El equipo del bloque no cuenta como captura: no cambia el autor.
+     */
+    public function autor(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'id_usuario', 'id_usuario');
     }
 
     public function actividad(): BelongsTo

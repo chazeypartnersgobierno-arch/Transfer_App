@@ -133,6 +133,7 @@ class SesionTest extends TestCase
         $this->crearSesion([], null, $consultor)->assertSessionHas('exito');
 
         $sesion = Sesion::sole();
+        $this->assertSame($consultor->id_usuario, $sesion->id_usuario); // queda como autor
         $this->actingAs($ajeno)->get("/sesiones/{$sesion->id_sesion}/editar")->assertNotFound();
         $this->actingAs($ajeno)->put("/sesiones/{$sesion->id_sesion}", $this->datos())->assertNotFound();
     }
@@ -348,6 +349,7 @@ class SesionTest extends TestCase
 
         $sesion->refresh();
         $this->assertSame('Tema corregido', $sesion->tema);
+        $this->assertSame($this->admin->id_usuario, $sesion->id_usuario); // autor de la última corrección
         $this->assertSame(Modalidad::Hibrida, $sesion->modalidad);
         $this->assertFalse(Asistencia::where('id_participante', $ana->id_participante)->sole()->asistio);
         $this->assertTrue(Asistencia::where('id_participante', $nuevo->id_participante)->sole()->asistio);
