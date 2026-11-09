@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Seguimiento extends Model
 {
@@ -98,7 +99,24 @@ class Seguimiento extends Model
     }
 
     /**
-     * Si ya tiene fecha de inicio y fecha fin. Sin las dos no se registran sesiones.
+     * Avances de validación (solo en la fase sin sesiones).
+     */
+    public function avances(): HasMany
+    {
+        return $this->hasMany(AvanceValidacion::class, 'id_seguimiento', 'id_seguimiento');
+    }
+
+    /**
+     * El % actual es la captura más reciente: el avance con la fecha de corte mayor.
+     * latestOfMany: Laravel trae solo ese avance, también al cargar muchos seguimientos.
+     */
+    public function avanceActual(): HasOne
+    {
+        return $this->hasOne(AvanceValidacion::class, 'id_seguimiento', 'id_seguimiento')->latestOfMany('fecha_corte');
+    }
+
+    /**
+     * Si ya tiene fecha de inicio y fecha fin. Sin las dos no se registran sesiones ni avances.
      */
     public function tieneFechas(): bool
     {

@@ -83,7 +83,7 @@
                         <th scope="col">Inicio</th>
                         <th scope="col">Fin</th>
                         <th scope="col">Estado</th>
-                        <th scope="col">Sesiones</th>
+                        <th scope="col">Sesiones / % actual</th>
                         <th scope="col" class="text-end">Acciones</th>
                     </tr>
                 </thead>
@@ -110,8 +110,12 @@
                                     <div class="texto-secundario small">Grupo o actividad de baja</div>
                                 @endunless
                             </td>
-                            {{-- Validación no tiene sesiones: registra avances. --}}
-                            <td class="celda-detalle" data-etiqueta="Sesiones">{{ $seguimiento->fase->tiene_sesiones ? $seguimiento->sesiones_count : '—' }}</td>
+                            {{-- Fases con sesiones: cuántas tiene. Validación: su % actual (la captura más reciente). --}}
+                            @if ($seguimiento->fase->tiene_sesiones)
+                                <td class="celda-detalle" data-etiqueta="Sesiones">{{ $seguimiento->sesiones_count }}</td>
+                            @else
+                                <td class="celda-detalle" data-etiqueta="% actual">{{ $seguimiento->avanceActual ? $seguimiento->avanceActual->porcentaje_real.' %' : '—' }}</td>
+                            @endif
                             <td class="celda-acciones">
                                 <div class="acciones">
                                     <a href="{{ route('seguimientos.editar', $seguimiento) }}" class="btn btn-sm btn-outline-primary">{{ $enTrabajo ? 'Editar' : 'Consultar' }}</a>

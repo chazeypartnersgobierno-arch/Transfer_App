@@ -117,7 +117,9 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - La fecha de una sesión debe estar entre la `fecha_inicio` y la `fecha_fin` de su seguimiento (ambas incluidas). Sin las dos fechas no se registran sesiones; con varios grupos, la fecha debe caber en las fechas de cada uno. Un seguimiento con sesiones no puede quitar sus fechas ni cambiarlas dejando sesiones fuera.
 - Las sesiones no se borran: se corrigen editándolas. Si ya hay una sesión con la misma fecha en ese seguimiento, se avisa y se pide confirmación antes de guardar.
 - La asistencia guarda un registro por participante activo del grupo (asistió sí o no; la casilla empieza sin marcar). Al editar aparecen también quienes entraron después y quienes ya tenían registro aunque estén de baja.
-- El % actual de una actividad de Validación es su captura más reciente.
+- El % actual de una actividad de Validación es su captura más reciente (la de fecha de corte mayor).
+- Los avances de validación se capturan un grupo (un seguimiento) a la vez. La fecha de corte debe estar entre la `fecha_inicio` y la `fecha_fin` del seguimiento (ambas incluidas) y no puede ser futura; sin las dos fechas no se registran avances. Un seguimiento con avances no puede quitar sus fechas ni cambiarlas dejando avances fuera.
+- No hay dos avances con la misma fecha de corte en un seguimiento: si ya existe, se avisa y se corrige editando el existente. Los avances no se borran: se corrigen editándolos, e `id_usuario` queda con quien hizo la última captura o corrección.
 - Un grupo terminó una fase cuando todos sus seguimientos de esa fase están en estado "Completada". Esto se calcula, no se guarda.
 - Los datos se cargan desde Excel; después los usuarios solo dan seguimiento.
 

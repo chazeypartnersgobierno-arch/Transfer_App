@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\AplicativoController;
+use App\Http\Controllers\AvanceValidacionController;
 use App\Http\Controllers\BloqueController;
 use App\Http\Controllers\CargaController;
 use App\Http\Controllers\EmpresaController;
@@ -90,6 +91,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/seguimientos/{seguimiento}/sesiones', [SesionController::class, 'guardar'])->name('sesiones.guardar');
         Route::get('/sesiones/{sesion}/editar', [SesionController::class, 'editar'])->name('sesiones.editar');
         Route::put('/sesiones/{sesion}', [SesionController::class, 'actualizar'])->name('sesiones.actualizar');
+
+        // Avances de validación (solo fases sin sesiones). No se borran: se corrigen editándolos.
+        Route::get('/seguimientos/{seguimiento}/avances/crear', [AvanceValidacionController::class, 'crear'])->name('avances.crear');
+        Route::post('/seguimientos/{seguimiento}/avances', [AvanceValidacionController::class, 'guardar'])->name('avances.guardar');
+        Route::get('/avances/{avance}/editar', [AvanceValidacionController::class, 'editar'])->name('avances.editar');
+        Route::put('/avances/{avance}', [AvanceValidacionController::class, 'actualizar'])->name('avances.actualizar');
 
         // Equipo del bloque: responsable, documentador y líderes, iguales en todo el bloque.
         Route::get('/seguimientos/bloques/{bloque}/equipo', [EquipoDeBloqueController::class, 'editar'])->name('seguimientos.equipo');

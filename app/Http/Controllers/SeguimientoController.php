@@ -67,6 +67,7 @@ class SeguimientoController extends Controller
         $seguimientos = Seguimiento::visiblePara($usuario)
             ->with(['actividad', 'grupo.bloque.empresa', 'fase']) // todo de una vez, sin una consulta por fila
             ->withCount('sesiones')
+            ->with('avanceActual') // el % actual de los de Validación
             // Por defecto, solo los de grupos y actividades activos.
             ->when(! $verBajas, fn ($consulta) => $consulta->enTrabajo())
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('actividad', fn ($q) => $q->where('id_empresa', $idEmpresa)))
@@ -106,6 +107,8 @@ class SeguimientoController extends Controller
                 ->withCount(['asistencias', 'asistencias as asistentes_count' => fn ($a) => $a->where('asistio', true)])
                 ->orderByDesc('fecha')
                 ->orderByDesc('id_sesion'),
+            // Avances de validación, el más reciente primero (ese es el % actual).
+            'avances' => fn ($q) => $q->with('usuario')->orderByDesc('fecha_corte'),
         ]);
 
         return view('seguimientos.formulario', ['seguimiento' => $seguimiento]);
@@ -142,7 +145,7 @@ class SeguimientoController extends Controller
             '*.max' => 'Este campo no puede tener más de 255 caracteres.',
         ]);
 
-        $this->validarQueLasSesionesSigan($seguimiento, $datos);
+        $this->validarQueLasCapturasSigan($seguimiento, $datos);
 
         $seguimiento->update($datos);
 
@@ -151,12 +154,16 @@ class SeguimientoController extends Controller
     }
 
     /**
-     * Las sesiones deben quedar dentro de la fecha de inicio y la fecha fin. Si el seguimiento
-     * ya tiene sesiones, no se pueden quitar sus fechas ni cambiarlas dejando sesiones fuera.
+     * Las sesiones y los avances de validación deben quedar dentro de la fecha de inicio y la fecha fin.
+     * Si el seguimiento ya tiene alguno, no se pueden quitar sus fechas ni cambiarlas dejándolos fuera.
      */
-    private function validarQueLasSesionesSigan(Seguimiento $seguimiento, array $datos): void
+    private function validarQueLasCapturasSigan(Seguimiento $seguimiento, array $datos): void
     {
-        $fechas = $seguimiento->sesiones()->orderBy('fecha')->pluck('fecha')->map(fn ($fecha) => Carbon::parse($fecha)->startOfDay());
+        $tieneSesiones = $seguimiento->tieneSesiones();
+        $nombre = $tieneSesiones ? 'sesiones' : 'avances';
+        $consulta = $tieneSesiones ? $seguimiento->sesiones() : $seguimiento->avances();
+        $columna = $tieneSesiones ? 'fecha' : 'fecha_corte';
+        $fechas = $consulta->orderBy($columna)->pluck($columna)->map(fn ($fecha) => Carbon::parse($fecha)->startOfDay());
 
         if ($fechas->isEmpty()) {
             return;
@@ -164,7 +171,7 @@ class SeguimientoController extends Controller
 
         if (empty($datos['fecha_inicio']) || empty($datos['fecha_fin'])) {
             throw ValidationException::withMessages([
-                'fecha_inicio' => 'No se pueden quitar las fechas: el seguimiento ya tiene sesiones.',
+                'fecha_inicio' => "No se pueden quitar las fechas: el seguimiento ya tiene {$nombre}.",
             ]);
         }
 
@@ -176,8 +183,11 @@ class SeguimientoController extends Controller
 
         if ($fuera->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'fecha_inicio' => 'Con estas fechas quedarían fuera sesiones ya registradas ('.$fuera->implode(', ').'). '
-                    .'Elige fechas que las incluyan o corrige primero esas sesiones.',
+                'fecha_inicio' => $tieneSesiones
+                    ? 'Con estas fechas quedarían fuera sesiones ya registradas ('.$fuera->implode(', ').'). '
+                        .'Elige fechas que las incluyan o corrige primero esas sesiones.'
+                    : 'Con estas fechas quedarían fuera avances ya registrados (cortes al '.$fuera->implode(', ').'). '
+                        .'Elige fechas que los incluyan o corrige primero esos avances.',
             ]);
         }
     }

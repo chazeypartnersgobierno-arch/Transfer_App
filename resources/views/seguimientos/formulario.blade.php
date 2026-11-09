@@ -118,7 +118,8 @@
             </div>
         </form>
     </div>
-{{-- Sesiones: solo en fases con tiene_sesiones = 1 (Validación registra avances). --}}
+
+    {{-- Sesiones: solo en fases con tiene_sesiones = 1. Las demás (Validación) registran avances. --}}
     @if ($seguimiento->tieneSesiones())
         <div class="tarjeta mt-3">
             <div class="asistencia-encabezado">
@@ -162,6 +163,62 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="tabla-vacia">Todavía no hay sesiones.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @else
+        {{-- Avances de validación: en las fases sin sesiones. El % actual es la captura más reciente. --}}
+        <div class="tarjeta mt-3">
+            <div class="asistencia-encabezado">
+                <h2 class="tarjeta-titulo mb-0">Avances de validación</h2>
+                @if ($editable && $seguimiento->tieneFechas())
+                    <a href="{{ route('avances.crear', $seguimiento) }}" class="btn btn-sm btn-primary">Nuevo avance</a>
+                @endif
+            </div>
+
+            @if ($editable && ! $seguimiento->tieneFechas())
+                <p class="texto-secundario px-3 mb-2">Para registrar avances, primero captura y guarda la fecha de inicio y la fecha fin de este seguimiento.</p>
+            @elseif ($seguimiento->tieneFechas())
+                <p class="texto-secundario px-3 mb-2">Las fechas de corte deben estar {{ $seguimiento->rangoDeFechas() }} y no pueden ser futuras.</p>
+            @endif
+
+            @if ($seguimiento->avances->isNotEmpty())
+                @php($actual = $seguimiento->avances->first())
+                <p class="px-3 mb-2"><strong>% actual: {{ $actual->porcentaje_real }} %</strong> <span class="texto-secundario">(esperado {{ $actual->porcentaje_esperado }} %, corte al {{ $actual->fecha_corte->format('d/m/Y') }})</span></p>
+            @endif
+
+            <div class="table-responsive">
+                <table class="table tabla-apilada">
+                    <thead>
+                        <tr>
+                            <th scope="col">Fecha de corte</th>
+                            <th scope="col">% esperado</th>
+                            <th scope="col">% real</th>
+                            <th scope="col">Capturó</th>
+                            <th scope="col">Comentarios</th>
+                            <th scope="col" class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($seguimiento->avances as $avance)
+                            <tr>
+                                <td class="celda-titulo">{{ $avance->fecha_corte->format('d/m/Y') }}</td>
+                                <td class="celda-detalle" data-etiqueta="% esperado">{{ $avance->porcentaje_esperado }} %</td>
+                                <td class="celda-detalle" data-etiqueta="% real">{{ $avance->porcentaje_real }} %</td>
+                                <td class="celda-detalle" data-etiqueta="Capturó">{{ $avance->usuario->nombre }}</td>
+                                <td class="celda-detalle" data-etiqueta="Comentarios">{{ \Illuminate\Support\Str::limit($avance->comentarios ?? '—', 80) }}</td>
+                                <td class="celda-acciones">
+                                    <div class="acciones">
+                                        <a href="{{ route('avances.editar', $avance) }}" class="btn btn-sm btn-outline-primary">{{ $editable ? 'Editar' : 'Consultar' }}</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="tabla-vacia">Todavía no hay avances.</td>
                             </tr>
                         @endforelse
                     </tbody>
