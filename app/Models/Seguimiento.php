@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Enums\EstadoActividad;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Seguimiento extends Model
 {
@@ -87,6 +90,46 @@ class Seguimiento extends Model
     public function grupo(): BelongsTo
     {
         return $this->belongsTo(Grupo::class, 'id_grupo', 'id_grupo');
+    }
+
+    public function sesiones(): HasMany
+    {
+        return $this->hasMany(Sesion::class, 'id_seguimiento', 'id_seguimiento');
+    }
+
+    /**
+     * Si ya tiene fecha de inicio y fecha fin. Sin las dos no se registran sesiones.
+     */
+    public function tieneFechas(): bool
+    {
+        return $this->fecha_inicio !== null && $this->fecha_fin !== null;
+    }
+
+    /**
+     * Si una fecha cae entre la fecha de inicio y la fecha fin (ambas incluidas).
+     */
+    public function fechaDentroDelRango(CarbonInterface|string $fecha): bool
+    {
+        return $this->tieneFechas()
+            && Carbon::parse($fecha)->startOfDay()->betweenIncluded($this->fecha_inicio, $this->fecha_fin);
+    }
+
+    /**
+     * Texto del rango, por ejemplo "del 01/03/2027 al 31/03/2027".
+     */
+    public function rangoDeFechas(): string
+    {
+        return $this->tieneFechas()
+            ? "del {$this->fecha_inicio->format('d/m/Y')} al {$this->fecha_fin->format('d/m/Y')}"
+            : 'sin fechas';
+    }
+
+    /**
+     * Si su fase registra sesiones y asistencia (tiene_sesiones = 1). Validación no.
+     */
+    public function tieneSesiones(): bool
+    {
+        return $this->fase->tiene_sesiones;
     }
 
     /**

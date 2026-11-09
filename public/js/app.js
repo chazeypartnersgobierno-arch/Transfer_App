@@ -28,6 +28,38 @@ document.querySelectorAll('form[data-formulario-actividad]').forEach((formulario
     actualizar();
 });
 
+// Asistencia: botones para marcar o desmarcar a todos los de un grupo.
+document.querySelectorAll('[data-asistencia]').forEach((seccion) => {
+    const botones = seccion.querySelector('[data-botones-marcar]');
+
+    if (!botones) {
+        return;
+    }
+
+    botones.hidden = false;
+    botones.querySelectorAll('[data-marcar]').forEach((boton) => {
+        boton.addEventListener('click', () => {
+            seccion.querySelectorAll('input[data-asistio]:not(:disabled)').forEach((casilla) => {
+                casilla.checked = boton.dataset.marcar === '1';
+            });
+        });
+    });
+});
+
+// Nueva sesión: solo se ve la asistencia de los grupos elegidos.
+// Es solo una ayuda: el servidor ignora la asistencia de los grupos no elegidos.
+document.querySelectorAll('[data-elegir-grupo]').forEach((casilla) => {
+    const seccion = document.querySelector('[data-asistencia="' + casilla.value + '"]');
+    const actualizar = () => {
+        if (seccion) {
+            seccion.hidden = !casilla.checked;
+        }
+    };
+
+    casilla.addEventListener('change', actualizar);
+    actualizar();
+});
+
 // Botón para ver u ocultar la contraseña.
 document.querySelectorAll('[data-ver-clave]').forEach((boton) => {
     const campo = boton.parentElement.querySelector('input');

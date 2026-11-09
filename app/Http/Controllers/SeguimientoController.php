@@ -10,7 +10,9 @@ use App\Models\Grupo;
 use App\Models\Seguimiento;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -64,6 +66,7 @@ class SeguimientoController extends Controller
 
         $seguimientos = Seguimiento::visiblePara($usuario)
             ->with(['actividad', 'grupo.bloque.empresa', 'fase']) // todo de una vez, sin una consulta por fila
+            ->withCount('sesiones')
             // Por defecto, solo los de grupos y actividades activos.
             ->when(! $verBajas, fn ($consulta) => $consulta->enTrabajo())
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('actividad', fn ($q) => $q->where('id_empresa', $idEmpresa)))
@@ -94,7 +97,16 @@ class SeguimientoController extends Controller
      */
     public function editar(Seguimiento $seguimiento): View
     {
-        $seguimiento->load(['actividad', 'grupo.bloque.empresa', 'fase']);
+        $seguimiento->load([
+            'actividad',
+            'grupo.bloque.empresa',
+            'fase',
+            // Cada sesión con cuántos registros de asistencia tiene y cuántos asistieron.
+            'sesiones' => fn ($q) => $q
+                ->withCount(['asistencias', 'asistencias as asistentes_count' => fn ($a) => $a->where('asistio', true)])
+                ->orderByDesc('fecha')
+                ->orderByDesc('id_sesion'),
+        ]);
 
         return view('seguimientos.formulario', ['seguimiento' => $seguimiento]);
     }
@@ -130,10 +142,44 @@ class SeguimientoController extends Controller
             '*.max' => 'Este campo no puede tener más de 255 caracteres.',
         ]);
 
+        $this->validarQueLasSesionesSigan($seguimiento, $datos);
+
         $seguimiento->update($datos);
 
         return redirect()->to($this->urlDeRegreso($request))
             ->with('exito', "Se guardó el seguimiento de {$seguimiento->actividad->nombre} ({$seguimiento->grupo->nombre}, {$seguimiento->fase->nombre}).");
+    }
+
+    /**
+     * Las sesiones deben quedar dentro de la fecha de inicio y la fecha fin. Si el seguimiento
+     * ya tiene sesiones, no se pueden quitar sus fechas ni cambiarlas dejando sesiones fuera.
+     */
+    private function validarQueLasSesionesSigan(Seguimiento $seguimiento, array $datos): void
+    {
+        $fechas = $seguimiento->sesiones()->orderBy('fecha')->pluck('fecha')->map(fn ($fecha) => Carbon::parse($fecha)->startOfDay());
+
+        if ($fechas->isEmpty()) {
+            return;
+        }
+
+        if (empty($datos['fecha_inicio']) || empty($datos['fecha_fin'])) {
+            throw ValidationException::withMessages([
+                'fecha_inicio' => 'No se pueden quitar las fechas: el seguimiento ya tiene sesiones.',
+            ]);
+        }
+
+        $inicio = Carbon::parse($datos['fecha_inicio'])->startOfDay();
+        $fin = Carbon::parse($datos['fecha_fin'])->startOfDay();
+        $fuera = $fechas->reject(fn ($fecha) => $fecha->betweenIncluded($inicio, $fin))
+            ->map(fn ($fecha) => $fecha->format('d/m/Y'))
+            ->unique();
+
+        if ($fuera->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'fecha_inicio' => 'Con estas fechas quedarían fuera sesiones ya registradas ('.$fuera->implode(', ').'). '
+                    .'Elige fechas que las incluyan o corrige primero esas sesiones.',
+            ]);
+        }
     }
 
     /**

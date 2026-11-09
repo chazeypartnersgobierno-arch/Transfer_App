@@ -118,4 +118,55 @@
             </div>
         </form>
     </div>
+{{-- Sesiones: solo en fases con tiene_sesiones = 1 (Validación registra avances). --}}
+    @if ($seguimiento->tieneSesiones())
+        <div class="tarjeta mt-3">
+            <div class="asistencia-encabezado">
+                <h2 class="tarjeta-titulo mb-0">Sesiones</h2>
+                @if ($editable && $seguimiento->tieneFechas())
+                    <a href="{{ route('sesiones.crear', $seguimiento) }}" class="btn btn-sm btn-primary">Nueva sesión</a>
+                @endif
+            </div>
+
+            {{-- Las sesiones deben quedar dentro de las fechas del seguimiento. --}}
+            @if ($editable && ! $seguimiento->tieneFechas())
+                <p class="texto-secundario px-3 mb-2">Para registrar sesiones, primero captura y guarda la fecha de inicio y la fecha fin de este seguimiento.</p>
+            @elseif ($seguimiento->tieneFechas())
+                <p class="texto-secundario px-3 mb-2">Las sesiones deben estar {{ $seguimiento->rangoDeFechas() }}.</p>
+            @endif
+
+            <div class="table-responsive">
+                <table class="table tabla-apilada">
+                    <thead>
+                        <tr>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Tema</th>
+                            <th scope="col">Modalidad</th>
+                            <th scope="col">Asistencia</th>
+                            <th scope="col" class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($seguimiento->sesiones as $sesion)
+                            <tr>
+                                <td class="celda-titulo">{{ $sesion->fecha->format('d/m/Y') }}</td>
+                                <td class="celda-detalle" data-etiqueta="Tema">{{ $sesion->tema }}</td>
+                                <td class="celda-detalle" data-etiqueta="Modalidad">{{ $sesion->modalidad->value }}</td>
+                                <td class="celda-detalle" data-etiqueta="Asistencia">{{ $sesion->asistentes_count }} de {{ $sesion->asistencias_count }}</td>
+                                <td class="celda-acciones">
+                                    <div class="acciones">
+                                        <a href="{{ route('sesiones.editar', $sesion) }}" class="btn btn-sm btn-outline-primary">{{ $editable ? 'Editar' : 'Consultar' }}</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="tabla-vacia">Todavía no hay sesiones.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 @endsection

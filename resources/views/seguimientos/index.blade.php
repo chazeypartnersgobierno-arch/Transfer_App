@@ -83,6 +83,7 @@
                         <th scope="col">Inicio</th>
                         <th scope="col">Fin</th>
                         <th scope="col">Estado</th>
+                        <th scope="col">Sesiones</th>
                         <th scope="col" class="text-end">Acciones</th>
                     </tr>
                 </thead>
@@ -109,6 +110,8 @@
                                     <div class="texto-secundario small">Grupo o actividad de baja</div>
                                 @endunless
                             </td>
+                            {{-- Validación no tiene sesiones: registra avances. --}}
+                            <td class="celda-detalle" data-etiqueta="Sesiones">{{ $seguimiento->fase->tiene_sesiones ? $seguimiento->sesiones_count : '—' }}</td>
                             <td class="celda-acciones">
                                 <div class="acciones">
                                     <a href="{{ route('seguimientos.editar', $seguimiento) }}" class="btn btn-sm btn-outline-primary">{{ $enTrabajo ? 'Editar' : 'Consultar' }}</a>
@@ -117,7 +120,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="tabla-vacia">No hay seguimientos para mostrar.</td>
+                            <td colspan="9" class="tabla-vacia">No hay seguimientos para mostrar.</td>
                         </tr>
                     @endforelse
                 </tbody>

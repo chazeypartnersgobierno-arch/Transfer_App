@@ -113,6 +113,10 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Los seguimientos no bloquean la baja de un grupo o de una actividad y quedan intactos. Antes de la baja se muestra cuántos tiene y se pide confirmación.
 - Mientras el grupo o la actividad estén de baja, sus seguimientos no aparecen en las listas de trabajo ni cuentan en los porcentajes de avance (`Seguimiento::enTrabajo()`), pero se pueden consultar con un filtro.
 - Fases con `tiene_sesiones = 1` registran sesiones y asistencia. Validación no tiene sesiones: registra avances por fecha en `avances_validacion`.
+- Una sesión se captura una vez y se eligen uno o varios grupos (seguimientos de la misma actividad y fase, en trabajo): la app crea una sesión por grupo con su propia asistencia, en una transacción. Después, cada sesión se edita por separado.
+- La fecha de una sesión debe estar entre la `fecha_inicio` y la `fecha_fin` de su seguimiento (ambas incluidas). Sin las dos fechas no se registran sesiones; con varios grupos, la fecha debe caber en las fechas de cada uno. Un seguimiento con sesiones no puede quitar sus fechas ni cambiarlas dejando sesiones fuera.
+- Las sesiones no se borran: se corrigen editándolas. Si ya hay una sesión con la misma fecha en ese seguimiento, se avisa y se pide confirmación antes de guardar.
+- La asistencia guarda un registro por participante activo del grupo (asistió sí o no; la casilla empieza sin marcar). Al editar aparecen también quienes entraron después y quienes ya tenían registro aunque estén de baja.
 - El % actual de una actividad de Validación es su captura más reciente.
 - Un grupo terminó una fase cuando todos sus seguimientos de esa fase están en estado "Completada". Esto se calcula, no se guarda.
 - Los datos se cargan desde Excel; después los usuarios solo dan seguimiento.

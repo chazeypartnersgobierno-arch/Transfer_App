@@ -36,6 +36,11 @@ class Grupo extends Model
         return $this->hasMany(Seguimiento::class, 'id_grupo', 'id_grupo');
     }
 
+    public function participantes(): HasMany
+    {
+        return $this->hasMany(Participante::class, 'id_grupo', 'id_grupo');
+    }
+
     /**
      * Un grupo no tiene id_empresa: su empresa es la de su bloque.
      * Chazey ve todos; los demás, solo los de su empresa.

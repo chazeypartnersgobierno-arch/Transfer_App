@@ -654,6 +654,22 @@ body {
     margin-bottom: .75rem;
 }
 
+/* Sesiones y asistencia */
+.asistencia-encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: 1rem 1rem .5rem;
+}
+
+.lista-grupos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: .25rem 1rem;
+}
+
 /* Vista previa de la carga desde Excel */
 .resumen-carga {
     display: grid;

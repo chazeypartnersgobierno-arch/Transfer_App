@@ -10,6 +10,7 @@ use App\Http\Controllers\FaseController;
 use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\SeguimientoController;
+use App\Http\Controllers\SesionController;
 use Illuminate\Support\Facades\Route;
 
 // Solo para quien NO ha iniciado sesión.
@@ -83,6 +84,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/seguimientos', [SeguimientoController::class, 'index'])->name('seguimientos.index');
         Route::get('/seguimientos/{seguimiento}/editar', [SeguimientoController::class, 'editar'])->name('seguimientos.editar');
         Route::put('/seguimientos/{seguimiento}', [SeguimientoController::class, 'actualizar'])->name('seguimientos.actualizar');
+
+        // Sesiones y asistencia (solo fases con sesiones). No se borran: se corrigen editándolas.
+        Route::get('/seguimientos/{seguimiento}/sesiones/crear', [SesionController::class, 'crear'])->name('sesiones.crear');
+        Route::post('/seguimientos/{seguimiento}/sesiones', [SesionController::class, 'guardar'])->name('sesiones.guardar');
+        Route::get('/sesiones/{sesion}/editar', [SesionController::class, 'editar'])->name('sesiones.editar');
+        Route::put('/sesiones/{sesion}', [SesionController::class, 'actualizar'])->name('sesiones.actualizar');
 
         // Equipo del bloque: responsable, documentador y líderes, iguales en todo el bloque.
         Route::get('/seguimientos/bloques/{bloque}/equipo', [EquipoDeBloqueController::class, 'editar'])->name('seguimientos.equipo');
