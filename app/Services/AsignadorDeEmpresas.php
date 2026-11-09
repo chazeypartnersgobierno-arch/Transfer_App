@@ -48,7 +48,7 @@ class AsignadorDeEmpresas
                 throw ValidationException::withMessages(['fecha_inicio' => 'La fecha de inicio no puede ser futura.']);
             }
 
-            $this->cerrarLasAnteriores($usuario);
+            $this->cerrarLasAnteriores($usuario, $fechaInicio);
 
             return $usuario->asignaciones()->create([
                 'id_empresa' => $empresa->id_empresa,
@@ -59,7 +59,7 @@ class AsignadorDeEmpresas
     }
 
     /**
-     * Cierra una asignación sin abrir otra: el consultor queda sin empresa.
+     * Cierra una asignación sin abrir otra: el consultor queda sin empresa (fecha_fin = hoy).
      */
     public function cerrar(AsignacionEmpresa $asignacion): void
     {
@@ -69,7 +69,7 @@ class AsignadorDeEmpresas
     }
 
     /**
-     * Cierra todas las asignaciones activas del usuario (por ejemplo, al pasar a admin).
+     * Cierra todas las asignaciones activas del usuario con fecha de hoy (por ejemplo, al pasar a admin).
      */
     public function cerrarTodas(Usuario $usuario): void
     {
@@ -78,9 +78,23 @@ class AsignadorDeEmpresas
 
     /**
      * REGLA: una sola asignación activa por consultor. Quitar esta llamada permite varias.
+     *
+     * La anterior se cierra un día antes de que empiece la nueva, para que los periodos
+     * no se traslapen aunque la nueva se registre con una fecha pasada. Por eso la nueva
+     * debe empezar después de que empezó la anterior.
      */
-    private function cerrarLasAnteriores(Usuario $usuario): void
+    private function cerrarLasAnteriores(Usuario $usuario, CarbonInterface $fechaInicio): void
     {
-        $this->cerrarTodas($usuario);
+        $fechaFin = $fechaInicio->toImmutable()->subDay();
+
+        foreach ($usuario->asignaciones()->activas()->with('empresa')->get() as $anterior) {
+            if ($anterior->fecha_inicio->greaterThan($fechaFin)) {
+                throw ValidationException::withMessages(['fecha_inicio' => 'La fecha de inicio debe ser posterior al '
+                    .$anterior->fecha_inicio->format('d/m/Y').", cuando empezó su asignación con {$anterior->empresa->nombre}: "
+                    .'esa asignación se cierra un día antes de la nueva.']);
+            }
+
+            $anterior->update(['activa' => false, 'fecha_fin' => $fechaFin->toDateString()]);
+        }
     }
 }

@@ -29,7 +29,8 @@
         @if ($activas->isNotEmpty())
             <p class="texto-secundario">
                 Un consultor trabaja con una sola empresa a la vez: al asignarlo, se cierra su asignación con
-                {{ $activas->pluck('empresa.nombre')->implode(', ') }} (con fecha de fin de hoy).
+                {{ $activas->pluck('empresa.nombre')->implode(', ') }}, que termina un día antes de la fecha de inicio que elijas
+                (por eso esa fecha debe ser posterior al {{ $activas->max('fecha_inicio')->format('d/m/Y') }}).
                 Lo que ya capturó se queda en esa empresa.
             </p>
         @endif

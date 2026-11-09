@@ -27,7 +27,8 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * Asigna un consultor a una empresa (asignación activa desde hoy). Sin empresa no hace nada:
+     * Asigna un consultor a una empresa (activa desde hace un mes, para que las pruebas
+     * puedan reasignarlo con fecha de hoy). Sin empresa no hace nada:
      * el consultor queda sin asignación y no ve datos; el admin no lleva asignaciones.
      */
     protected function asignarEmpresa(Usuario $usuario, ?Empresa $empresa): Usuario
@@ -42,7 +43,7 @@ abstract class TestCase extends BaseTestCase
 
         $usuario->asignaciones()->create([
             'id_empresa' => $empresa->id_empresa,
-            'fecha_inicio' => today()->toDateString(),
+            'fecha_inicio' => today()->subMonth()->toDateString(),
             'activa' => true,
         ]);
 

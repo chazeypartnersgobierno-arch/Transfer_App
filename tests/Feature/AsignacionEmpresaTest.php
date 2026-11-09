@@ -109,14 +109,49 @@ class AsignacionEmpresaTest extends TestCase
         $anterior = $this->asignador->asignar($consultor, $primera, today()->subMonth());
         $this->asignador->asignar($consultor, $segunda, today());
 
+        // La anterior termina un día antes de que empiece la nueva.
         $anterior->refresh();
         $this->assertFalse($anterior->activa);
-        $this->assertSame(today()->toDateString(), $anterior->fecha_fin->toDateString());
+        $this->assertSame(today()->subDay()->toDateString(), $anterior->fecha_fin->toDateString());
 
         // Solo una activa, y el historial se conserva.
         $this->assertSame(1, $consultor->asignaciones()->activas()->count());
         $this->assertSame(2, $consultor->asignaciones()->count());
         $this->assertSame([$segunda->id_empresa], $consultor->idsEmpresasVisibles());
+    }
+
+    public function test_con_fecha_pasada_la_anterior_se_cierra_un_dia_antes_de_la_nueva(): void
+    {
+        $consultor = $this->usuario();
+        $anterior = $this->asignador->asignar($consultor, $this->empresa('UNO'), today()->parse('2026-09-01'));
+
+        // Se registra hoy un cambio que en realidad ocurrió el 01/11/2026.
+        $nueva = $this->asignador->asignar($consultor, $this->empresa('DOS'), today()->parse('2026-11-01'));
+
+        $this->assertSame('2026-10-31', $anterior->fresh()->fecha_fin->toDateString());
+        $this->assertSame('2026-11-01', $nueva->fecha_inicio->toDateString());
+        $this->assertNull($nueva->fecha_fin);
+    }
+
+    public function test_la_nueva_debe_empezar_despues_que_la_anterior(): void
+    {
+        $consultor = $this->usuario();
+        $anterior = $this->asignador->asignar($consultor, $this->empresa('UNO'), today()->parse('2026-09-01'));
+        $mensaje = 'La fecha de inicio debe ser posterior al 01/09/2026, cuando empezó su asignación con Empresa UNO: '
+            .'esa asignación se cierra un día antes de la nueva.';
+
+        // El mismo día o antes dejaría a la anterior terminando antes de empezar.
+        $this->assertSame($mensaje, $this->errorAlAsignar($consultor, $this->empresa('DOS'), '2026-09-01'));
+        $this->assertSame($mensaje, $this->errorAlAsignar($consultor, $this->empresa('TRES'), '2026-08-15'));
+
+        // Nada cambió: la anterior sigue activa y no se creó otra.
+        $this->assertTrue($anterior->fresh()->activa);
+        $this->assertNull($anterior->fresh()->fecha_fin);
+        $this->assertSame(1, AsignacionEmpresa::count());
+
+        // Un día después ya se puede: la anterior queda de un solo día (empieza y termina el 01/09).
+        $this->assertNull($this->errorAlAsignar($consultor, $this->empresa('CUA'), '2026-09-02'));
+        $this->assertSame('2026-09-01', $anterior->fresh()->fecha_fin->toDateString());
     }
 
     public function test_rechaza_lo_que_no_se_puede_asignar(): void
@@ -177,7 +212,7 @@ class AsignacionEmpresaTest extends TestCase
         $dos = $this->empresa('DOS');
         $seguimiento = $this->seguimiento($uno, 'Conciliar UNO');
         $consultor = $this->usuario();
-        $this->asignador->asignar($consultor, $uno, today());
+        $this->asignador->asignar($consultor, $uno, today()->subMonth());
 
         $this->actingAs($consultor)->put("/seguimientos/{$seguimiento->id_seguimiento}", [
             'fecha_inicio' => '2027-01-10',

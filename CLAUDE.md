@@ -106,8 +106,8 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 ## Asignaciones de empresa
 
 - Solo el administrador gestiona las asignaciones. Solo los consultores se asignan; el admin no lleva asignaciones.
-- Toda asignación pasa por `App\Services\AsignadorDeEmpresas`, en transacción. No se borran: se cierran (`activa = 0`, `fecha_fin` = hoy).
-- Regla actual: un consultor tiene UNA asignación activa. Al asignarlo a otra empresa, la anterior se cierra. La regla vive solo en `AsignadorDeEmpresas::cerrarLasAnteriores()`; para permitir varias se quita esa llamada (la visibilidad ya trabaja con una lista de empresas).
+- Toda asignación pasa por `App\Services\AsignadorDeEmpresas`, en transacción. No se borran: se cierran (`activa = 0` y `fecha_fin`).
+- Regla actual: un consultor tiene UNA asignación activa. Al asignarlo a otra empresa, la anterior se cierra un día antes de la `fecha_inicio` de la nueva (así los periodos no se traslapan aunque se registre con fecha pasada); por eso la nueva debe empezar después de la anterior. Cerrar una asignación sin abrir otra, o pasar el consultor a admin, la cierra con fecha de hoy. La regla vive solo en `AsignadorDeEmpresas::cerrarLasAnteriores()`; para permitir varias se quita esa llamada (la visibilidad ya trabaja con una lista de empresas).
 - `fecha_inicio` es hoy por defecto, editable por el admin para registrar asignaciones que empezaron antes; no puede ser futura. No se asigna a una empresa de baja ni a la misma empresa que ya está activa.
 - Los datos pertenecen a la empresa, no al usuario: la empresa de un seguimiento (y de sus sesiones, asistencias y avances) sale de su cadena `seguimiento → actividad → bloque → empresa`, nunca de la asignación del usuario. Al cambiar a un consultor de empresa, lo que capturó se queda en la empresa original.
 - La baja de una empresa se bloquea mientras tenga consultores activos con asignación activa a ella.
