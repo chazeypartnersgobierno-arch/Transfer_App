@@ -5,9 +5,11 @@ use App\Http\Controllers\AplicativoController;
 use App\Http\Controllers\BloqueController;
 use App\Http\Controllers\CargaController;
 use App\Http\Controllers\EmpresaController;
+use App\Http\Controllers\EquipoDeBloqueController;
 use App\Http\Controllers\FaseController;
 use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\SeguimientoController;
 use Illuminate\Support\Facades\Route;
 
 // Solo para quien NO ha iniciado sesión.
@@ -74,6 +76,17 @@ Route::middleware('auth')->group(function () {
         Route::put('/aplicativos/{aplicativo}', [AplicativoController::class, 'actualizar'])->name('aplicativos.actualizar');
         Route::patch('/aplicativos/{aplicativo}/baja', [AplicativoController::class, 'darDeBaja'])->name('aplicativos.baja');
         Route::patch('/aplicativos/{aplicativo}/reactivar', [AplicativoController::class, 'reactivar'])->name('aplicativos.reactivar');
+    });
+
+    // Seguimiento: admin y consultor. Cada uno solo ve los de su empresa (Seguimiento::visiblePara).
+    Route::middleware('can:dar-seguimiento')->group(function () {
+        Route::get('/seguimientos', [SeguimientoController::class, 'index'])->name('seguimientos.index');
+        Route::get('/seguimientos/{seguimiento}/editar', [SeguimientoController::class, 'editar'])->name('seguimientos.editar');
+        Route::put('/seguimientos/{seguimiento}', [SeguimientoController::class, 'actualizar'])->name('seguimientos.actualizar');
+
+        // Equipo del bloque: responsable, documentador y líderes, iguales en todo el bloque.
+        Route::get('/seguimientos/bloques/{bloque}/equipo', [EquipoDeBloqueController::class, 'editar'])->name('seguimientos.equipo');
+        Route::put('/seguimientos/bloques/{bloque}/equipo', [EquipoDeBloqueController::class, 'actualizar'])->name('seguimientos.equipo.actualizar');
     });
 
     // Cambios en empresas: quien no cumple el Gate recibe error 403.

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
  *   (Onboarding: 1; Transición: 3, uno por Transferencia, Estabilización y Validación).
  *
  * Solo genera combinaciones con grupo y actividad activos, y nunca toca lo que ya existe.
+ * Los seguimientos nuevos copian el equipo de su bloque (Seguimiento::CAMPOS_DEL_BLOQUE).
  */
 class GeneradorDeSeguimientos
 {
@@ -104,13 +105,31 @@ class GeneradorDeSeguimientos
     }
 
     /**
+     * Equipo actual de un bloque, tomado de su seguimiento más reciente.
+     * Si el bloque todavía no tiene seguimientos, el equipo queda vacío.
+     *
+     * @return array<string, ?string>
+     */
+    public function equipoDelBloque(int $idBloque): array
+    {
+        $campos = array_keys(Seguimiento::CAMPOS_DEL_BLOQUE);
+        $ultimo = Seguimiento::delBloque($idBloque)->latest('id_seguimiento')->first($campos);
+
+        return $ultimo?->only($campos) ?? array_fill_keys($campos, null);
+    }
+
+    /**
      * Guarda las combinaciones. Todo o nada: si una falla, no queda ninguna.
      */
     private function crear(Collection $combinaciones): int
     {
-        return DB::transaction(function () use ($combinaciones) {
+        // Bloque de cada grupo, para copiar el equipo que ya tiene ese bloque.
+        $bloquePorGrupo = Grupo::whereIn('id_grupo', $combinaciones->pluck('id_grupo')->unique())->pluck('id_bloque', 'id_grupo');
+        $equipos = $bloquePorGrupo->unique()->mapWithKeys(fn ($idBloque) => [$idBloque => $this->equipoDelBloque($idBloque)]);
+
+        return DB::transaction(function () use ($combinaciones, $bloquePorGrupo, $equipos) {
             foreach ($combinaciones as $combinacion) {
-                Seguimiento::create($combinacion);
+                Seguimiento::create([...$combinacion, ...$equipos[$bloquePorGrupo[$combinacion['id_grupo']]]]);
             }
 
             return $combinaciones->count();

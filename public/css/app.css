@@ -616,6 +616,44 @@ body {
     color: var(--app-texto-secundario);
 }
 
+/* Estado de un seguimiento. Retrasado se calcula: va como etiqueta aparte. */
+.estado.estado-seguimiento-pendiente {
+    color: var(--app-texto-secundario);
+}
+
+.estado.estado-seguimiento-en-curso {
+    color: var(--app-principal);
+}
+
+.etiqueta-retrasado {
+    display: inline-block;
+    margin-left: .375rem;
+    padding: .0625rem .5rem;
+    border-radius: 1rem;
+    background: rgba(var(--app-error-rgb), .1);
+    color: var(--app-error);
+    font-size: .75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Equipo del bloque dentro del formulario de un seguimiento */
+.equipo-bloque {
+    padding: 1rem;
+    border: 1px solid var(--app-borde);
+    border-radius: .5rem;
+    background: var(--app-fondo);
+}
+
+.equipo-bloque-encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: .75rem;
+}
+
 /* Vista previa de la carga desde Excel */
 .resumen-carga {
     display: grid;

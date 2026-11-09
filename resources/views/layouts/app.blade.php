@@ -44,6 +44,13 @@
                     <li><x-menu-enlace ruta="inicio" icono="inicio">Inicio</x-menu-enlace></li>
                 </ul>
 
+                @can('dar-seguimiento')
+                    <p class="menu-titulo">Seguimiento</p>
+                    <ul class="menu-lista">
+                        <li><x-menu-enlace ruta="seguimientos.index" activo-en="seguimientos.*" icono="seguimiento">Seguimientos</x-menu-enlace></li>
+                    </ul>
+                @endcan
+
                 <p class="menu-titulo">Catálogos</p>
                 <ul class="menu-lista">
                     <li><x-menu-enlace ruta="empresas.index" activo-en="empresas.*" icono="empresa">Empresas</x-menu-enlace></li>

@@ -17,6 +17,19 @@ class Seguimiento extends Model
 
     const UPDATED_AT = 'fecha_actualizacion';
 
+    /**
+     * Equipo del bloque: estos datos son los mismos en todos los seguimientos de un bloque.
+     * Se guardan en cada seguimiento, pero se capturan una sola vez por bloque
+     * (EquipoDeBloqueController) y los seguimientos nuevos los copian (GeneradorDeSeguimientos).
+     * El experto no está aquí: es individual de cada seguimiento.
+     */
+    public const CAMPOS_DEL_BLOQUE = [
+        'responsable' => 'Responsable',
+        'documentador' => 'Documentador',
+        'lider_transferencia' => 'Líder de transferencia',
+        'lider_transferencia_gbs' => 'Líder de transferencia GBS',
+    ];
+
     protected $fillable = [
         'id_actividad',
         'id_grupo',
@@ -86,6 +99,85 @@ class Seguimiento extends Model
         return $consulta
             ->whereHas('grupo', fn ($q) => $q->where('estado', true))
             ->whereHas('actividad', fn ($q) => $q->where('estado', true));
+    }
+
+    /**
+     * Filtra los seguimientos que un usuario puede ver: Chazey ve todos; los demás,
+     * solo los de su empresa (la empresa sale de la actividad).
+     */
+    public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
+    {
+        return $usuario->esChazey()
+            ? $consulta
+            : $consulta->whereHas('actividad', fn ($q) => $q->where('id_empresa', $usuario->id_empresa));
+    }
+
+    /**
+     * Laravel llama a este método para convertir un {seguimiento} de la URL en un modelo.
+     * Si es de otra empresa, responde 404, como si no existiera.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::visiblePara(auth()->user())
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->first();
+    }
+
+    /**
+     * Todos los seguimientos de un bloque, también los de grupos o actividades de baja.
+     */
+    public function scopeDelBloque(Builder $consulta, int $idBloque): Builder
+    {
+        return $consulta->whereHas('grupo', fn ($q) => $q->where('id_bloque', $idBloque));
+    }
+
+    /**
+     * Filtra por estado. Pendiente incluye los que todavía no tienen estado.
+     */
+    public function scopeConEstado(Builder $consulta, EstadoActividad $estado): Builder
+    {
+        return $estado === EstadoActividad::Pendiente
+            ? $consulta->where(fn ($q) => $q->whereNull('estado_actividad')->orWhere('estado_actividad', $estado))
+            : $consulta->where('estado_actividad', $estado);
+    }
+
+    /**
+     * Retrasados: hoy es posterior a la fecha fin y no están completados.
+     * Es la misma regla que estaRetrasado(), pero como consulta para filtrar.
+     */
+    public function scopeRetrasados(Builder $consulta): Builder
+    {
+        return $consulta
+            ->whereNotNull('fecha_fin')
+            ->whereDate('fecha_fin', '<', today())
+            ->where(fn ($q) => $q->whereNull('estado_actividad')->orWhere('estado_actividad', '!=', EstadoActividad::Completada));
+    }
+
+    /**
+     * Estado para mostrar: sin valor se considera Pendiente.
+     */
+    public function estadoActual(): EstadoActividad
+    {
+        return $this->estado_actividad ?? EstadoActividad::Pendiente;
+    }
+
+    /**
+     * "Retrasado" no se guarda: se calcula cada vez, porque depende del día de hoy.
+     */
+    public function estaRetrasado(): bool
+    {
+        return $this->fecha_fin !== null
+            && today()->greaterThan($this->fecha_fin)
+            && $this->estadoActual() !== EstadoActividad::Completada;
+    }
+
+    /**
+     * En trabajo si su grupo y su actividad están activos (igual que scopeEnTrabajo).
+     * Si no, solo se consulta: no se edita.
+     */
+    public function estaEnTrabajo(): bool
+    {
+        return $this->grupo->estado && $this->actividad->estado;
     }
 
     /**

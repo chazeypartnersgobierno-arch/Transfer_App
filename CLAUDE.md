@@ -81,6 +81,9 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 - `porcentaje_esperado`: solo 0, 25, 50, 75 o 100. `porcentaje_real`: de 0 a 100.
 - `fecha_fin` no puede ser menor que `fecha_inicio`.
 - `fecha_cierre` se llena sola al pasar a Completada y se vacía al reabrir; vuelve a llenarse al pasar otra vez a Completada.
+- En `seguimientos`, `responsable`, `experto`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son texto libre de hasta 255 caracteres. `responsable`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son el equipo del bloque: iguales en todos los seguimientos de un bloque. Se guardan en cada seguimiento, se capturan una vez por bloque (pantalla Equipo del bloque, que actualiza todos sus seguimientos, también los de baja) y los seguimientos nuevos los copian. `experto` es individual de cada seguimiento.
+- `documentacion` es texto libre de hasta 500 caracteres.
+- Un seguimiento de un grupo o una actividad dados de baja solo se consulta: no se edita.
 
 ## Roles de la app
 

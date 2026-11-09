@@ -3,7 +3,15 @@
 @section('titulo', 'Inicio')
 
 @php
+    $accesos = [];
+
+    // El seguimiento va primero: es el trabajo diario. La ruta también está protegida en el servidor.
+    if (auth()->user()->can('dar-seguimiento')) {
+        $accesos[] = ['seguimientos.index', 'seguimiento', 'Seguimientos'];
+    }
+
     $accesos = [
+        ...$accesos,
         ['empresas.index', 'empresa', 'Empresas'],
         ['fases.index', 'fase', 'Fases'],
         ['bloques.index', 'bloque', 'Bloques'],
