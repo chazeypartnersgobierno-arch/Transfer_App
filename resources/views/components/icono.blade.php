@@ -17,7 +17,9 @@
         'seguimiento' => '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m8.5 13 2.2 2.2L15.5 10.5"/>',
         'candado' => '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
         'completa' => '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
-        'menu' => '<path d="M4 6.5h16M4 12h16M4 17.5h16"/>',
+        'usuario' => '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.6-4 3.6-6.5 7.5-6.5s6.9 2.5 7.5 6.5"/>',
+        'llave' => '<circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16.5 6.5l2.5 2.5M14.5 8.5l2 2"/>',
+        'menu' =>'<path d="M4 6.5h16M4 12h16M4 17.5h16"/>',
         'salir' => '<path d="M9.5 20.5h-4a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h4"/><path d="m15.5 16.5 4.5-4.5-4.5-4.5M20 12H9.5"/>',
     };
 @endphp

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\AplicativoController;
+use App\Http\Controllers\AsignacionEmpresaController;
 use App\Http\Controllers\AvanceValidacionController;
 use App\Http\Controllers\BloqueController;
 use App\Http\Controllers\CargaController;
@@ -11,8 +12,10 @@ use App\Http\Controllers\FaseController;
 use App\Http\Controllers\FasesDelGrupoController;
 use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\MiContrasenaController;
 use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\SesionController;
+use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 // Solo para quien NO ha iniciado sesión.
@@ -23,9 +26,14 @@ Route::middleware('guest')->group(function () {
 });
 
 // Solo para quien SÍ ha iniciado sesión; a los demás los envía a /login.
-Route::middleware('auth')->group(function () {
+// "activo" saca de la app a quien fue dado de baja con la sesión abierta.
+Route::middleware(['auth', 'activo'])->group(function () {
     Route::view('/', 'inicio')->name('inicio');
     Route::post('/logout', [LoginController::class, 'cerrarSesion'])->name('logout');
+
+    // Cada usuario cambia su propia contraseña.
+    Route::get('/mi-contrasena', [MiContrasenaController::class, 'editar'])->name('mi-contrasena.editar');
+    Route::put('/mi-contrasena', [MiContrasenaController::class, 'actualizar'])->name('mi-contrasena.actualizar');
 
     // Consultas: cualquier usuario con sesión.
     Route::get('/empresas', [EmpresaController::class, 'index'])->name('empresas.index');
@@ -45,6 +53,18 @@ Route::middleware('auth')->group(function () {
 
     // Cambios en catálogos por empresa: solo admin. Quien no cumple el Gate recibe error 403.
     Route::middleware('can:administrar')->group(function () {
+        // Usuarios y sus asignaciones a empresas.
+        Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+        Route::get('/usuarios/crear', [UsuarioController::class, 'crear'])->name('usuarios.crear');
+        Route::post('/usuarios', [UsuarioController::class, 'guardar'])->name('usuarios.guardar');
+        Route::get('/usuarios/{usuario}/editar', [UsuarioController::class, 'editar'])->name('usuarios.editar');
+        Route::put('/usuarios/{usuario}', [UsuarioController::class, 'actualizar'])->name('usuarios.actualizar');
+        Route::patch('/usuarios/{usuario}/baja', [UsuarioController::class, 'darDeBaja'])->name('usuarios.baja');
+        Route::patch('/usuarios/{usuario}/reactivar', [UsuarioController::class, 'reactivar'])->name('usuarios.reactivar');
+        Route::get('/usuarios/{usuario}/asignaciones', [AsignacionEmpresaController::class, 'index'])->name('usuarios.asignaciones');
+        Route::post('/usuarios/{usuario}/asignaciones', [AsignacionEmpresaController::class, 'guardar'])->name('usuarios.asignaciones.guardar');
+        Route::patch('/asignaciones/{asignacion}/cerrar', [AsignacionEmpresaController::class, 'cerrar'])->name('asignaciones.cerrar');
+
         Route::get('/carga', [CargaController::class, 'index'])->name('carga.index');
         Route::get('/carga/plantilla', [CargaController::class, 'plantilla'])->name('carga.plantilla');
         Route::post('/carga', [CargaController::class, 'subir'])->name('carga.subir');

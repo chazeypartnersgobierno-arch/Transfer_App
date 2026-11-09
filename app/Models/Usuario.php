@@ -36,6 +36,9 @@ class Usuario extends Authenticatable
         'estado',
     ];
 
+    // Mismo valor por defecto que la base: un usuario nuevo está activo desde que se crea.
+    protected $attributes = ['estado' => true];
+
     // Nunca se incluye el hash si el usuario se convierte a JSON o a arreglo.
     protected $hidden = ['contrasena_hash'];
 
@@ -54,6 +57,15 @@ class Usuario extends Authenticatable
     public function asignaciones(): HasMany
     {
         return $this->hasMany(AsignacionEmpresa::class, 'id_usuario', 'id_usuario');
+    }
+
+    /**
+     * Solo las asignaciones vigentes. Sirve para traerlas de una vez en las listas:
+     * Usuario::with('asignacionesActivas.empresa')
+     */
+    public function asignacionesActivas(): HasMany
+    {
+        return $this->asignaciones()->activas();
     }
 
     /**

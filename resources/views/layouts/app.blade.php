@@ -65,9 +65,15 @@
                 @can('administrar')
                     <p class="menu-titulo">Administración</p>
                     <ul class="menu-lista">
+                        <li><x-menu-enlace ruta="usuarios.index" activo-en="usuarios.*" icono="usuario">Usuarios</x-menu-enlace></li>
                         <li><x-menu-enlace ruta="carga.index" activo-en="carga.*" icono="carga">Carga desde Excel</x-menu-enlace></li>
                     </ul>
                 @endcan
+
+                <p class="menu-titulo">Mi cuenta</p>
+                <ul class="menu-lista">
+                    <li><x-menu-enlace ruta="mi-contrasena.editar" activo-en="mi-contrasena.*" icono="llave">Mi contraseña</x-menu-enlace></li>
+                </ul>
             </div>
         </nav>
 

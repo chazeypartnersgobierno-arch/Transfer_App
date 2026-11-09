@@ -27,6 +27,7 @@
 
     // La carga solo la ve un admin; la ruta también está protegida en el servidor.
     if (auth()->user()->can('administrar')) {
+        $accesos[] = ['usuarios.index', 'usuario', 'Usuarios'];
         $accesos[] = ['carga.index', 'carga', 'Carga desde Excel'];
     }
 @endphp
