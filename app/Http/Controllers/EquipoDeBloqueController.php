@@ -45,7 +45,7 @@ class EquipoDeBloqueController extends Controller
         $total = Seguimiento::delBloque($bloque->id_bloque)->count();
 
         if ($total === 0) {
-            return back()->with('error', "El bloque {$bloque->nombre} todavía no tiene seguimientos: el equipo se captura cuando existan.");
+            return back()->with('error', "El bloque {$bloque->nombre} todavía no tiene seguimientos.");
         }
 
         $reglas = array_fill_keys(array_keys(Seguimiento::CAMPOS_DEL_BLOQUE), ['nullable', 'string', 'max:255']);

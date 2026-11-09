@@ -16,7 +16,6 @@
         <div class="tarjeta tarjeta-formulario mb-3">
             <h2 class="tarjeta-titulo">1. Descarga la plantilla</h2>
             <p class="texto-secundario">
-                Trae las hojas Instrucciones, Actividades y Participantes, con listas desplegables de los bloques y grupos activos de la empresa.
                 Si después agregas bloques o grupos, descárgala de nuevo.
             </p>
 
@@ -33,8 +32,7 @@
         <div class="tarjeta tarjeta-formulario">
             <h2 class="tarjeta-titulo">2. Sube el archivo</h2>
             <p class="texto-secundario">
-                Antes de guardar verás qué registros son nuevos, cuáles están duplicados y cuáles tienen errores.
-                Si no confirmas, el archivo se borra en {{ \App\Services\ArchivosDeCarga::HORAS }} horas.
+                Antes de guardar verás una vista previa.
             </p>
 
             {{-- multipart/form-data: necesario para enviar un archivo. --}}

@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Seguimientos</h1>
-            <p class="pagina-subtitulo">Cada actividad en cada grupo y fase. Se generan solos al crear grupos y actividades.</p>
+            <p class="pagina-subtitulo">Cada actividad en cada grupo y fase.</p>
         </div>
 
         {{-- El equipo (responsable, documentador y líderes) es uno por bloque: se cambia desde aquí. --}}

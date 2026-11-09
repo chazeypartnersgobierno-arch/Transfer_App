@@ -131,7 +131,7 @@ class EquipoDeBloqueTest extends TestCase
         $this->actingAs($consultor)->get($this->url())
             ->assertOk()
             ->assertSee('Equipo del bloque Tesorería')
-            ->assertSee('Al guardar se actualizan los 4 seguimientos del bloque');
+            ->assertSee('Se actualizarán 4 seguimientos.');
 
         $this->actingAs($consultor)->put($this->url(), self::EQUIPO)
             ->assertRedirect(route('seguimientos.equipo', $this->bloque))
@@ -177,7 +177,7 @@ class EquipoDeBloqueTest extends TestCase
             ->assertSee('todavía no tiene seguimientos')
             ->assertDontSee('>Guardar<', false);
         $this->actingAs($admin)->from('/seguimientos')->put($this->url($vacio), self::EQUIPO)
-            ->assertSessionHas('error', 'El bloque Vacío todavía no tiene seguimientos: el equipo se captura cuando existan.');
+            ->assertSessionHas('error', 'El bloque Vacío todavía no tiene seguimientos.');
 
         $seguimiento = $this->seguimiento($this->actividad('Uno'), null, 1, ['responsable' => 'Original']);
         $this->bloque->update(['estado' => false]);
@@ -198,7 +198,7 @@ class EquipoDeBloqueTest extends TestCase
 
         // Muestra el más reciente.
         $this->actingAs($this->usuario())->get($this->url())
-            ->assertSee('Hay seguimientos de este bloque con valores distintos en: Responsable.')
+            ->assertSee('Hay valores distintos en: Responsable.')
             ->assertSee('value="Luis"', false);
     }
 

@@ -33,7 +33,7 @@ class AsignadorDeEmpresas
             Usuario::whereKey($usuario->id_usuario)->lockForUpdate()->first();
 
             if ($usuario->rol_app !== RolApp::Consultor) {
-                throw ValidationException::withMessages(['id_empresa' => 'Solo los consultores se asignan a empresas: el administrador ve todas.']);
+                throw ValidationException::withMessages(['id_empresa' => 'Solo los consultores tienen empresa asignada.']);
             }
 
             if (! $empresa->estado) {
@@ -41,11 +41,11 @@ class AsignadorDeEmpresas
             }
 
             if ($usuario->asignaciones()->activas()->where('id_empresa', $empresa->id_empresa)->exists()) {
-                throw ValidationException::withMessages(['id_empresa' => "{$usuario->nombre} ya está asignado a {$empresa->nombre}."]);
+                throw ValidationException::withMessages(['id_empresa' => "Ya trabaja con {$empresa->nombre}."]);
             }
 
             if ($fechaInicio->isAfter(today())) {
-                throw ValidationException::withMessages(['fecha_inicio' => 'La fecha de inicio no puede ser futura.']);
+                throw ValidationException::withMessages(['fecha_inicio' => 'La fecha no puede ser futura.']);
             }
 
             $this->cerrarLasAnteriores($usuario, $fechaInicio);
@@ -89,9 +89,9 @@ class AsignadorDeEmpresas
 
         foreach ($usuario->asignaciones()->activas()->with('empresa')->get() as $anterior) {
             if ($anterior->fecha_inicio->greaterThan($fechaFin)) {
-                throw ValidationException::withMessages(['fecha_inicio' => 'La fecha de inicio debe ser posterior al '
-                    .$anterior->fecha_inicio->format('d/m/Y').", cuando empezó su asignación con {$anterior->empresa->nombre}: "
-                    .'esa asignación se cierra un día antes de la nueva.']);
+                throw ValidationException::withMessages([
+                    'fecha_inicio' => 'La fecha debe ser posterior al '.$anterior->fecha_inicio->format('d/m/Y').'.',
+                ]);
             }
 
             $anterior->update(['activa' => false, 'fecha_fin' => $fechaFin->toDateString()]);

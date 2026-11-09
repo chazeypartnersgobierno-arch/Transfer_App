@@ -1,55 +1,48 @@
-{{-- Historial de empresas de un consultor y formulario para asignarle otra. --}}
+{{-- Empresa de un consultor: cambio de empresa e historial. Las reglas están en App\Services\AsignadorDeEmpresas. --}}
 @extends('layouts.app')
 
 @php
     $activas = $asignaciones->where('activa', true);
 @endphp
 
-@section('titulo', 'Asignaciones')
+@section('titulo', "Empresa de {$usuario->nombre}")
 
 @section('contenido')
     <div class="pagina-encabezado">
         <div>
-            <h1 class="pagina-titulo">Asignaciones de {{ $usuario->nombre }}</h1>
+            <h1 class="pagina-titulo">Empresa de {{ $usuario->nombre }}</h1>
             <p class="pagina-subtitulo">
-                @if ($activas->isEmpty())
-                    Sin empresa asignada: por ahora no ve datos.
-                @else
-                    Trabaja con {{ $activas->pluck('empresa.nombre')->implode(', ') }}.
-                @endif
+                {{ $activas->isEmpty() ? 'Sin empresa asignada.' : 'Trabaja con '.$activas->pluck('empresa.nombre')->implode(', ').'.' }}
             </p>
         </div>
 
         <a href="{{ route('usuarios.index') }}" class="btn btn-outline-primary">Volver a usuarios</a>
     </div>
 
-    <div class="tarjeta tarjeta-formulario mb-3">
-        <h2 class="tarjeta-titulo">Asignar a una empresa</h2>
+    @if ($empresas->isEmpty())
+        <x-alerta tipo="advertencia">
+            {{ $activas->isEmpty() ? 'Por ahora no hay empresas activas para asignarlo.' : 'Por ahora no hay otra empresa a la cual cambiarlo.' }}
+        </x-alerta>
+    @else
+        <div class="tarjeta tarjeta-formulario mb-3">
+            <h2 class="tarjeta-titulo">{{ $activas->isEmpty() ? 'Asignar empresa' : 'Cambiar de empresa' }}</h2>
 
-        @if ($activas->isNotEmpty())
-            <p class="texto-secundario">
-                Un consultor trabaja con una sola empresa a la vez: al asignarlo, se cierra su asignación con
-                {{ $activas->pluck('empresa.nombre')->implode(', ') }}, que termina un día antes de la fecha de inicio que elijas
-                (por eso esa fecha debe ser posterior al {{ $activas->max('fecha_inicio')->format('d/m/Y') }}).
-                Lo que ya capturó se queda en esa empresa.
-            </p>
-        @endif
+            @if ($activas->isNotEmpty())
+                <p class="texto-secundario">Al cambiarlo de empresa, su asignación actual se cierra automáticamente. Lo que ya capturó se conserva.</p>
+            @endif
 
-        @if ($empresas->isEmpty())
-            <x-alerta tipo="advertencia">No hay otra empresa activa a la cual asignarlo.</x-alerta>
-        @else
             <form method="POST" action="{{ route('usuarios.asignaciones.guardar', $usuario) }}">
                 @csrf
 
                 <x-lista name="id_empresa" label="Empresa" :opciones="$empresas" :value="old('id_empresa')" vacia="Elige una empresa" required />
-                <x-campo name="fecha_inicio" label="Trabaja con ella desde" type="date" :value="old('fecha_inicio', today()->format('Y-m-d'))" :max="today()->format('Y-m-d')" required />
+                <x-campo name="fecha_inicio" label="Desde" type="date" :value="old('fecha_inicio', today()->format('Y-m-d'))" :max="today()->format('Y-m-d')" required />
 
                 <div class="formulario-acciones">
-                    <x-boton>Asignar</x-boton>
+                    <x-boton>{{ $activas->isEmpty() ? 'Asignar' : 'Cambiar' }}</x-boton>
                 </div>
             </form>
-        @endif
-    </div>
+        </div>
+    @endif
 
     <div class="tarjeta">
         <h2 class="tarjeta-titulo">Historial</h2>
@@ -71,18 +64,18 @@
                             <td class="celda-titulo">{{ $asignacion->empresa->nombre }}</td>
                             <td class="celda-detalle">{{ $asignacion->fecha_inicio->format('d/m/Y') }}</td>
                             <td class="celda-detalle">{{ $asignacion->fecha_fin?->format('d/m/Y') ?? '—' }}</td>
-                            <td class="celda-estado"><x-estado :activo="$asignacion->activa" texto-activo="Activa" texto-baja="Cerrada" /></td>
+                            <td class="celda-estado"><x-estado :activo="$asignacion->activa" texto-activo="Actual" texto-baja="Terminada" /></td>
                             <td class="celda-acciones">
                                 @if ($asignacion->activa)
                                     <div class="acciones">
-                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cerrar-{{ $asignacion->id_usuario_empresa }}">Cerrar</button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#quitar-{{ $asignacion->id_usuario_empresa }}">Quitar empresa</button>
                                     </div>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="tabla-vacia">Todavía no tiene asignaciones.</td>
+                            <td colspan="5" class="tabla-vacia">Todavía no ha tenido empresa.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -91,8 +84,8 @@
     </div>
 
     @foreach ($activas as $asignacion)
-        <x-confirmar id="cerrar-{{ $asignacion->id_usuario_empresa }}" titulo="Cerrar asignación" :accion="route('asignaciones.cerrar', $asignacion)" boton="Cerrar asignación">
-            ¿Quieres cerrar la asignación de {{ $usuario->nombre }} con {{ $asignacion->empresa->nombre }}? Quedará sin empresa y no verá datos hasta que lo asignes a otra. Lo que capturó se queda en la empresa.
+        <x-confirmar id="quitar-{{ $asignacion->id_usuario_empresa }}" titulo="Quitar empresa" :accion="route('asignaciones.cerrar', $asignacion)" boton="Quitar empresa">
+            ¿Quieres quitar a {{ $usuario->nombre }} de {{ $asignacion->empresa->nombre }}? Se quedará sin empresa.
         </x-confirmar>
     @endforeach
 @endsection

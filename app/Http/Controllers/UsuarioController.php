@@ -169,7 +169,7 @@ class UsuarioController extends Controller
             ->first(fn (Empresa $empresa) => ! $empresa->estado);
 
         if ($empresaDeBaja !== null) {
-            return back()->with('error', "No se puede reactivar a {$usuario->nombre}: su empresa asignada ({$empresaDeBaja->nombre}) está dada de baja. Cierra esa asignación o reactiva la empresa.");
+            return back()->with('error', "No se puede reactivar a {$usuario->nombre}: su empresa ({$empresaDeBaja->nombre}) está dada de baja.");
         }
 
         $usuario->update(['estado' => true]);
@@ -236,9 +236,9 @@ class UsuarioController extends Controller
             'id_empresa.required_if' => 'Elige la empresa del consultor.',
             'id_empresa.integer' => 'Elige una empresa de la lista.',
             'id_empresa.exists' => 'La empresa no existe o está dada de baja.',
-            'fecha_inicio.required_if' => 'Escribe desde cuándo trabaja con la empresa.',
+            'fecha_inicio.required_if' => 'Escribe la fecha.',
             'fecha_inicio.date' => 'Escribe una fecha válida.',
-            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser futura.',
+            'fecha_inicio.before_or_equal' => 'La fecha no puede ser futura.',
             'contrasena.required' => 'Escribe la contraseña.',
             'contrasena.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'contrasena.max' => 'La contraseña no puede tener más de 255 caracteres.',

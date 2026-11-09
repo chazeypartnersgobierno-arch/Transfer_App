@@ -10,10 +10,7 @@
 
     <div class="tarjeta tarjeta-formulario">
         <x-alerta tipo="advertencia">
-            {{ \App\Models\Seguimiento::seGeneraran($porGenerar) }} en los grupos activos del bloque {{ $bloque->nombre }}.
-            @if ($datos['tipo'] === \App\Enums\TipoActividad::Transicion->value)
-                Cada grupo recibe uno por cada fase: Transferencia, Estabilización y Validación.
-            @endif
+            {{ \App\Models\Seguimiento::seGeneraran($porGenerar) }} en el bloque {{ $bloque->nombre }}.
         </x-alerta>
 
         <dl class="datos-fijos mb-3">

@@ -137,8 +137,7 @@ class AsignacionEmpresaTest extends TestCase
     {
         $consultor = $this->usuario();
         $anterior = $this->asignador->asignar($consultor, $this->empresa('UNO'), today()->parse('2026-09-01'));
-        $mensaje = 'La fecha de inicio debe ser posterior al 01/09/2026, cuando empezó su asignación con Empresa UNO: '
-            .'esa asignación se cierra un día antes de la nueva.';
+        $mensaje = 'La fecha debe ser posterior al 01/09/2026.';
 
         // El mismo día o antes dejaría a la anterior terminando antes de empezar.
         $this->assertSame($mensaje, $this->errorAlAsignar($consultor, $this->empresa('DOS'), '2026-09-01'));
@@ -160,11 +159,11 @@ class AsignacionEmpresaTest extends TestCase
         $consultor = $this->usuario();
         $this->asignador->asignar($consultor, $empresa, today());
 
-        $this->assertSame('Prueba ya está asignado a Empresa EPM.', $this->errorAlAsignar($consultor, $empresa));
+        $this->assertSame('Ya trabaja con Empresa EPM.', $this->errorAlAsignar($consultor, $empresa));
         $this->assertSame('La empresa Empresa BAJ está dada de baja.', $this->errorAlAsignar($consultor, $this->empresa('BAJ', false)));
-        $this->assertSame('La fecha de inicio no puede ser futura.', $this->errorAlAsignar($consultor, $this->empresa('FUT'), today()->addDay()->toDateString()));
+        $this->assertSame('La fecha no puede ser futura.', $this->errorAlAsignar($consultor, $this->empresa('FUT'), today()->addDay()->toDateString()));
         $this->assertSame(
-            'Solo los consultores se asignan a empresas: el administrador ve todas.',
+            'Solo los consultores tienen empresa asignada.',
             $this->errorAlAsignar($this->usuario(RolApp::Admin), $empresa)
         );
 
@@ -240,7 +239,7 @@ class AsignacionEmpresaTest extends TestCase
         // Su nombre sigue como autor de la captura.
         $this->assertSame($consultor->id_usuario, $seguimiento->fresh()->id_usuario);
         $this->actingAs($this->usuario(RolApp::Admin))->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")
-            ->assertSeeInOrder(['Última captura', 'Prueba']);
+            ->assertSeeInOrder(['Último cambio', 'Prueba']);
     }
 
     public function test_el_admin_ve_todas_las_empresas_sin_asignaciones(): void

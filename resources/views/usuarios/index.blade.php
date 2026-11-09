@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Usuarios</h1>
-            <p class="pagina-subtitulo">Quién entra a la app. El administrador ve todas las empresas; el consultor, la de su asignación activa.</p>
+            <p class="pagina-subtitulo">Personas que entran a la app.</p>
         </div>
 
         <a href="{{ route('usuarios.crear') }}" class="btn btn-primary">Nuevo usuario</a>
@@ -79,7 +79,7 @@
                                         <a href="{{ route('usuarios.editar', $usuario) }}" class="btn btn-sm btn-outline-primary">Editar</a>
                                     @endif
                                     @if ($esConsultor)
-                                        <a href="{{ route('usuarios.asignaciones', $usuario) }}" class="btn btn-sm btn-outline-primary">Asignaciones</a>
+                                        <a href="{{ route('usuarios.asignaciones', $usuario) }}" class="btn btn-sm btn-outline-primary">Empresa</a>
                                     @endif
                                     @if ($usuario->estado && ! $esUnoMismo)
                                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#baja-{{ $usuario->id_usuario }}">Dar de baja</button>
@@ -114,7 +114,7 @@
     @foreach ($usuarios->where('estado', true) as $usuario)
         @unless ($usuario->is(auth()->user()))
             <x-confirmar id="baja-{{ $usuario->id_usuario }}" titulo="Dar de baja" :accion="route('usuarios.baja', $usuario)" boton="Dar de baja">
-                ¿Quieres dar de baja a {{ $usuario->nombre }}? Ya no podrá entrar y, si tiene la sesión abierta, saldrá en su siguiente clic. No se borra su información y podrás reactivarlo después.
+                ¿Quieres dar de baja a {{ $usuario->nombre }}? Ya no podrá entrar. Podrás reactivarlo después.
             </x-confirmar>
         @endunless
     @endforeach

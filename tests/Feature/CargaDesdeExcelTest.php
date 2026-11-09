@@ -262,7 +262,7 @@ class CargaDesdeExcelTest extends TestCase
             ->assertSee('Ya no se usa «Todos»: cada actividad lleva un bloque de la empresa.')
             ->assertSee('El bloque «Nómina» no existe en esta empresa.')
             ->assertSee('El bloque Viejo está dado de baja.')
-            ->assertSee('No se puede guardar')
+            ->assertSee('Corrige los errores en el archivo y vuelve a subirlo.')
             ->assertDontSee('Confirmar y guardar');
 
         // Aunque se envíe a mano, no se guarda nada.

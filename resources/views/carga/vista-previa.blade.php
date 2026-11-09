@@ -53,7 +53,7 @@
                         <div @class(['con-error' => $totales[ResultadoDeCarga::ERROR] > 0])><dt>Con error</dt><dd>{{ $totales[ResultadoDeCarga::ERROR] }}</dd></div>
                     </dl>
                     @if ($hoja === 'Actividades' && ! $resultado->hayErrores() && $porGuardar['Actividades'] > 0)
-                        <p class="texto-secundario mb-0 mt-2">{{ \App\Models\Seguimiento::seGeneraran($resultado->seguimientosPorGenerar) }} en los grupos activos de sus bloques.</p>
+                        <p class="texto-secundario mb-0 mt-2">{{ \App\Models\Seguimiento::seGeneraran($resultado->seguimientosPorGenerar) }}.</p>
                     @endif
                 </div>
             </div>
@@ -66,7 +66,7 @@
                 Al confirmar se guardarán {{ $queSeGuarda }}. Los duplicados no se insertan.
             </x-alerta>
         @elseif ($resultado->hayErrores())
-            <x-alerta tipo="error">No se puede guardar: corrige los errores en el archivo y vuelve a subirlo. No se guardó nada.</x-alerta>
+            <x-alerta tipo="error">Corrige los errores en el archivo y vuelve a subirlo.</x-alerta>
         @else
             <x-alerta tipo="advertencia">No hay registros nuevos para guardar.</x-alerta>
         @endif

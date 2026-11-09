@@ -284,8 +284,8 @@ class Seguimiento extends Model
     {
         return match ($cantidad) {
             0 => 'No tiene seguimientos.',
-            1 => 'Tiene 1 seguimiento: queda intacto, pero no aparecerá en las listas de trabajo ni contará en el avance mientras esté de baja.',
-            default => "Tiene {$cantidad} seguimientos: quedan intactos, pero no aparecerán en las listas de trabajo ni contarán en el avance mientras esté de baja.",
+            1 => 'Tiene 1 seguimiento; se conserva.',
+            default => "Tiene {$cantidad} seguimientos; se conservan.",
         };
     }
 }

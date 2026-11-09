@@ -270,7 +270,7 @@ class SeguimientoPantallaTest extends TestCase
             ->assertOk()
             ->assertSee('Conciliar')
             ->assertSee('Tesorería › Grupo 1')
-            ->assertSee('Se llena sola al pasar a Completada');
+            ->assertSeeInOrder(['Fecha de cierre', '—']);
 
         $this->actingAs($admin)->put("/seguimientos/{$seguimiento->id_seguimiento}", $this->datos([
             'documentacion' => 'https://sharepoint.empresa.com/doc',

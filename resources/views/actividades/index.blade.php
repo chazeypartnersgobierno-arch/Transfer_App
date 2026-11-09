@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Actividades</h1>
-            <p class="pagina-subtitulo">Lo que se transfiere. Onboarding pasa por una fase; Transición, por Transferencia, Estabilización y Validación.</p>
+            <p class="pagina-subtitulo">Lo que se transfiere en cada bloque.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
@@ -125,7 +125,7 @@
             <x-confirmar id="reactivar-{{ $actividad->id_actividad }}" titulo="Reactivar" :accion="route('actividades.reactivar', $actividad)" boton="Reactivar">
                 ¿Quieres reactivar la actividad {{ $actividad->nombre }}?
                 @if ($faltantes[$actividad->id_actividad] > 0)
-                    {{ \App\Models\Seguimiento::seGeneraran($faltantes[$actividad->id_actividad]) }} para los grupos activos que no la tienen.
+                    {{ \App\Models\Seguimiento::seGeneraran($faltantes[$actividad->id_actividad]) }}.
                 @else
                     No hace falta generar seguimientos nuevos.
                 @endif

@@ -62,11 +62,11 @@
             </div>
             <div>
                 <dt>Fecha de cierre</dt>
-                <dd>{{ $seguimiento->fecha_cierre?->format('d/m/Y') ?? 'Se llena sola al pasar a Completada' }}</dd>
+                <dd>{{ $seguimiento->fecha_cierre?->format('d/m/Y') ?? '—' }}</dd>
             </div>
             <div>
-                <dt>Última captura</dt>
-                <dd>{{ $seguimiento->autor?->nombre ?? 'Nadie lo ha editado todavía' }}</dd>
+                <dt>Último cambio</dt>
+                <dd>{{ $seguimiento->autor?->nombre ?? '—' }}</dd>
             </div>
         </dl>
 
@@ -144,9 +144,7 @@
 
             {{-- Las sesiones deben quedar dentro de las fechas del seguimiento. --}}
             @if ($editable && ! $seguimiento->tieneFechas())
-                <p class="texto-secundario px-3 mb-2">Para registrar sesiones, primero captura y guarda la fecha de inicio y la fecha fin de este seguimiento.</p>
-            @elseif ($seguimiento->tieneFechas())
-                <p class="texto-secundario px-3 mb-2">Las sesiones deben estar {{ $seguimiento->rangoDeFechas() }}.</p>
+                <p class="texto-secundario px-3 mb-2">Para registrar sesiones, primero guarda la fecha de inicio y la fecha fin.</p>
             @endif
 
             <div class="table-responsive">
@@ -195,9 +193,7 @@
             </div>
 
             @if ($editable && ! $seguimiento->tieneFechas())
-                <p class="texto-secundario px-3 mb-2">Para registrar avances, primero captura y guarda la fecha de inicio y la fecha fin de este seguimiento.</p>
-            @elseif ($seguimiento->tieneFechas())
-                <p class="texto-secundario px-3 mb-2">Las fechas de corte deben estar {{ $seguimiento->rangoDeFechas() }} y no pueden ser futuras.</p>
+                <p class="texto-secundario px-3 mb-2">Para registrar avances, primero guarda la fecha de inicio y la fecha fin.</p>
             @endif
 
             @if ($seguimiento->avances->isNotEmpty())

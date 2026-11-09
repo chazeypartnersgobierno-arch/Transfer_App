@@ -33,24 +33,21 @@
 
             @if ($pideEmpresa)
                 <fieldset class="mb-3">
-                    <legend class="form-label">{{ $esNuevo ? 'Empresa del consultor' : 'Empresa (solo si pasa a consultor)' }}</legend>
-                    <p class="texto-secundario">El administrador ve todas las empresas; estos datos solo se usan si el rol es Consultor.</p>
+                    <legend class="form-label">Empresa (solo para consultores)</legend>
 
                     <x-lista name="id_empresa" label="Empresa" :opciones="$empresas" :value="old('id_empresa')" vacia="Elige una empresa" />
-                    <x-campo name="fecha_inicio" label="Trabaja con ella desde" type="date" :value="old('fecha_inicio', today()->format('Y-m-d'))" :max="today()->format('Y-m-d')" />
+                    <x-campo name="fecha_inicio" label="Desde" type="date" :value="old('fecha_inicio', today()->format('Y-m-d'))" :max="today()->format('Y-m-d')" />
                 </fieldset>
             @else
                 <p class="texto-secundario">
-                    Para cambiar la empresa de este consultor usa
-                    <a href="{{ route('usuarios.asignaciones', $usuario) }}">Asignaciones</a>.
-                    Si pasa a administrador, sus asignaciones se cierran.
+                    <a href="{{ route('usuarios.asignaciones', $usuario) }}">Cambiar su empresa</a>
                 </p>
             @endif
 
             <fieldset class="mb-3">
                 <legend class="form-label">{{ $esNuevo ? 'Contraseña' : 'Cambiar contraseña (opcional)' }}</legend>
                 @unless ($esNuevo)
-                    <p class="texto-secundario">Déjalas vacías para conservar la contraseña actual.</p>
+                    <p class="texto-secundario">Déjala vacía para no cambiarla.</p>
                 @endunless
 
                 <x-campo name="contrasena" label="Contraseña" type="password" minlength="8" maxlength="255" autocomplete="new-password" :required="$esNuevo" />

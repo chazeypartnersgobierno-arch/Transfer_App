@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Bloques</h1>
-            <p class="pagina-subtitulo">Cada grupo pertenece a un bloque, y las actividades cambian según el bloque.</p>
+            <p class="pagina-subtitulo">Cada bloque tiene sus grupos y sus actividades.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
@@ -98,7 +98,7 @@
     @can('administrar')
         @foreach ($bloques->where('estado', true) as $bloque)
             <x-confirmar id="baja-{{ $bloque->id_bloque }}" titulo="Dar de baja" :accion="route('bloques.baja', $bloque)" boton="Dar de baja">
-                ¿Quieres dar de baja el bloque {{ $bloque->nombre }}? No se borra su información y podrás reactivarlo después.
+                ¿Quieres dar de baja el bloque {{ $bloque->nombre }}? Podrás reactivarlo después.
             </x-confirmar>
         @endforeach
     @endcan

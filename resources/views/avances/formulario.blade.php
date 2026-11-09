@@ -39,7 +39,7 @@
 
     <div class="tarjeta tarjeta-formulario">
         @unless ($esNuevo)
-            <p class="texto-secundario">Última captura o corrección: {{ $avance->usuario->nombre }}.</p>
+            <p class="texto-secundario">Último cambio: {{ $avance->usuario->nombre }}.</p>
         @endunless
 
         <form method="POST" action="{{ $esNuevo ? route('avances.guardar', $seguimiento) : route('avances.actualizar', $avance) }}">
@@ -51,7 +51,6 @@
             <fieldset @disabled(! $editable)>
                 <x-campo name="fecha_corte" label="Fecha de corte" type="date" :value="old('fecha_corte', $avance->fecha_corte?->format('Y-m-d'))" required
                     :min="$seguimiento->fecha_inicio?->format('Y-m-d')" :max="$maximo?->format('Y-m-d')" />
-                <p class="ayuda-campo">Debe estar entre las fechas del seguimiento ({{ $seguimiento->rangoDeFechas() }}) y no puede ser futura.</p>
 
                 <div class="row">
                     <div class="col-sm-6">

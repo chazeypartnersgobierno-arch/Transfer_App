@@ -24,7 +24,7 @@
             <h1 class="pagina-titulo">{{ $titulo }}</h1>
             <p class="pagina-subtitulo">{{ $seguimiento->actividad->nombre }} · {{ $seguimiento->fase->nombre }}</p>
             @if (! $esNueva && $sesion->autor)
-                <p class="texto-secundario mb-0">Última captura o corrección: {{ $sesion->autor->nombre }}.</p>
+                <p class="texto-secundario mb-0">Último cambio: {{ $sesion->autor->nombre }}.</p>
             @endif
         </div>
     </div>
@@ -40,7 +40,7 @@
     @if ($repetidas !== [])
         <x-alerta tipo="advertencia">
             Ya hay una sesión con la fecha {{ \Illuminate\Support\Carbon::parse(old('fecha'))->format('d/m/Y') }} en: {{ implode(', ', $repetidas) }}.
-            Revisa que no sea la misma. Si es otra sesión, usa "Guardar de todos modos".
+            Si es otra sesión, usa «Guardar de todos modos».
         </x-alerta>
     @endif
 
@@ -59,7 +59,6 @@
                         {{-- min y max: el calendario solo deja elegir fechas del seguimiento. El servidor también lo valida. --}}
                         <x-campo name="fecha" label="Fecha" type="date" :value="old('fecha', $sesion->fecha?->format('Y-m-d'))" required
                             :min="$seguimiento->fecha_inicio?->format('Y-m-d')" :max="$seguimiento->fecha_fin?->format('Y-m-d')" />
-                        <p class="ayuda-campo">Debe estar entre las fechas del seguimiento: {{ $seguimiento->rangoDeFechas() }}.</p>
                     </div>
                     <div class="col-sm-6">
                         <x-lista name="modalidad" label="Modalidad" :opciones="\App\Enums\Modalidad::opciones()" :value="old('modalidad', $sesion->modalidad?->value)" vacia="Elige una modalidad" required />
@@ -83,8 +82,7 @@
                 <div class="tarjeta tarjeta-formulario mb-3">
                     <h2 class="tarjeta-titulo">Grupos</h2>
                     <p class="texto-secundario">
-                        Se crea una sesión en cada grupo elegido, cada una con su propia asistencia.
-                        La fecha debe estar dentro de las fechas de todos los grupos elegidos; un grupo sin fechas no se puede elegir.
+                        Elige uno o varios grupos.
                     </p>
 
                     @error('seguimientos')

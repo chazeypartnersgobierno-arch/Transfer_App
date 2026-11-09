@@ -16,7 +16,7 @@
     </div>
 
     @unless ($grupo->estado)
-        <x-alerta tipo="advertencia">El grupo está dado de baja: sus seguimientos no aparecen aquí ni cuentan en el avance.</x-alerta>
+        <x-alerta tipo="advertencia">Este grupo está dado de baja.</x-alerta>
     @endunless
 
     <ul class="nav nav-tabs pestanas-fases">

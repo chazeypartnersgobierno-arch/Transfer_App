@@ -149,7 +149,7 @@ class UsuarioTest extends TestCase
         $this->actingAs($this->admin)->post('/usuarios', $this->datos(['id_empresa' => $deBaja->id_empresa]))
             ->assertSessionHasErrors(['id_empresa' => 'La empresa no existe o está dada de baja.']);
         $this->actingAs($this->admin)->post('/usuarios', $this->datos(['fecha_inicio' => today()->addDay()->toDateString()]))
-            ->assertSessionHasErrors(['fecha_inicio' => 'La fecha de inicio no puede ser futura.']);
+            ->assertSessionHasErrors(['fecha_inicio' => 'La fecha no puede ser futura.']);
 
         $this->assertFalse(Usuario::where('correo', 'ana@prueba.test')->exists());
         $this->assertSame(0, AsignacionEmpresa::count());
@@ -164,7 +164,7 @@ class UsuarioTest extends TestCase
         $this->actingAs($this->admin)->get("/usuarios/{$consultor->id_usuario}/editar")
             ->assertOk()
             ->assertDontSee('name="id_empresa"', false)
-            ->assertSee('Asignaciones');
+            ->assertSee('Cambiar su empresa');
 
         $this->actingAs($this->admin)->put("/usuarios/{$consultor->id_usuario}", [
             'nombre' => 'Nuevo nombre',
@@ -270,7 +270,7 @@ class UsuarioTest extends TestCase
         $this->empresa->update(['estado' => false]);
 
         $this->actingAs($this->admin)->patch("/usuarios/{$consultor->id_usuario}/reactivar")
-            ->assertSessionHas('error', 'No se puede reactivar a Prueba: su empresa asignada (Empresa Uno) está dada de baja. Cierra esa asignación o reactiva la empresa.');
+            ->assertSessionHas('error', 'No se puede reactivar a Prueba: su empresa (Empresa Uno) está dada de baja.');
         $this->assertFalse($consultor->fresh()->estado);
 
         $this->actingAs($this->admin)->patch('/asignaciones/'.$consultor->asignaciones()->sole()->id_usuario_empresa.'/cerrar');
@@ -296,20 +296,42 @@ class UsuarioTest extends TestCase
 
         $this->actingAs($this->admin)->post($url, ['id_empresa' => $otra->id_empresa, 'fecha_inicio' => today()->toDateString()])
             ->assertRedirect($url)
-            ->assertSessionHas('exito', 'Se asignó Carla a Empresa Dos. Se cerró su asignación con Empresa Uno.');
+            ->assertSessionHas('exito', 'Carla ahora trabaja con Empresa Dos.');
 
         $this->assertSame([$otra->id_empresa], $consultor->idsEmpresasVisibles());
 
         // Las reglas del servicio llegan como errores del formulario.
         $this->actingAs($this->admin)->post($url, ['id_empresa' => $otra->id_empresa, 'fecha_inicio' => today()->toDateString()])
-            ->assertSessionHasErrors(['id_empresa' => 'Carla ya está asignado a Empresa Dos.']);
+            ->assertSessionHasErrors(['id_empresa' => 'Ya trabaja con Empresa Dos.']);
+    }
+
+    public function test_la_pantalla_de_empresa_es_corta_y_clara(): void
+    {
+        $consultor = $this->usuario(RolApp::Consultor, 'Carlos Larrarte', $this->empresa);
+        $url = "/usuarios/{$consultor->id_usuario}/asignaciones";
+
+        // Sin otra empresa: solo el aviso, sin formulario.
+        $this->actingAs($this->admin)->get($url)
+            ->assertSee('Empresa de Carlos Larrarte')
+            ->assertSee('Por ahora no hay otra empresa a la cual cambiarlo.')
+            ->assertDontSee('Cambiar de empresa')
+            ->assertDontSee('name="id_empresa"', false);
+
+        // Con otra empresa: el formulario con el texto corto, sin explicar la regla de la fecha.
+        Empresa::create(['nombre' => 'Empresa Dos', 'sigla' => 'DOS']);
+
+        $this->actingAs($this->admin)->get($url)
+            ->assertSee('Cambiar de empresa')
+            ->assertSee('Al cambiarlo de empresa, su asignación actual se cierra automáticamente. Lo que ya capturó se conserva.')
+            ->assertDontSee('debe ser posterior')
+            ->assertDontSee('Por ahora no hay otra empresa');
     }
 
     public function test_el_admin_no_tiene_pantalla_de_asignaciones(): void
     {
         $this->actingAs($this->admin)->get("/usuarios/{$this->admin->id_usuario}/asignaciones")
             ->assertRedirect(route('usuarios.index'))
-            ->assertSessionHas('error', 'El administrador ve todas las empresas: no lleva asignaciones.');
+            ->assertSessionHas('error', 'Los administradores no tienen empresa asignada.');
     }
 
     // ===== Mi contraseña =====

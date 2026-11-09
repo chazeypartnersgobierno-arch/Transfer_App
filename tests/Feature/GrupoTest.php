@@ -505,8 +505,7 @@ class GrupoTest extends TestCase
 
         $this->actingAs($admin)->post('/actividades', $datos)
             ->assertOk()
-            ->assertSee('Se generarán 6 seguimientos')
-            ->assertSee('uno por cada fase');
+            ->assertSee('Se generarán 6 seguimientos en el bloque Tesorería.');
 
         $this->actingAs($admin)->post('/actividades', [...$datos, 'accion' => 'confirmar'])
             ->assertSessionHas('exito', 'Se creó la actividad Tres fases. Se generaron 6 seguimientos.');
@@ -524,7 +523,7 @@ class GrupoTest extends TestCase
             'id_bloque' => $this->bloque->id_bloque,
             'nombre' => 'General',
         ])->assertOk()
-            ->assertSee('del bloque Tesorería')
+            ->assertSee('en el bloque Tesorería')
             ->assertSee('name="id_bloque" value="'.$this->bloque->id_bloque.'"', false);
     }
 
@@ -565,7 +564,7 @@ class GrupoTest extends TestCase
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/grupos')
-            ->assertSee('Tiene 2 seguimientos: quedan intactos');
+            ->assertSee('Tiene 2 seguimientos; se conservan.');
 
         $this->actingAs($admin)->from('/grupos')->patch("/grupos/{$grupo->id_grupo}/baja")
             ->assertRedirect('/grupos')
@@ -585,7 +584,7 @@ class GrupoTest extends TestCase
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/actividades')
-            ->assertSee('Tiene 1 seguimiento: queda intacto');
+            ->assertSee('Tiene 1 seguimiento; se conserva.');
 
         $this->actingAs($admin)->from('/actividades')->patch("/actividades/{$actividad->id_actividad}/baja")
             ->assertSessionHas('exito', 'Se dio de baja la actividad General. Sus seguimientos quedaron intactos.');
@@ -648,7 +647,7 @@ class GrupoTest extends TestCase
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/grupos?ver_bajas=1')
-            ->assertSee('Se generará 1 seguimiento para las actividades activas que le faltan', false);
+            ->assertSee('Se generará 1 seguimiento.', false);
 
         $this->assertSame(1, Seguimiento::count());
 
@@ -685,7 +684,7 @@ class GrupoTest extends TestCase
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/actividades?ver_bajas=1')
-            ->assertSee('Se generará 1 seguimiento para los grupos activos que no la tienen', false);
+            ->assertSee('Se generará 1 seguimiento.', false);
 
         $this->actingAs($admin)->from('/actividades')->patch("/actividades/{$actividad->id_actividad}/reactivar")
             ->assertSessionHas('exito', 'Se reactivó la actividad Actividad. Se generó 1 seguimiento.');

@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Grupos</h1>
-            <p class="pagina-subtitulo">Al crear un grupo se generan sus seguimientos: uno por cada actividad activa de su bloque y cada fase de su tipo.</p>
+            <p class="pagina-subtitulo">Grupos de participantes de cada bloque.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
@@ -115,7 +115,7 @@
             <x-confirmar id="reactivar-{{ $grupo->id_grupo }}" titulo="Reactivar" :accion="route('grupos.reactivar', $grupo)" boton="Reactivar">
                 ¿Quieres reactivar el grupo {{ $grupo->nombre }}?
                 @if ($faltantes[$grupo->id_grupo] > 0)
-                    {{ \App\Models\Seguimiento::seGeneraran($faltantes[$grupo->id_grupo]) }} para las actividades activas que le faltan.
+                    {{ \App\Models\Seguimiento::seGeneraran($faltantes[$grupo->id_grupo]) }}.
                 @else
                     No hace falta generar seguimientos nuevos.
                 @endif

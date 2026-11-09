@@ -408,7 +408,7 @@ class SesionTest extends TestCase
             $this->seguimiento1->update(['fecha_inicio' => '2027-03-01', 'fecha_fin' => '2027-03-31', ...$sinFechas]);
 
             $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento1->id_seguimiento}/editar")
-                ->assertSee('primero captura y guarda la fecha de inicio y la fecha fin')
+                ->assertSee('primero guarda la fecha de inicio y la fecha fin')
                 ->assertDontSee('Nueva sesión');
 
             $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento1->id_seguimiento}/sesiones/crear")
@@ -425,8 +425,7 @@ class SesionTest extends TestCase
     {
         $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento1->id_seguimiento}/sesiones/crear")
             ->assertSee('min="2027-03-01"', false)
-            ->assertSee('max="2027-03-31"', false)
-            ->assertSee('Debe estar entre las fechas del seguimiento: del 01/03/2027 al 31/03/2027.');
+            ->assertSee('max="2027-03-31"', false);
 
         foreach (['2027-02-28', '2027-04-01'] as $fuera) {
             $this->crearSesion(['fecha' => $fuera])

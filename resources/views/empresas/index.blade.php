@@ -83,7 +83,7 @@
     @can('administrar-empresas')
         @foreach ($empresas->where('estado', true) as $empresa)
             <x-confirmar id="baja-{{ $empresa->id_empresa }}" titulo="Dar de baja" :accion="route('empresas.baja', $empresa)" boton="Dar de baja">
-                ¿Quieres dar de baja la empresa {{ $empresa->nombre }}? No se borra su información y podrás reactivarla después.
+                ¿Quieres dar de baja la empresa {{ $empresa->nombre }}? Podrás reactivarla después.
             </x-confirmar>
         @endforeach
     @endcan

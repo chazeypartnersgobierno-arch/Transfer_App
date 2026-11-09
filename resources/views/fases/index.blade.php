@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Fases</h1>
-            <p class="pagina-subtitulo">Etapas de la transferencia, en orden. Son las mismas para todas las empresas.</p>
+            <p class="pagina-subtitulo">Etapas de la transferencia, en orden.</p>
         </div>
     </div>
 

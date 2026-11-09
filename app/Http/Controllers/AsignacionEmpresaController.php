@@ -21,7 +21,7 @@ class AsignacionEmpresaController extends Controller
     public function index(Usuario $usuario): View|RedirectResponse
     {
         if ($usuario->rol_app !== RolApp::Consultor) {
-            return redirect()->route('usuarios.index')->with('error', 'El administrador ve todas las empresas: no lleva asignaciones.');
+            return redirect()->route('usuarios.index')->with('error', 'Los administradores no tienen empresa asignada.');
         }
 
         $asignaciones = $usuario->asignaciones()
@@ -52,23 +52,17 @@ class AsignacionEmpresaController extends Controller
             'id_empresa.required' => 'Elige una empresa.',
             'id_empresa.integer' => 'Elige una empresa de la lista.',
             'id_empresa.exists' => 'La empresa no existe.',
-            'fecha_inicio.required' => 'Escribe desde cuándo trabaja con la empresa.',
+            'fecha_inicio.required' => 'Escribe la fecha.',
             'fecha_inicio.date' => 'Escribe una fecha válida.',
-            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser futura.',
+            'fecha_inicio.before_or_equal' => 'La fecha no puede ser futura.',
         ]);
 
-        $anteriores = $usuario->asignacionesActivas()->with('empresa')->get()->pluck('empresa.nombre');
         $empresa = Empresa::findOrFail($datos['id_empresa']);
 
         $asignador->asignar($usuario, $empresa, Carbon::parse($datos['fecha_inicio']));
 
-        $mensaje = "Se asignó {$usuario->nombre} a {$empresa->nombre}.";
-
-        if ($anteriores->isNotEmpty()) {
-            $mensaje .= ' Se cerró su asignación con '.$anteriores->implode(', ').'.';
-        }
-
-        return redirect()->route('usuarios.asignaciones', $usuario)->with('exito', $mensaje);
+        return redirect()->route('usuarios.asignaciones', $usuario)
+            ->with('exito', "{$usuario->nombre} ahora trabaja con {$empresa->nombre}.");
     }
 
     /**
@@ -79,6 +73,6 @@ class AsignacionEmpresaController extends Controller
         $asignador->cerrar($asignacion);
 
         return redirect()->route('usuarios.asignaciones', $asignacion->id_usuario)
-            ->with('exito', "Se cerró la asignación con {$asignacion->empresa->nombre}.");
+            ->with('exito', "{$asignacion->usuario->nombre} ya no tiene empresa.");
     }
 }

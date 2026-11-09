@@ -191,7 +191,7 @@ class AvanceValidacionTest extends TestCase
 
         $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento->id_seguimiento}/editar")
             ->assertDontSee('Nuevo avance')
-            ->assertSee('Para registrar avances, primero captura y guarda la fecha de inicio y la fecha fin de este seguimiento.');
+            ->assertSee('Para registrar avances, primero guarda la fecha de inicio y la fecha fin.');
 
         $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento->id_seguimiento}/avances/crear")
             ->assertSessionHas('error', 'Primero captura la fecha de inicio y la fecha fin del seguimiento: los avances deben quedar dentro de esas fechas.');
@@ -222,7 +222,7 @@ class AvanceValidacionTest extends TestCase
         $this->actingAs($corrige)->get("/avances/{$avance->id_avance_validacion}/editar")
             ->assertOk()
             ->assertSee('Editar avance')
-            ->assertSee('Última captura o corrección: Prueba.');
+            ->assertSee('Último cambio: Prueba.');
 
         // La misma fecha del propio avance no cuenta como repetida.
         $this->actingAs($corrige)->put("/avances/{$avance->id_avance_validacion}", $this->datos(['porcentaje_real' => '55', 'comentarios' => '']))

@@ -4,10 +4,7 @@
 
 @section('contenido')
     <div class="pagina-encabezado">
-        <div>
-            <h1 class="pagina-titulo">Mi contraseña</h1>
-            <p class="pagina-subtitulo">Para cambiarla, escribe primero la que usas ahora.</p>
-        </div>
+        <h1 class="pagina-titulo">Mi contraseña</h1>
     </div>
 
     <div class="tarjeta tarjeta-formulario">

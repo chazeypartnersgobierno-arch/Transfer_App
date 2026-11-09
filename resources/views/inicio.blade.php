@@ -46,7 +46,7 @@
     </div>
 
     @if (! auth()->user()->esChazey() && $empresasDelConsultor->isEmpty())
-        <x-alerta tipo="advertencia">No tienes una empresa asignada, así que por ahora no verás datos. Pide al administrador que te asigne una.</x-alerta>
+        <x-alerta tipo="advertencia">No tienes una empresa asignada. Pide al administrador que te asigne una.</x-alerta>
     @endif
 
     <div class="row g-3">

@@ -98,7 +98,7 @@
     @can('administrar')
         @foreach ($aplicativos->where('estado', true) as $aplicativo)
             <x-confirmar id="baja-{{ $aplicativo->id_aplicativo }}" titulo="Dar de baja" :accion="route('aplicativos.baja', $aplicativo)" boton="Dar de baja">
-                ¿Quieres dar de baja el aplicativo {{ $aplicativo->nombre }}? No se borra su información y podrás reactivarlo después.
+                ¿Quieres dar de baja el aplicativo {{ $aplicativo->nombre }}? Podrás reactivarlo después.
             </x-confirmar>
         @endforeach
     @endcan

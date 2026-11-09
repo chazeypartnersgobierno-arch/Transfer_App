@@ -13,7 +13,7 @@
         <div>
             <h1 class="pagina-titulo">{{ $titulo }}</h1>
             @if ($esNuevo)
-                <p class="pagina-subtitulo">Al guardar se generan sus seguimientos. Elige bien el bloque: después no se puede cambiar.</p>
+                <p class="pagina-subtitulo">El bloque no se puede cambiar después.</p>
             @endif
         </div>
     </div>
