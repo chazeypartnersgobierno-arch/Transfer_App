@@ -42,6 +42,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:administrar')->group(function () {
         Route::get('/carga', [CargaController::class, 'index'])->name('carga.index');
         Route::get('/carga/plantilla', [CargaController::class, 'plantilla'])->name('carga.plantilla');
+        Route::post('/carga', [CargaController::class, 'subir'])->name('carga.subir');
+        Route::get('/carga/vista-previa', [CargaController::class, 'vistaPrevia'])->name('carga.vista-previa');
+        Route::post('/carga/confirmar', [CargaController::class, 'confirmar'])->name('carga.confirmar');
+        Route::post('/carga/cancelar', [CargaController::class, 'cancelar'])->name('carga.cancelar');
 
         Route::get('/bloques/crear', [BloqueController::class, 'crear'])->name('bloques.crear');
         Route::post('/bloques', [BloqueController::class, 'guardar'])->name('bloques.guardar');

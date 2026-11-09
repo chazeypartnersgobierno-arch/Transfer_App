@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Grupos</h1>
-            <p class="pagina-subtitulo">Al crear un grupo se generan sus seguimientos: las actividades de su bloque y las que aplican a todos.</p>
+            <p class="pagina-subtitulo">Al crear un grupo se generan sus seguimientos: uno por cada actividad activa de su bloque y cada fase de su tipo.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}

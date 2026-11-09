@@ -35,13 +35,13 @@
                 <x-lista
                     name="id_bloque"
                     label="Bloque"
-                    :opciones="['todos' => 'Todos los bloques'] + $bloques->pluck('nombre', 'id_bloque')->all()"
+                    :opciones="$bloques->pluck('nombre', 'id_bloque')->all()"
                     :value="old('id_bloque')"
                     :datos="$bloques->mapWithKeys(fn ($bloque) => [$bloque->id_bloque => ['data-empresa' => $bloque->id_empresa]])->all()"
                     vacia="Elige un bloque"
                     required
                 />
-                <p class="ayuda-campo">"Todos los bloques" aplica a todos los grupos de la empresa, por ejemplo una inducción general.</p>
+                <p class="ayuda-campo">La actividad se genera para los grupos de este bloque.</p>
             @else
                 @method('PUT')
             @endif
@@ -63,7 +63,7 @@
                     </div>
                     <div>
                         <dt>Bloque</dt>
-                        <dd>{{ $actividad->bloque?->nombre ?? 'Todos' }}</dd>
+                        <dd>{{ $actividad->bloque->nombre }}</dd>
                     </div>
                 </dl>
             @endunless

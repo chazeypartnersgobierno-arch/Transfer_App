@@ -17,11 +17,6 @@ use Illuminate\View\View;
 
 class ActividadController extends Controller
 {
-    /**
-     * Valor de la opción "Todos los bloques" en el formulario.
-     */
-    private const TODOS_LOS_BLOQUES = 'todos';
-
     public function index(Request $request, GeneradorDeSeguimientos $generador): View
     {
         $usuario = $request->user();
@@ -120,30 +115,17 @@ class ActividadController extends Controller
 
         $idEmpresa = is_numeric($request->input('id_empresa')) ? (int) $request->input('id_empresa') : 0;
 
-        // El bloque se elige siempre: uno de la lista o "Todos", para que nadie deje
-        // el campo vacío por descuido y genere seguimientos en toda la empresa.
-        $aplicaATodos = $request->input('id_bloque') === self::TODOS_LOS_BLOQUES;
-
-        $reglaDeBloque = $aplicaATodos
-            ? ['required']
-            : [
-                'required',
-                'integer',
-                // Debe estar activo y ser de la misma empresa.
-                Rule::exists('bloques', 'id_bloque')->where('id_empresa', $idEmpresa)->where('estado', true),
-            ];
-
         $datos = $request->validate([
             'id_empresa' => ['required', 'integer', Rule::exists('empresas', 'id_empresa')->where('estado', true)],
             'tipo' => ['required', Rule::enum(TipoActividad::class)],
-            'id_bloque' => $reglaDeBloque,
+            // Toda actividad lleva bloque: debe estar activo y ser de la misma empresa.
+            'id_bloque' => [
+                'required',
+                'integer',
+                Rule::exists('bloques', 'id_bloque')->where('id_empresa', $idEmpresa)->where('estado', true),
+            ],
             ...$this->reglasDeTextos(),
         ], $this->mensajes());
-
-        // Sin bloque (NULL) significa que aplica a todos los grupos de la empresa.
-        if ($aplicaATodos) {
-            $datos['id_bloque'] = null;
-        }
 
         $this->validarQueNoSeRepita($datos);
 
@@ -154,7 +136,7 @@ class ActividadController extends Controller
                 'datos' => $datos,
                 'porGenerar' => $porGenerar,
                 'empresa' => Empresa::find($datos['id_empresa']),
-                'bloque' => isset($datos['id_bloque']) ? Bloque::find($datos['id_bloque']) : null,
+                'bloque' => Bloque::find($datos['id_bloque']),
             ]);
         }
 
@@ -220,8 +202,7 @@ class ActividadController extends Controller
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su empresa está dada de baja.");
         }
 
-        // Una actividad sin bloque aplica a todos los grupos de la empresa.
-        if ($actividad->bloque && ! $actividad->bloque->estado) {
+        if (! $actividad->bloque->estado) {
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su bloque está dado de baja.");
         }
 
@@ -246,7 +227,7 @@ class ActividadController extends Controller
         $repetida = Actividad::query()
             ->where('id_empresa', $datos['id_empresa'])
             ->where('tipo', $datos['tipo'])
-            ->where('id_bloque', $datos['id_bloque'] ?? null)
+            ->where('id_bloque', $datos['id_bloque'])
             ->where('macroproceso', $datos['macroproceso'] ?? null)
             ->where('proceso', $datos['proceso'] ?? null)
             ->where('subproceso', $datos['subproceso'] ?? null)

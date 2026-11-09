@@ -69,17 +69,6 @@ class GrupoTest extends TestCase
         return Fase::where('orden', $orden)->sole();
     }
 
-    /** Actividad de Onboarding sin bloque: aplica a todos los grupos de la empresa. */
-    private function sinBloque(string $nombre = 'General', ?Empresa $empresa = null, bool $estado = true): Actividad
-    {
-        return Actividad::create([
-            'id_empresa' => ($empresa ?? $this->empresa)->id_empresa,
-            'tipo' => TipoActividad::Onboarding,
-            'nombre' => $nombre,
-            'estado' => $estado,
-        ]);
-    }
-
     /** Actividad de un bloque. Por defecto es de Onboarding, que genera 1 seguimiento por grupo. */
     private function deBloque(string $nombre = 'De bloque', ?Bloque $bloque = null, bool $estado = true, TipoActividad $tipo = TipoActividad::Onboarding): Actividad
     {
@@ -315,17 +304,14 @@ class GrupoTest extends TestCase
 
     // ===== Generación al crear un grupo =====
 
-    public function test_crear_un_grupo_genera_las_sin_bloque_de_su_empresa_y_las_de_su_bloque(): void
+    public function test_crear_un_grupo_genera_solo_las_actividades_activas_de_su_bloque(): void
     {
-        $general = $this->sinBloque();
+        $general = $this->deBloque('General');
         $delBloque = $this->deBloque();
 
         // Ninguna de estas le corresponde.
         $this->deBloque('De otro bloque', $this->crearBloque($this->empresa, 'Otro'));
-        $otraEmpresa = $this->crearEmpresa('OTRA');
-        $this->sinBloque('General ajena', $otraEmpresa);
-        $this->deBloque('Bloque ajeno', $this->crearBloque($otraEmpresa, 'Ajeno'));
-        $this->sinBloque('General inactiva', null, false);
+        $this->deBloque('Bloque ajeno', $this->crearBloque($this->crearEmpresa('OTRA'), 'Ajeno'));
         $this->deBloque('De bloque inactiva', null, false);
 
         $this->actingAs($this->usuario())
@@ -340,7 +326,7 @@ class GrupoTest extends TestCase
 
     public function test_los_seguimientos_generados_nacen_vacios(): void
     {
-        $this->sinBloque();
+        $this->deBloque('General');
 
         $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Nuevo']);
 
@@ -361,7 +347,7 @@ class GrupoTest extends TestCase
 
     public function test_si_falla_la_generacion_tampoco_queda_el_grupo(): void
     {
-        $this->sinBloque();
+        $this->deBloque('General');
 
         $this->app->instance(GeneradorDeSeguimientos::class, new class extends GeneradorDeSeguimientos
         {
@@ -459,25 +445,22 @@ class GrupoTest extends TestCase
         $this->assertSame(1, Actividad::count());
     }
 
-    public function test_actividad_sin_bloque_llega_a_los_grupos_activos_de_su_empresa(): void
+    public function test_ya_no_existe_la_opcion_todos_los_bloques(): void
     {
-        $a = $this->grupo($this->bloque, 'En un bloque');
-        $b = $this->grupo($this->crearBloque($this->empresa, 'Otro'), 'En otro bloque');
-        $inactivo = $this->grupo($this->bloque, 'De baja', false);
-        $ajeno = $this->grupo($this->crearBloque($this->crearEmpresa('AJENA'), 'Ajeno'), 'Ajeno');
+        $this->grupo($this->bloque, 'En un bloque');
 
-        $this->actingAs($this->usuario())->post('/actividades', [
-            'accion' => 'confirmar',
-            'id_empresa' => $this->empresa->id_empresa,
-            'tipo' => 'Onboarding',
-            'id_bloque' => 'todos',
-            'nombre' => 'Inducción',
-        ])->assertSessionHas('exito', 'Se creó la actividad Inducción. Se generaron 2 seguimientos.');
+        foreach (['todos', ''] as $valor) {
+            $this->actingAs($this->usuario())->post('/actividades', [
+                'accion' => 'confirmar',
+                'id_empresa' => $this->empresa->id_empresa,
+                'tipo' => 'Onboarding',
+                'id_bloque' => $valor,
+                'nombre' => 'Inducción',
+            ])->assertSessionHasErrors('id_bloque');
+        }
 
-        $this->assertSame(1, $a->seguimientos()->count());
-        $this->assertSame(1, $b->seguimientos()->count());
-        $this->assertSame(0, $inactivo->seguimientos()->count());
-        $this->assertSame(0, $ajeno->seguimientos()->count());
+        $this->assertSame(0, Actividad::count());
+        $this->assertSame(0, Seguimiento::count());
     }
 
     public function test_actividad_con_bloque_solo_llega_a_los_grupos_de_ese_bloque(): void
@@ -568,16 +551,18 @@ class GrupoTest extends TestCase
         $this->assertSame(6, Seguimiento::count());
     }
 
-    public function test_confirmar_conserva_todos_los_bloques(): void
+    public function test_confirmar_conserva_el_bloque_elegido(): void
     {
         $this->grupo();
 
         $this->actingAs($this->usuario())->post('/actividades', [
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
-            'id_bloque' => 'todos',
+            'id_bloque' => $this->bloque->id_bloque,
             'nombre' => 'General',
-        ])->assertOk()->assertSee('name="id_bloque" value="todos"', false);
+        ])->assertOk()
+            ->assertSee('del bloque Tesorería')
+            ->assertSee('name="id_bloque" value="'.$this->bloque->id_bloque.'"', false);
     }
 
     public function test_reactivar_una_transicion_incompleta_solo_genera_las_fases_que_faltan(): void
@@ -610,7 +595,7 @@ class GrupoTest extends TestCase
     public function test_la_baja_avisa_cuantos_seguimientos_tiene_el_grupo_y_los_conserva(): void
     {
         $grupo = $this->grupo();
-        $actividad = $this->sinBloque();
+        $actividad = $this->deBloque('General');
         $otra = $this->deBloque();
         $this->seguimiento($grupo, $actividad, ['comentarios' => 'Se conserva']);
         $this->seguimiento($grupo, $otra);
@@ -632,7 +617,7 @@ class GrupoTest extends TestCase
 
     public function test_la_baja_avisa_cuantos_seguimientos_tiene_la_actividad_y_los_conserva(): void
     {
-        $actividad = $this->sinBloque();
+        $actividad = $this->deBloque('General');
         $this->seguimiento($this->grupo($this->bloque, 'A'), $actividad, ['comentarios' => 'Se conserva']);
         $admin = $this->usuario();
 
@@ -669,8 +654,8 @@ class GrupoTest extends TestCase
     {
         $grupo = $this->grupo($this->bloque, 'A');
         $otroGrupo = $this->grupo($this->bloque, 'B');
-        $actividad = $this->sinBloque('Uno');
-        $otraActividad = $this->sinBloque('Dos');
+        $actividad = $this->deBloque('Uno');
+        $otraActividad = $this->deBloque('Dos');
         $seguimiento = $this->seguimiento($grupo, $actividad);
         $delOtroGrupo = $this->seguimiento($otroGrupo, $actividad);
         $deLaOtraActividad = $this->seguimiento($grupo, $otraActividad);
@@ -692,7 +677,7 @@ class GrupoTest extends TestCase
 
     public function test_reactivar_un_grupo_avisa_y_genera_solo_lo_que_falta(): void
     {
-        $existente = $this->sinBloque('Existente');
+        $existente = $this->deBloque('Existente');
         $grupo = $this->grupo($this->bloque, 'Grupo uno', false);
         $this->seguimiento($grupo, $existente, ['comentarios' => 'Se conserva']);
         $nueva = $this->deBloque('Creada durante la baja');
@@ -714,7 +699,7 @@ class GrupoTest extends TestCase
 
     public function test_reactivar_un_grupo_completo_no_genera_nada(): void
     {
-        $actividad = $this->sinBloque();
+        $actividad = $this->deBloque('General');
         $grupo = $this->grupo($this->bloque, 'Grupo uno', false);
         $this->seguimiento($grupo, $actividad);
         $admin = $this->usuario();
@@ -750,7 +735,7 @@ class GrupoTest extends TestCase
 
     public function test_reactivar_dos_veces_no_duplica(): void
     {
-        $this->sinBloque();
+        $this->deBloque('General');
         $grupo = $this->grupo($this->bloque, 'Grupo uno', false);
         $admin = $this->usuario();
 
@@ -763,8 +748,8 @@ class GrupoTest extends TestCase
     public function test_el_generador_ignora_grupos_y_actividades_de_baja(): void
     {
         $generador = new GeneradorDeSeguimientos;
-        $actividadActiva = $this->sinBloque('Activa');
-        $actividadInactiva = $this->sinBloque('Inactiva', null, false);
+        $actividadActiva = $this->deBloque('Activa');
+        $actividadInactiva = $this->deBloque('Inactiva', null, false);
         $grupoActivo = $this->grupo($this->bloque, 'Activo');
         $grupoInactivo = $this->grupo($this->bloque, 'Inactivo', false);
 
@@ -778,7 +763,7 @@ class GrupoTest extends TestCase
 
     public function test_no_se_reactiva_si_su_bloque_esta_de_baja(): void
     {
-        $this->sinBloque();
+        $this->deBloque('General');
         $inactivo = $this->crearBloque($this->empresa, 'Inactivo', false);
         $grupo = $this->grupo($inactivo, 'Grupo uno', false);
 

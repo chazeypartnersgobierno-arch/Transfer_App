@@ -17,9 +17,6 @@ use Maatwebsite\Excel\Events\AfterSheet;
  */
 class PlantillaDeCarga implements Export, WithMultipleSheets
 {
-    /** Valor de la columna Bloque para una actividad que aplica a todos los bloques. */
-    public const TODOS = 'Todos';
-
     public const ENCABEZADOS_ACTIVIDADES = ['Macroproceso', 'Proceso', 'Subproceso', 'Actividad', 'Bloque', 'Tipo'];
 
     public const ENCABEZADOS_PARTICIPANTES = ['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Bloque', 'Grupo', 'Rol'];
@@ -43,9 +40,9 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
 
         $tipos = collect(TipoActividad::cases())->pluck('value');
 
-        // Columnas de la hoja oculta Listas: A bloques con "Todos", B bloques, C grupos, D tipos.
+        // Columnas de la hoja oculta Listas: A bloques, B grupos, C tipos.
+        // Toda actividad lleva un bloque real: no hay opción "Todos".
         $columnasDeListas = [
-            ['Bloques para actividades', collect([self::TODOS])->merge($bloques)],
             ['Bloques', $bloques],
             ['Grupos', $grupos],
             ['Tipos', $tipos],
@@ -56,18 +53,18 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
             new HojaDePlantilla(
                 'Actividades',
                 [self::ENCABEZADOS_ACTIVIDADES],
-                listas: [
-                    'E' => $this->rango('A', $columnasDeListas[0][1]),
-                    'F' => $this->rango('D', $tipos),
-                ],
+                listas: array_filter([
+                    'E' => $this->rango('A', $bloques),
+                    'F' => $this->rango('C', $tipos),
+                ]),
                 anchos: ['A' => 28, 'B' => 28, 'C' => 28, 'D' => 60, 'E' => 28, 'F' => 16],
             ),
             new HojaDePlantilla(
                 'Participantes',
                 [self::ENCABEZADOS_PARTICIPANTES],
                 listas: array_filter([
-                    'E' => $this->rango('B', $bloques),
-                    'F' => $this->rango('C', $grupos),
+                    'E' => $this->rango('A', $bloques),
+                    'F' => $this->rango('B', $grupos),
                 ]),
                 anchos: ['A' => 24, 'B' => 28, 'C' => 34, 'D' => 18, 'E' => 28, 'F' => 24, 'G' => 24],
             ),
@@ -95,7 +92,7 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
             ['Reglas'],
             ['• Tipo Onboarding: la actividad genera 1 seguimiento por grupo, en la fase Onboarding.'],
             ['• Tipo Transición: la actividad pasa por las tres fases (Transferencia, Estabilización y Validación) y genera 3 seguimientos por grupo.'],
-            ['• Bloque "Todos": la actividad aplica a todos los grupos de la empresa, por ejemplo una inducción general.'],
+            ['• Toda actividad lleva un bloque de la empresa, también las de Onboarding: cada bloque tiene su propio Onboarding.'],
             ['• Las actividades se cargan una sola vez por bloque y tipo: si el bloque ya tiene actividades de ese tipo, se rechaza la carga.'],
             ['  Los cambios posteriores se hacen en la app.'],
             ['• Las actividades se guardan en el orden de las filas. Las filas repetidas son error.'],
@@ -107,7 +104,7 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
             ['Actividades', 'Proceso', 'No', 'Proceso dentro del macroproceso.', 'Tesorería'],
             ['Actividades', 'Subproceso', 'No', 'Subproceso; puede quedar vacío.', 'Conciliaciones'],
             ['Actividades', 'Actividad', 'Sí', 'Nombre de la actividad (hasta 500 caracteres).', 'Conciliar cuentas bancarias'],
-            ['Actividades', 'Bloque', 'Sí', 'Bloque de la lista, o "Todos".', 'Tesorería'],
+            ['Actividades', 'Bloque', 'Sí', 'Bloque de la lista.', 'Tesorería'],
             ['Actividades', 'Tipo', 'Sí', 'Onboarding o Transición.', 'Transición'],
             ['Participantes', 'Nombre', 'Sí', 'Nombre o nombres.', 'Ana María'],
             ['Participantes', 'Apellidos', 'Sí', 'Apellidos.', 'Gómez Ruiz'],

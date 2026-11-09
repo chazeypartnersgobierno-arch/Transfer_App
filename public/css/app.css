@@ -616,6 +616,44 @@ body {
     color: var(--app-texto-secundario);
 }
 
+/* Vista previa de la carga desde Excel */
+.resumen-carga {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .75rem;
+    margin: 0;
+}
+
+.resumen-carga dt {
+    color: var(--app-texto-secundario);
+    font-size: .8125rem;
+    font-weight: 500;
+}
+
+.resumen-carga dd {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.resumen-carga .con-error dd {
+    color: var(--app-error);
+}
+
+.estado.estado-carga-duplicado {
+    color: var(--app-advertencia);
+}
+
+.estado.estado-carga-error {
+    color: var(--app-error);
+}
+
+.lista-errores {
+    margin: 0;
+    padding-left: 1rem;
+    color: var(--app-error);
+}
+
 /* Texto de ayuda bajo una lista desplegable o un campo. */
 .ayuda-campo {
     margin: -.5rem 0 1rem;

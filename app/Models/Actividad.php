@@ -40,7 +40,7 @@ class Actividad extends Model
     }
 
     /**
-     * Sin bloque (NULL), la actividad aplica a todos los grupos de la empresa.
+     * Toda actividad tiene bloque: solo genera seguimientos para los grupos de ese bloque.
      */
     public function bloque(): BelongsTo
     {

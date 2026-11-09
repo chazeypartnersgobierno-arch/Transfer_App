@@ -77,7 +77,7 @@
                             <td class="celda-titulo">{{ $actividad->nombre }}</td>
                             <td class="celda-detalle" data-etiqueta="Proceso">{{ $actividad->rutaDeProceso() ?: '—' }}</td>
                             <td class="celda-detalle" data-etiqueta="Tipo">{{ $actividad->tipo->value }}</td>
-                            <td class="celda-detalle" data-etiqueta="Bloque">{{ $actividad->bloque?->nombre ?? 'Todos' }}</td>
+                            <td class="celda-detalle" data-etiqueta="Bloque">{{ $actividad->bloque->nombre }}</td>
                             @if (auth()->user()->esChazey())
                                 <td class="celda-detalle" data-etiqueta="Empresa">{{ $actividad->empresa->nombre }}</td>
                             @endif

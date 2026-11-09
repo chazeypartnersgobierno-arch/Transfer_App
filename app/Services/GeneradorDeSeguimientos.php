@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Único lugar con la regla de qué seguimientos debe tener cada grupo.
  *
- * - Qué actividades: las de su bloque y las sin bloque de su empresa.
+ * - Qué actividades: las de su bloque (toda actividad tiene bloque).
  * - Cuántos seguimientos: uno por cada fase del tipo de la actividad
  *   (Onboarding: 1; Transición: 3, uno por Transferencia, Estabilización y Validación).
  *
@@ -29,8 +29,7 @@ class GeneradorDeSeguimientos
     {
         $actividades = Actividad::query()
             ->where('estado', true)
-            ->where('id_empresa', $grupo->bloque->id_empresa)
-            ->where(fn ($q) => $q->whereNull('id_bloque')->orWhere('id_bloque', $grupo->id_bloque))
+            ->where('id_bloque', $grupo->id_bloque)
             ->orderBy('id_actividad')
             ->get();
 
@@ -47,11 +46,7 @@ class GeneradorDeSeguimientos
     {
         $grupos = Grupo::query()
             ->where('estado', true)
-            ->when(
-                $actividad->id_bloque === null,
-                fn ($q) => $q->whereHas('bloque', fn ($b) => $b->where('id_empresa', $actividad->id_empresa)),
-                fn ($q) => $q->where('id_bloque', $actividad->id_bloque)
-            )
+            ->where('id_bloque', $actividad->id_bloque)
             ->orderBy('id_grupo')
             ->get();
 

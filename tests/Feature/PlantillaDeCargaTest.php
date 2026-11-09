@@ -159,7 +159,7 @@ class PlantillaDeCargaTest extends TestCase
         $respuesta->assertDownload('plantilla_carga_uno.xlsx');
 
         $libro = $this->abrir($respuesta);
-        $this->assertSame(['Bloque propio'], $this->lista($libro, 'B'));
+        $this->assertSame(['Bloque propio'], $this->lista($libro, 'A'));
     }
 
     public function test_si_la_empresa_del_admin_esta_de_baja_no_genera(): void
@@ -203,7 +203,8 @@ class PlantillaDeCargaTest extends TestCase
 
         $this->assertStringContainsString('Empresa Uno (UNO)', $texto);
         $this->assertStringContainsString('Transición: la actividad pasa por las tres fases', $texto);
-        $this->assertStringContainsString('Bloque "Todos"', $texto);
+        $this->assertStringContainsString('Toda actividad lleva un bloque', $texto);
+        $this->assertStringNotContainsString('Todos', $texto);
         $this->assertStringContainsString('una sola vez por bloque y tipo', $texto);
 
         foreach (['Macroproceso', 'Subproceso', 'Apellidos', 'Fecha de ingreso', 'Rol'] as $columna) {
@@ -224,10 +225,9 @@ class PlantillaDeCargaTest extends TestCase
 
         $libro = $this->abrir($this->actingAs($this->usuario())->get('/carga/plantilla?id_empresa='.$this->empresa->id_empresa));
 
-        $this->assertSame(['Todos', 'Alfa', 'Zeta'], $this->lista($libro, 'A'));
-        $this->assertSame(['Alfa', 'Zeta'], $this->lista($libro, 'B'));
-        $this->assertSame(['Grupo 1', 'Grupo 2'], $this->lista($libro, 'C'));
-        $this->assertSame(['Onboarding', 'Transición'], $this->lista($libro, 'D'));
+        $this->assertSame(['Alfa', 'Zeta'], $this->lista($libro, 'A'));
+        $this->assertSame(['Grupo 1', 'Grupo 2'], $this->lista($libro, 'B'));
+        $this->assertSame(['Onboarding', 'Transición'], $this->lista($libro, 'C'));
     }
 
     public function test_las_columnas_con_lista_desplegable_apuntan_a_la_hoja_listas(): void
@@ -240,10 +240,10 @@ class PlantillaDeCargaTest extends TestCase
         $participantes = $libro->getSheetByName('Participantes');
 
         $esperadas = [
-            [$actividades, 'E', "'Listas'!\$A\$2:\$A\$3"],
-            [$actividades, 'F', "'Listas'!\$D\$2:\$D\$3"],
-            [$participantes, 'E', "'Listas'!\$B\$2:\$B\$2"],
-            [$participantes, 'F', "'Listas'!\$C\$2:\$C\$2"],
+            [$actividades, 'E', "'Listas'!\$A\$2:\$A\$2"],
+            [$actividades, 'F', "'Listas'!\$C\$2:\$C\$3"],
+            [$participantes, 'E', "'Listas'!\$A\$2:\$A\$2"],
+            [$participantes, 'F', "'Listas'!\$B\$2:\$B\$2"],
         ];
 
         foreach ($esperadas as [$hoja, $columna, $formula]) {
@@ -262,9 +262,10 @@ class PlantillaDeCargaTest extends TestCase
     {
         $libro = $this->abrir($this->actingAs($this->usuario())->get('/carga/plantilla?id_empresa='.$this->empresa->id_empresa));
 
-        $this->assertSame(['Todos'], $this->lista($libro, 'A'));
+        $this->assertSame([], $this->lista($libro, 'A'));
         $this->assertNull($this->validacion($libro->getSheetByName('Participantes'), 'E'));
-        $this->assertNotNull($this->validacion($libro->getSheetByName('Actividades'), 'E'));
+        $this->assertNull($this->validacion($libro->getSheetByName('Actividades'), 'E'));
+        $this->assertNotNull($this->validacion($libro->getSheetByName('Actividades'), 'F'));
     }
 
     public function test_un_nombre_que_parece_formula_se_guarda_como_texto(): void
@@ -273,7 +274,7 @@ class PlantillaDeCargaTest extends TestCase
 
         $libro = $this->abrir($this->actingAs($this->usuario())->get('/carga/plantilla?id_empresa='.$this->empresa->id_empresa));
 
-        $celda = $libro->getSheetByName('Listas')->getCell('B2');
+        $celda = $libro->getSheetByName('Listas')->getCell('A2');
         $this->assertSame('=1+1', $celda->getValue());
         $this->assertFalse($celda->isFormula());
     }

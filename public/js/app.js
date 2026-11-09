@@ -12,7 +12,7 @@ document.querySelectorAll('form[data-formulario-actividad]').forEach((formulario
     const bloque = formulario.querySelector('[name="id_bloque"]');
 
     const actualizar = () => {
-        // Muestra solo los bloques de la empresa elegida. "Todos los bloques" siempre se ve.
+        // Muestra solo los bloques de la empresa elegida.
         bloque.querySelectorAll('option[data-empresa]').forEach((opcion) => {
             const visible = !empresa || opcion.dataset.empresa === empresa.value;
             opcion.hidden = !visible;

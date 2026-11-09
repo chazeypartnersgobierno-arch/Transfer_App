@@ -43,7 +43,7 @@ Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`av
 | fases | nombre, orden, tiene_sesiones | — |
 | bloques | nombre | id_empresa → empresas |
 | grupos | nombre | id_bloque → bloques |
-| actividades | tipo, macroproceso, proceso, subproceso, nombre | id_empresa → empresas, id_bloque → bloques (NULL = aplica a todos los grupos de la empresa) |
+| actividades | tipo, macroproceso, proceso, subproceso, nombre | id_empresa → empresas, id_bloque → bloques (obligatorio) |
 | aplicativos | nombre | id_empresa → empresas |
 | participantes | nombre, apellidos, correo, rol, fecha_ingreso, comentarios | id_grupo → grupos |
 | usuarios | nombre, correo, contrasena_hash, rol_app | id_empresa → empresas (NULL = usuario Chazey, ve todas), id_participante → participantes (NULL) |
@@ -99,7 +99,7 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 
 - Las fases son las mismas para todas las empresas. En la app solo se edita su nombre: no se agregan ni se quitan, y el orden y `tiene_sesiones` son fijos. La lógica usa `orden` y `tiene_sesiones`, nunca el nombre.
 - La fase va en el seguimiento, no en la actividad. El tipo de la actividad decide sus fases: Onboarding genera 1 seguimiento por grupo (fase de orden 1); Transición genera 3 por grupo (fases de orden 2, 3 y 4: Transferencia, Estabilización y Validación). Cada fase conserva sus reglas: Validación no tiene sesiones y lleva % esperado y real.
-- Actividad con bloque: se genera solo para los grupos de ese bloque. Actividad sin bloque ("Todos los bloques"): se genera para todos los grupos de la empresa. Vale para ambos tipos, y el bloque siempre se elige de forma explícita.
+- Toda actividad lleva un bloque real de su empresa, también las de Onboarding (cada bloque tiene su propio Onboarding). Se genera solo para los grupos de ese bloque. No existe la opción "Todos los bloques".
 - Las actividades se muestran en el orden en que se cargaron (por `id_actividad`); la carga las inserta en el orden del archivo.
 - Al crear una actividad, la app rechaza otra con la misma empresa, tipo, bloque, macroproceso, proceso, subproceso y nombre, aunque esté dada de baja. Al editar, empresa, tipo y bloque quedan fijos.
 - Cada actividad se registra una sola vez en `actividades`.
@@ -117,8 +117,11 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 ## Carga desde Excel
 
 - La empresa se elige en pantalla. La app genera la plantilla, con las hojas Instrucciones, Actividades y Participantes.
-- Actividades: Macroproceso, Proceso, Subproceso, Actividad, Bloque, Tipo. Actividad, Bloque y Tipo son obligatorios; Bloque acepta "Todos". El ID y las fechas se ignoran: las fechas se capturan en pantalla en cada seguimiento.
-- Participantes: Nombre, Apellidos, Correo, Fecha de ingreso, Bloque, Grupo, Rol. Un correo existente se marca como duplicado y no se vuelve a insertar.
+- Actividades: Macroproceso, Proceso, Subproceso, Actividad, Bloque, Tipo. Actividad, Bloque y Tipo son obligatorios; Bloque debe ser un bloque activo de la empresa (no se acepta "Todos"). El ID y las fechas se ignoran: las fechas se capturan en pantalla en cada seguimiento.
+- Participantes: Nombre, Apellidos, Correo, Fecha de ingreso, Bloque, Grupo, Rol. Un correo que ya existe en la base (en cualquier empresa) se marca como duplicado y no se vuelve a insertar; un correo repetido dentro del archivo es error. La fecha de ingreso acepta fecha de Excel o texto dd/mm/aaaa; una fecha que no existe es error.
+- Bloques o grupos inexistentes o dados de baja son error, y el mensaje dice cuál de los dos casos es.
+- Al comparar datos del archivo se ignoran mayúsculas, acentos y espacios de más (igual que MySQL con utf8mb4_0900_ai_ci). Se guarda el texto limpio; los correos, en minúsculas.
+- El archivo subido espera en `storage/app/private/cargas` hasta confirmar o cancelar. Los que nadie confirmó se borran a las 24 horas (`php artisan cargas:limpiar`, programado a diario y también al abrir la pantalla de carga).
 - Se carga una sola vez por bloque y tipo: se rechaza la carga si el bloque ya tiene actividades de ese tipo, incluidas las dadas de baja o creadas a mano, indicando cuántas existen. Se calcula con una consulta. Los cambios posteriores se hacen en pantalla.
 - Las filas repetidas en el archivo son error. Bloques y grupos inexistentes también: no se crean solos.
 - Vista previa antes de guardar: registros nuevos, duplicados y con error, con el detalle por hoja y fila. Con errores no se puede confirmar. Todo se guarda en una transacción.

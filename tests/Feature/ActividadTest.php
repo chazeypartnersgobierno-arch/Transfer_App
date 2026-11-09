@@ -48,12 +48,15 @@ class ActividadTest extends TestCase
         return Bloque::create(['id_empresa' => $empresa->id_empresa, 'nombre' => $nombre, 'estado' => $estado]);
     }
 
+    /** Toda actividad lleva bloque: si no se indica, usa el bloque "General" de la empresa. */
     private function actividad(Empresa $empresa, TipoActividad $tipo = TipoActividad::Onboarding, ?Bloque $bloque = null, array $extra = []): Actividad
     {
+        $bloque ??= Bloque::firstOrCreate(['id_empresa' => $empresa->id_empresa, 'nombre' => 'General']);
+
         return Actividad::create([
             'id_empresa' => $empresa->id_empresa,
             'tipo' => $tipo,
-            'id_bloque' => $bloque?->id_bloque,
+            'id_bloque' => $bloque->id_bloque,
             'nombre' => 'Actividad uno',
             ...$extra,
         ]);
@@ -93,7 +96,7 @@ class ActividadTest extends TestCase
             ->assertSee('Finanzas › Pagos › Cierre')
             ->assertSee('Transición')
             ->assertSee('Onboarding')
-            ->assertSee('>Todos</td>', false)
+            ->assertSee('>General</td>', false)
             ->assertSee('Tesorería')
             ->assertSee('Empresa PROPIA')
             ->assertSee('Nueva actividad')
@@ -208,7 +211,7 @@ class ActividadTest extends TestCase
         }
     }
 
-    public function test_cualquier_tipo_puede_aplicar_a_todos_los_bloques(): void
+    public function test_ningun_tipo_acepta_todos_los_bloques(): void
     {
         $empresa = $this->empresa();
         $admin = $this->usuario();
@@ -219,10 +222,10 @@ class ActividadTest extends TestCase
                 'tipo' => $tipo,
                 'id_bloque' => 'todos',
                 'nombre' => 'Inducción general',
-            ])->assertSessionHasNoErrors();
-
-            $this->assertNull(Actividad::where('tipo', $tipo)->sole()->id_bloque);
+            ])->assertSessionHasErrors(['id_bloque' => 'Elige un bloque de la lista.']);
         }
+
+        $this->assertSame(0, Actividad::count());
     }
 
     public function test_el_bloque_se_elige_siempre_de_forma_explicita(): void
@@ -315,11 +318,11 @@ class ActividadTest extends TestCase
         $this->assertSame(1, Actividad::count());
     }
 
-    public function test_detecta_repetidas_sin_bloque_y_sin_procesos(): void
+    public function test_detecta_repetidas_sin_procesos(): void
     {
         $empresa = $this->empresa();
         $admin = $this->usuario();
-        $datos = ['id_empresa' => $empresa->id_empresa, 'tipo' => 'Onboarding', 'id_bloque' => 'todos', 'nombre' => 'Inducción general'];
+        $datos = ['id_empresa' => $empresa->id_empresa, 'tipo' => 'Onboarding', 'id_bloque' => $this->bloque($empresa)->id_bloque, 'nombre' => 'Inducción general'];
 
         $this->actingAs($admin)->post('/actividades', $datos)->assertSessionHasNoErrors();
         $this->actingAs($admin)->post('/actividades', $datos)->assertSessionHasErrors('nombre');
@@ -362,7 +365,7 @@ class ActividadTest extends TestCase
         $this->actingAs($this->usuario())->get('/actividades/crear')
             ->assertOk()
             ->assertSee('data-formulario-actividad', false)
-            ->assertSee('Todos los bloques')
+            ->assertDontSee('Todos los bloques')
             ->assertSee('name="tipo"', false)
             ->assertDontSee('data-campo-bloque', false)
             ->assertSee('data-empresa="'.$empresa->id_empresa.'"', false)
@@ -548,16 +551,6 @@ class ActividadTest extends TestCase
         $this->assertFalse($deInactiva->fresh()->estado);
     }
 
-    public function test_reactiva_una_sin_bloque(): void
-    {
-        $actividad = $this->actividad($this->empresa(), TipoActividad::Onboarding, null, ['estado' => false]);
-
-        $this->actingAs($this->usuario())->from('/actividades')->patch("/actividades/{$actividad->id_actividad}/reactivar")
-            ->assertSessionHas('exito');
-
-        $this->assertTrue($actividad->fresh()->estado);
-    }
-
     public function test_la_baja_de_un_bloque_se_bloquea_con_actividades_activas(): void
     {
         $empresa = $this->empresa();
@@ -579,7 +572,8 @@ class ActividadTest extends TestCase
     public function test_la_baja_de_una_empresa_se_bloquea_con_actividades_activas(): void
     {
         $empresa = $this->empresa();
-        $actividad = $this->actividad($empresa);
+        // Bloque ya de baja, para que solo la actividad impida la baja de la empresa.
+        $actividad = $this->actividad($empresa, TipoActividad::Onboarding, $this->bloque($empresa, 'Viejo', false));
         $admin = $this->usuario();
         $url = "/empresas/{$empresa->id_empresa}/baja";
 
