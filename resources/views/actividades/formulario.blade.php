@@ -47,7 +47,6 @@
             @endif
 
             <x-campo name="macroproceso" label="Macroproceso (opcional)" :value="old('macroproceso', $actividad->macroproceso)" maxlength="255" />
-            <x-campo name="proceso" label="Proceso (opcional)" :value="old('proceso', $actividad->proceso)" maxlength="255" />
             <x-campo name="nombre" label="Nombre" :value="old('nombre', $actividad->nombre)" maxlength="500" required />
 
             @unless ($esNueva)

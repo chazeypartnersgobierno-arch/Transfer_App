@@ -52,10 +52,11 @@ class ActividadController extends Controller
                 // addcslashes: para que % y _ se busquen como texto normal.
                 $texto = '%'.addcslashes($buscar, '%_\\').'%';
 
+                // El proceso es el bloque: se busca por su nombre.
                 $consulta->where(fn ($q) => $q
                     ->where('nombre', 'like', $texto)
                     ->orWhere('macroproceso', 'like', $texto)
-                    ->orWhere('proceso', 'like', $texto));
+                    ->orWhereHas('bloque', fn ($b) => $b->where('nombre', 'like', $texto)));
             })
             // En el orden en que se cargaron.
             ->orderBy('id_actividad')
@@ -212,7 +213,7 @@ class ActividadController extends Controller
 
     /**
      * Cada actividad se registra una sola vez. La tabla no lo impide por sí sola, así que
-     * se revisa aquí: se repite si coinciden empresa, tipo, bloque, procesos y nombre,
+     * se revisa aquí: se repite si coinciden empresa, tipo, bloque, macroproceso y nombre,
      * incluso con una dada de baja.
      */
     private function validarQueNoSeRepita(array $datos, ?Actividad $actividad = null): void
@@ -222,7 +223,6 @@ class ActividadController extends Controller
             ->where('tipo', $datos['tipo'])
             ->where('id_bloque', $datos['id_bloque'])
             ->where('macroproceso', $datos['macroproceso'] ?? null)
-            ->where('proceso', $datos['proceso'] ?? null)
             ->where('nombre', $datos['nombre'])
             ->when($actividad, fn ($consulta) => $consulta->whereKeyNot($actividad->id_actividad))
             ->exists();
@@ -238,7 +238,6 @@ class ActividadController extends Controller
     {
         return [
             'macroproceso' => ['nullable', 'string', 'max:255'],
-            'proceso' => ['nullable', 'string', 'max:255'],
             'nombre' => ['required', 'string', 'max:500'],
         ];
     }
@@ -255,7 +254,6 @@ class ActividadController extends Controller
             'id_bloque.integer' => 'Elige un bloque de la lista.',
             'id_bloque.exists' => 'El bloque no existe, está dado de baja o es de otra empresa.',
             'macroproceso.max' => 'El macroproceso no puede tener más de 255 caracteres.',
-            'proceso.max' => 'El proceso no puede tener más de 255 caracteres.',
             'nombre.required' => 'Escribe el nombre de la actividad.',
             'nombre.max' => 'El nombre no puede tener más de 500 caracteres.',
         ];

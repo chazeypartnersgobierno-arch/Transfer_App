@@ -339,7 +339,7 @@ class GrupoTest extends TestCase
             'tipo' => 'Onboarding',
             'id_bloque' => $this->bloque->id_bloque,
             'nombre' => 'Nueva actividad de prueba',
-            'proceso' => 'Pagos',
+            'macroproceso' => 'Pagos',
         ];
         $admin = $this->usuario();
 
@@ -357,7 +357,7 @@ class GrupoTest extends TestCase
             ->assertRedirect(route('actividades.index'))
             ->assertSessionHas('exito', 'Se creó la actividad Nueva actividad de prueba. Se generaron 2 seguimientos.');
 
-        $this->assertSame('Pagos', Actividad::sole()->proceso);
+        $this->assertSame('Pagos', Actividad::sole()->macroproceso);
         $this->assertSame(2, Seguimiento::count());
     }
 

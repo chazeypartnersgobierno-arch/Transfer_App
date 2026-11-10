@@ -59,9 +59,9 @@
                 <thead>
                     <tr>
                         <th scope="col">Actividad</th>
+                        <th scope="col">Macroproceso</th>
                         <th scope="col">Proceso</th>
                         <th scope="col">Tipo</th>
-                        <th scope="col">Bloque</th>
                         @if (auth()->user()->esChazey())
                             <th scope="col">Empresa</th>
                         @endif
@@ -75,9 +75,9 @@
                     @forelse ($actividades as $actividad)
                         <tr>
                             <td class="celda-titulo">{{ $actividad->nombre }}</td>
-                            <td class="celda-detalle" data-etiqueta="Proceso">{{ $actividad->rutaDeProceso() ?: '—' }}</td>
+                            <td class="celda-detalle" data-etiqueta="Macroproceso">{{ $actividad->macroproceso ?: '—' }}</td>
+                            <td class="celda-detalle" data-etiqueta="Proceso">{{ $actividad->bloque->nombre }}</td>
                             <td class="celda-detalle" data-etiqueta="Tipo">{{ $actividad->tipo->value }}</td>
-                            <td class="celda-detalle" data-etiqueta="Bloque">{{ $actividad->bloque->nombre }}</td>
                             @if (auth()->user()->esChazey())
                                 <td class="celda-detalle" data-etiqueta="Empresa">{{ $actividad->empresa->nombre }}</td>
                             @endif

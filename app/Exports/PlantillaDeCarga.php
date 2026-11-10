@@ -17,9 +17,10 @@ use Maatwebsite\Excel\Events\AfterSheet;
  */
 class PlantillaDeCarga implements Export, WithMultipleSheets
 {
-    public const ENCABEZADOS_ACTIVIDADES = ['Macroproceso', 'Proceso', 'Actividad', 'Bloque', 'Tipo'];
+    // En pantalla y en la plantilla, el bloque se llama "Proceso".
+    public const ENCABEZADOS_ACTIVIDADES = ['Macroproceso', 'Proceso', 'Actividad', 'Tipo'];
 
-    public const ENCABEZADOS_PARTICIPANTES = ['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Bloque', 'Grupo', 'Rol'];
+    public const ENCABEZADOS_PARTICIPANTES = ['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Proceso', 'Grupo', 'Rol'];
 
     public function __construct(private Empresa $empresa) {}
 
@@ -54,10 +55,10 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
                 'Actividades',
                 [self::ENCABEZADOS_ACTIVIDADES],
                 listas: array_filter([
-                    'D' => $this->rango('A', $bloques),
-                    'E' => $this->rango('C', $tipos),
+                    'B' => $this->rango('A', $bloques),
+                    'D' => $this->rango('C', $tipos),
                 ]),
-                anchos: ['A' => 28, 'B' => 28, 'C' => 60, 'D' => 28, 'E' => 16],
+                anchos: ['A' => 28, 'B' => 28, 'C' => 60, 'D' => 16],
             ),
             new HojaDePlantilla(
                 'Participantes',
@@ -101,16 +102,15 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
             [],
             ['Hoja', 'Columna', 'Obligatoria', 'Qué va', 'Ejemplo'],
             ['Actividades', 'Macroproceso', 'No', 'Macroproceso al que pertenece la actividad.', 'Finanzas'],
-            ['Actividades', 'Proceso', 'No', 'Proceso dentro del macroproceso.', 'Tesorería'],
+            ['Actividades', 'Proceso', 'Sí', 'Proceso de la lista.', 'Tesorería'],
             ['Actividades', 'Actividad', 'Sí', 'Nombre de la actividad (hasta 500 caracteres).', 'Conciliar cuentas bancarias'],
-            ['Actividades', 'Bloque', 'Sí', 'Bloque de la lista.', 'Tesorería'],
             ['Actividades', 'Tipo', 'Sí', 'Onboarding o Transición.', 'Transición'],
             ['Participantes', 'Nombre', 'Sí', 'Nombre o nombres.', 'Ana María'],
             ['Participantes', 'Apellidos', 'Sí', 'Apellidos.', 'Gómez Ruiz'],
             ['Participantes', 'Correo', 'Sí', 'Correo único de la persona.', 'ana.gomez@empresa.com'],
             ['Participantes', 'Fecha de ingreso', 'No', 'Fecha con formato día/mes/año.', '15/01/2027'],
-            ['Participantes', 'Bloque', 'Sí', 'Bloque del grupo, de la lista.', 'Tesorería'],
-            ['Participantes', 'Grupo', 'Sí', 'Grupo de ese bloque, de la lista.', 'Grupo 1'],
+            ['Participantes', 'Proceso', 'Sí', 'Proceso del grupo, de la lista.', 'Tesorería'],
+            ['Participantes', 'Grupo', 'Sí', 'Grupo de ese proceso, de la lista.', 'Grupo 1'],
             ['Participantes', 'Rol', 'Sí', 'Rol de la persona, en texto libre (hasta 50 caracteres).', 'Analista'],
         ];
 

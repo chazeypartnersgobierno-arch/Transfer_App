@@ -70,8 +70,8 @@
                             <tr>
                                 <td class="celda-titulo">
                                     {{ $seguimiento->actividad->nombre }}
-                                    @if ($seguimiento->actividad->rutaDeProceso() !== '')
-                                        <div class="texto-secundario small">{{ $seguimiento->actividad->rutaDeProceso() }}</div>
+                                    @if (filled($seguimiento->actividad->macroproceso))
+                                        <div class="texto-secundario small">{{ $seguimiento->actividad->macroproceso }}</div>
                                     @endif
                                 </td>
                                 <td class="celda-detalle" data-etiqueta="Inicio">{{ $seguimiento->fecha_inicio?->format('d/m/Y') ?? '—' }}</td>

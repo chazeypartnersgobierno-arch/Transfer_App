@@ -85,14 +85,14 @@ class ActividadTest extends TestCase
     {
         $empresa = $this->empresa();
         $bloque = $this->bloque($empresa);
-        $this->actividad($empresa, TipoActividad::Transicion, $bloque, ['nombre' => 'Zeta primera', 'macroproceso' => 'Finanzas', 'proceso' => 'Pagos']);
+        $this->actividad($empresa, TipoActividad::Transicion, $bloque, ['nombre' => 'Zeta primera', 'macroproceso' => 'Finanzas']);
         $this->actividad($empresa, TipoActividad::Onboarding, $bloque, ['nombre' => 'Media segunda']);
         $this->actividad($empresa, TipoActividad::Transicion, null, ['nombre' => 'Alfa tercera']);
 
         $this->actingAs($this->usuario())->get('/actividades')
             ->assertOk()
             ->assertSeeInOrder(['Zeta primera', 'Media segunda', 'Alfa tercera'])
-            ->assertSee('Finanzas › Pagos')
+            ->assertSee('Finanzas')
             ->assertSee('Transición')
             ->assertSee('Onboarding')
             ->assertSee('>General</td>', false)
@@ -152,7 +152,7 @@ class ActividadTest extends TestCase
         $empresa = $this->empresa();
         $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Primera']);
         $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Segunda', 'macroproceso' => 'Finanzas']);
-        $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Tercera', 'proceso' => 'Pagos']);
+        $this->actividad($empresa, TipoActividad::Onboarding, $this->bloque($empresa, 'Pagos'), ['nombre' => 'Tercera']);
         $this->actividad($empresa, TipoActividad::Onboarding, null, ['nombre' => 'Cuarta']);
         $admin = $this->usuario();
 
@@ -184,14 +184,13 @@ class ActividadTest extends TestCase
         $bloque = $this->bloque($empresa);
 
         $this->actingAs($this->usuario())
-            ->post('/actividades', $this->datos($empresa, $bloque, ['macroproceso' => '', 'proceso' => 'Pagos']))
+            ->post('/actividades', $this->datos($empresa, $bloque, ['macroproceso' => '']))
             ->assertRedirect(route('actividades.index'))
             ->assertSessionHas('exito');
 
         $actividad = Actividad::sole();
         $this->assertSame($bloque->id_bloque, $actividad->id_bloque);
         $this->assertNull($actividad->macroproceso);
-        $this->assertSame('Pagos', $actividad->proceso);
     }
 
     public function test_cualquier_tipo_puede_llevar_bloque(): void
@@ -292,8 +291,8 @@ class ActividadTest extends TestCase
         $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['nombre' => str_repeat('A', 501)]))
             ->assertSessionHasErrors(['nombre' => 'El nombre no puede tener más de 500 caracteres.']);
 
-        $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['proceso' => str_repeat('A', 256)]))
-            ->assertSessionHasErrors(['proceso' => 'El proceso no puede tener más de 255 caracteres.']);
+        $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque, ['macroproceso' => str_repeat('A', 256)]))
+            ->assertSessionHasErrors(['macroproceso' => 'El macroproceso no puede tener más de 255 caracteres.']);
 
         $this->assertSame(0, Actividad::count());
     }
@@ -304,7 +303,7 @@ class ActividadTest extends TestCase
         $bloque = $this->bloque($empresa);
         $admin = $this->usuario();
         $mensaje = 'Ya existe una actividad igual. Si está dada de baja, puedes reactivarla.';
-        $datos = $this->datos($empresa, $bloque, ['proceso' => 'Pagos']);
+        $datos = $this->datos($empresa, $bloque, ['macroproceso' => 'Finanzas']);
 
         $this->actingAs($admin)->post('/actividades', $datos)->assertSessionHasNoErrors();
         $this->actingAs($admin)->post('/actividades', $datos)->assertSessionHasErrors(['nombre' => $mensaje]);
@@ -337,7 +336,6 @@ class ActividadTest extends TestCase
         $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $bloque))->assertSessionHasNoErrors();
 
         $variantes = [
-            'otro proceso' => $this->datos($empresa, $bloque, ['proceso' => 'Otro']),
             'otro macroproceso' => $this->datos($empresa, $bloque, ['macroproceso' => 'Otro']),
             'otro tipo' => $this->datos($empresa, $bloque, ['tipo' => 'Onboarding']),
             'otro bloque' => $this->datos($empresa, $this->bloque($empresa, 'Dos')),
@@ -348,7 +346,7 @@ class ActividadTest extends TestCase
             $this->actingAs($admin)->post('/actividades', $datos)->assertSessionHasNoErrors();
         }
 
-        $this->assertSame(6, Actividad::count());
+        $this->assertSame(5, Actividad::count());
     }
 
     public function test_formulario_de_chazey_trae_lo_necesario_para_filtrar(): void
@@ -426,7 +424,6 @@ class ActividadTest extends TestCase
         $this->actingAs($admin)->put("/actividades/{$actividad->id_actividad}", [
             'nombre' => 'Renombrada',
             'macroproceso' => 'Macro',
-            'proceso' => 'Proc',
             'id_empresa' => $otra->id_empresa,
             'tipo' => 'Onboarding',
             'id_bloque' => $otroBloque->id_bloque,
@@ -435,7 +432,6 @@ class ActividadTest extends TestCase
         $actividad->refresh();
         $this->assertSame('Renombrada', $actividad->nombre);
         $this->assertSame('Macro', $actividad->macroproceso);
-        $this->assertSame('Proc', $actividad->proceso);
         $this->assertSame($empresa->id_empresa, $actividad->id_empresa);
         $this->assertSame(TipoActividad::Transicion, $actividad->tipo);
         $this->assertSame($bloque->id_bloque, $actividad->id_bloque);

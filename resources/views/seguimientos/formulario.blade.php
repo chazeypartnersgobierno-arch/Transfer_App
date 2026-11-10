@@ -35,10 +35,10 @@
 
     <div class="tarjeta tarjeta-formulario">
         <dl class="datos-fijos mb-3">
-            @if ($seguimiento->actividad->rutaDeProceso() !== '')
+            @if (filled($seguimiento->actividad->macroproceso))
                 <div>
-                    <dt>Proceso</dt>
-                    <dd>{{ $seguimiento->actividad->rutaDeProceso() }}</dd>
+                    <dt>Macroproceso</dt>
+                    <dd>{{ $seguimiento->actividad->macroproceso }}</dd>
                 </div>
             @endif
             <div>

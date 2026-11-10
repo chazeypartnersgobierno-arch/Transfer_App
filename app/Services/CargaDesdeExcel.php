@@ -111,6 +111,14 @@ class CargaDesdeExcel
         $filas = $hojas[$hoja];
         $primera = array_map(fn ($valor) => Texto::llave($valor), $filas[0] ?? []);
 
+        // La plantilla anterior tenía una columna Bloque y otra Proceso de texto libre.
+        // Ahora la columna Proceso trae el bloque: se rechaza para no confundir una con otra.
+        if (in_array(Texto::llave('Bloque'), $primera, true)) {
+            $resultado->erroresGenerales[] = "La hoja {$hoja} tiene la columna Bloque: es una plantilla anterior. Descarga la plantilla nueva en esta pantalla.";
+
+            return [];
+        }
+
         // Columna en la que está cada encabezado esperado.
         $columnas = [];
         $faltan = [];
@@ -161,15 +169,12 @@ class CargaDesdeExcel
 
         foreach ($filas as ['fila' => $numero, 'valores' => $valores]) {
             $macroproceso = Texto::limpiar($valores['Macroproceso']);
-            $proceso = Texto::limpiar($valores['Proceso']);
             $nombre = Texto::limpiar($valores['Actividad']);
-            $textoBloque = Texto::limpiar($valores['Bloque']);
+            // La columna Proceso trae el nombre del bloque.
+            $textoBloque = Texto::limpiar($valores['Proceso']);
             $textoTipo = Texto::limpiar($valores['Tipo']);
 
-            $errores = [
-                ...$this->revisarLargo('El macroproceso', $macroproceso, 255),
-                ...$this->revisarLargo('El proceso', $proceso, 255),
-            ];
+            $errores = $this->revisarLargo('El macroproceso', $macroproceso, 255);
 
             if ($nombre === '') {
                 $errores[] = 'Falta la actividad.';
@@ -190,7 +195,7 @@ class CargaDesdeExcel
                 }
             }
 
-            $llave = implode('|', array_map(fn ($v) => Texto::llave($v), [$textoBloque, $textoTipo, $macroproceso, $proceso, $nombre]));
+            $llave = implode('|', array_map(fn ($v) => Texto::llave($v), [$textoBloque, $textoTipo, $macroproceso, $nombre]));
 
             if (isset($vistas[$llave])) {
                 $errores[] = "Repite la fila {$vistas[$llave]}.";
@@ -202,8 +207,8 @@ class CargaDesdeExcel
                 'fila' => $numero,
                 'mostrar' => [
                     'Actividad' => $nombre,
-                    'Proceso' => collect([$macroproceso, $proceso])->filter()->implode(' › '),
-                    'Bloque' => $textoBloque,
+                    'Macroproceso' => $macroproceso,
+                    'Proceso' => $textoBloque,
                     'Tipo' => $tipo?->value ?? $textoTipo,
                 ],
                 'errores' => $errores,
@@ -214,7 +219,6 @@ class CargaDesdeExcel
                     'id_bloque' => $bloque?->id_bloque,
                     'tipo' => $tipo?->value,
                     'macroproceso' => $macroproceso === '' ? null : $macroproceso,
-                    'proceso' => $proceso === '' ? null : $proceso,
                     'nombre' => $nombre,
                 ],
             ];
@@ -307,7 +311,7 @@ class CargaDesdeExcel
             $nombre = Texto::limpiar($valores['Nombre']);
             $apellidos = Texto::limpiar($valores['Apellidos']);
             $correo = mb_strtolower(Texto::limpiar($valores['Correo']));
-            $textoBloque = Texto::limpiar($valores['Bloque']);
+            $textoBloque = Texto::limpiar($valores['Proceso']);
             $textoGrupo = Texto::limpiar($valores['Grupo']);
             $rol = Texto::limpiar($valores['Rol']);
 
@@ -378,7 +382,7 @@ class CargaDesdeExcel
      */
     private function mostrarParticipante(array $valores): array
     {
-        $bloque = Texto::limpiar($valores['Bloque']);
+        $bloque = Texto::limpiar($valores['Proceso']);
         $grupo = Texto::limpiar($valores['Grupo']);
 
         return [

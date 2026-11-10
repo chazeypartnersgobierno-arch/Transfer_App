@@ -25,7 +25,6 @@ class Actividad extends Model
         'id_bloque',
         'tipo',
         'macroproceso',
-        'proceso',
         'nombre',
         'estado',
     ];
@@ -49,13 +48,5 @@ class Actividad extends Model
     public function seguimientos(): HasMany
     {
         return $this->hasMany(Seguimiento::class, 'id_actividad', 'id_actividad');
-    }
-
-    /**
-     * Macroproceso y proceso en una sola línea, omitiendo los vacíos.
-     */
-    public function rutaDeProceso(): string
-    {
-        return collect([$this->macroproceso, $this->proceso])->filter()->implode(' › ');
     }
 }

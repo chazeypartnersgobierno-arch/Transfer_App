@@ -150,8 +150,8 @@ class PlantillaDeCargaTest extends TestCase
 
         $this->assertSame(['Instrucciones', 'Actividades', 'Participantes', 'Listas'], $libro->getSheetNames());
         $this->assertSame('Instrucciones', $libro->getActiveSheet()->getTitle());
-        $this->assertSame(['Macroproceso', 'Proceso', 'Actividad', 'Bloque', 'Tipo'], $this->encabezados($libro->getSheetByName('Actividades')));
-        $this->assertSame(['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Bloque', 'Grupo', 'Rol'], $this->encabezados($libro->getSheetByName('Participantes')));
+        $this->assertSame(['Macroproceso', 'Proceso', 'Actividad', 'Tipo'], $this->encabezados($libro->getSheetByName('Actividades')));
+        $this->assertSame(['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Proceso', 'Grupo', 'Rol'], $this->encabezados($libro->getSheetByName('Participantes')));
         $this->assertSame(Worksheet::SHEETSTATE_HIDDEN, $libro->getSheetByName('Listas')->getSheetState());
         $this->assertNull($libro->getSheetByName('Capacitaciones'));
 
@@ -211,8 +211,8 @@ class PlantillaDeCargaTest extends TestCase
         $participantes = $libro->getSheetByName('Participantes');
 
         $esperadas = [
-            [$actividades, 'D', "'Listas'!\$A\$2:\$A\$2"],
-            [$actividades, 'E', "'Listas'!\$C\$2:\$C\$3"],
+            [$actividades, 'B', "'Listas'!\$A\$2:\$A\$2"],
+            [$actividades, 'D', "'Listas'!\$C\$2:\$C\$3"],
             [$participantes, 'E', "'Listas'!\$A\$2:\$A\$2"],
             [$participantes, 'F', "'Listas'!\$B\$2:\$B\$2"],
         ];
@@ -235,8 +235,8 @@ class PlantillaDeCargaTest extends TestCase
 
         $this->assertSame([], $this->lista($libro, 'A'));
         $this->assertNull($this->validacion($libro->getSheetByName('Participantes'), 'E'));
-        $this->assertNull($this->validacion($libro->getSheetByName('Actividades'), 'D'));
-        $this->assertNotNull($this->validacion($libro->getSheetByName('Actividades'), 'E'));
+        $this->assertNull($this->validacion($libro->getSheetByName('Actividades'), 'B'));
+        $this->assertNotNull($this->validacion($libro->getSheetByName('Actividades'), 'D'));
     }
 
     public function test_un_nombre_que_parece_formula_se_guarda_como_texto(): void

@@ -489,7 +489,6 @@ class FlujoSeleccionYContratacionTest extends TestCase
                 'tipo' => $tipo->value,
                 'id_bloque' => $this->bloque->id_bloque,
                 'macroproceso' => 'Selección y contratación',
-                'proceso' => 'Selección y contratación',
                 'nombre' => $nombre,
             ];
 
@@ -510,7 +509,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
         // La misma actividad otra vez: se rechaza.
         $this->post(route('actividades.guardar'), [
             'id_empresa' => $this->epm->id_empresa, 'tipo' => 'Onboarding', 'id_bloque' => $this->bloque->id_bloque,
-            'macroproceso' => 'Selección y contratación', 'proceso' => 'Selección y contratación',
+            'macroproceso' => 'Selección y contratación',
             'nombre' => 'Inducción general de CCS', 'accion' => 'confirmar',
         ])->assertSessionHasErrors();
 

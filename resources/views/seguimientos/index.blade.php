@@ -145,8 +145,8 @@
                         <tr>
                             <td class="celda-titulo">
                                 {{ $seguimiento->actividad->nombre }}
-                                @if ($seguimiento->actividad->rutaDeProceso() !== '')
-                                    <div class="texto-secundario small">{{ $seguimiento->actividad->rutaDeProceso() }}</div>
+                                @if (filled($seguimiento->actividad->macroproceso))
+                                    <div class="texto-secundario small">{{ $seguimiento->actividad->macroproceso }}</div>
                                 @endif
                             </td>
                             <td class="celda-detalle" data-etiqueta="Grupo"><a href="{{ route('grupos.fases', $seguimiento->grupo) }}" title="Ver las fases del grupo">{{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}</a></td>
