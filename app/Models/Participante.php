@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Persona que recibe la transferencia. Pertenece a un grupo; la empresa se obtiene
@@ -43,6 +44,11 @@ class Participante extends Model
     public function grupo(): BelongsTo
     {
         return $this->belongsTo(Grupo::class, 'id_grupo', 'id_grupo');
+    }
+
+    public function accesos(): HasMany
+    {
+        return $this->hasMany(AccesoSolicitado::class, 'id_participante', 'id_participante');
     }
 
     public function nombreCompleto(): string

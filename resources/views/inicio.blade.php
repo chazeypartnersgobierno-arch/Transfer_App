@@ -15,6 +15,10 @@
         $accesos[] = ['seguimientos.index', 'seguimiento', 'Seguimientos'];
     }
 
+    if (auth()->user()->can('administrar-accesos')) {
+        $accesos[] = ['accesos.index', 'acceso', 'Accesos'];
+    }
+
     $accesos = [
         ...$accesos,
         ['empresas.index', 'empresa', 'Empresas'],

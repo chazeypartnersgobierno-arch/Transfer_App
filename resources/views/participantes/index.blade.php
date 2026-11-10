@@ -86,6 +86,9 @@
                             @can('administrar-participantes')
                                 <td class="celda-acciones">
                                     <div class="acciones">
+                                        @can('administrar-accesos')
+                                            <a href="{{ route('accesos.index', ['id_participante' => $participante->id_participante]) }}" class="btn btn-sm btn-outline-primary">Accesos</a>
+                                        @endcan
                                         @if ($participante->estado)
                                             <a href="{{ route('participantes.editar', $participante) }}" class="btn btn-sm btn-outline-primary">Editar</a>
                                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#baja-{{ $participante->id_participante }}">Dar de baja</button>

@@ -48,6 +48,9 @@
                     <p class="menu-titulo">Seguimiento</p>
                     <ul class="menu-lista">
                         <li><x-menu-enlace ruta="seguimientos.index" activo-en="seguimientos.*" icono="seguimiento">Seguimientos</x-menu-enlace></li>
+                        @can('administrar-accesos')
+                            <li><x-menu-enlace ruta="accesos.index" activo-en="accesos.*" icono="acceso">Accesos</x-menu-enlace></li>
+                        @endcan
                     </ul>
                 @endcan
 

@@ -54,6 +54,13 @@ class AppServiceProvider extends ServiceProvider
             true
         ));
 
+        // Registrar y editar accesos solicitados: admin y consultor (cada uno en las empresas que ve).
+        Gate::define('administrar-accesos', fn (Usuario $usuario) => in_array(
+            $usuario->rol_app,
+            [RolApp::Admin, RolApp::Consultor],
+            true
+        ));
+
         // Vista propia para los enlaces de paginación, con Bootstrap y en español.
         Paginator::defaultView('paginacion');
 

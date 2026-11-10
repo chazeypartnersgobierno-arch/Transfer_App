@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Aplicativo extends Model
 {
@@ -24,5 +25,10 @@ class Aplicativo extends Model
         return [
             'estado' => 'boolean',
         ];
+    }
+
+    public function accesos(): HasMany
+    {
+        return $this->hasMany(AccesoSolicitado::class, 'id_aplicativo', 'id_aplicativo');
     }
 }

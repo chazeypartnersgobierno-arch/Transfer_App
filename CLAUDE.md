@@ -84,6 +84,16 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 - Puede cambiar de grupo, solo a otro de su misma empresa. Puede quedarse en su grupo aunque ese grupo esté de baja, pero no se reactiva a un participante cuyo grupo está de baja.
 - No son usuarios de la app y no tienen relación con `usuarios`.
 
+### Accesos solicitados
+
+- Los registran y editan el admin y el consultor (Gate `administrar-accesos`); el consultor, solo para participantes de su empresa asignada. Los estados están en `App\Enums\EstadoAcceso`.
+- El aplicativo debe ser de la misma empresa que el participante. Para registrar, participante (de grupo y bloque activos) y aplicativo deben estar activos. Una solicitud de un participante o aplicativo dados de baja solo se consulta.
+- Se registran para uno o varios participantes a la vez (una solicitud por persona, en transacción), con filtro por bloque y grupo. Empiezan en Solicitado.
+- No hay dos solicitudes en curso del mismo participante para el mismo aplicativo: "en curso" es cualquier estado salvo Rechazado. Al registrar se omite a quien ya tiene una en curso y al terminar se muestra un resumen de registrados y omitidos, con nombres. Tampoco se reabre una Rechazada si ya hay otra en curso.
+- Los cambios de estado son libres, sin orden obligatorio. Al editar quedan fijos el participante y el aplicativo.
+- `fecha_solicitud` no puede ser futura. `fecha_otorgado` es obligatoria en Otorgado (con la fecha de hoy por defecto, editable), no puede ser anterior a `fecha_solicitud` ni futura, y se vacía al salir de Otorgado.
+- No se borran: se corrigen editándolas.
+
 ### Otras reglas
 
 - Todas las FK con ON DELETE RESTRICT.
@@ -101,9 +111,9 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 | Código | Etiqueta | Permisos |
 |---|---|---|
 | admin | Administrador | Todo: usuarios, catálogos (empresas, fases, bloques, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
-| consultor | Consultor | Seguimientos, sesiones, asistencia, avances de validación y participantes (crear, editar, consultar; participantes también baja y reactivar); los demás catálogos solo lectura |
+| consultor | Consultor | Seguimientos, sesiones, asistencia, avances de validación, participantes y accesos solicitados (crear, editar, consultar; participantes también baja y reactivar), siempre de su empresa asignada; los demás catálogos solo lectura |
 
-- Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla), `dar-seguimiento` y `administrar-participantes` (admin y consultor), no solo ocultando botones.
+- Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla), `dar-seguimiento`, `administrar-participantes` y `administrar-accesos` (admin y consultor), no solo ocultando botones.
 - El administrador siempre es de Chazey y ve todas las empresas (`Usuario::esChazey()`). No existen admins de empresa.
 - El consultor solo ve los datos de las empresas de su asignación activa (`Usuario::idsEmpresasVisibles()`); sin asignación activa no ve datos. Esto también se valida en el servidor.
 - Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión, y si ya estaba dentro sale en su siguiente clic (middleware `activo`, `App\Http\Middleware\UsuarioActivo`).

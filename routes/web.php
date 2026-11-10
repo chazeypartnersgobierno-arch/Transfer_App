@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccesoSolicitadoController;
 use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\AplicativoController;
 use App\Http\Controllers\AsignacionEmpresaController;
@@ -61,6 +62,15 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::put('/participantes/{participante}', [ParticipanteController::class, 'actualizar'])->name('participantes.actualizar');
         Route::patch('/participantes/{participante}/baja', [ParticipanteController::class, 'darDeBaja'])->name('participantes.baja');
         Route::patch('/participantes/{participante}/reactivar', [ParticipanteController::class, 'reactivar'])->name('participantes.reactivar');
+    });
+
+    // Accesos solicitados: admin y consultor, cada uno en las empresas que ve. No se borran: se corrigen.
+    Route::middleware('can:administrar-accesos')->group(function () {
+        Route::get('/accesos', [AccesoSolicitadoController::class, 'index'])->name('accesos.index');
+        Route::get('/accesos/crear', [AccesoSolicitadoController::class, 'crear'])->name('accesos.crear');
+        Route::post('/accesos', [AccesoSolicitadoController::class, 'guardar'])->name('accesos.guardar');
+        Route::get('/accesos/{acceso}/editar', [AccesoSolicitadoController::class, 'editar'])->name('accesos.editar');
+        Route::put('/accesos/{acceso}', [AccesoSolicitadoController::class, 'actualizar'])->name('accesos.actualizar');
     });
 
     // Cambios en catálogos por empresa: solo admin. Quien no cumple el Gate recibe error 403.

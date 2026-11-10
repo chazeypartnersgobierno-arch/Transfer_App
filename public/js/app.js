@@ -88,6 +88,37 @@ document.querySelectorAll('[data-elegir-grupo]').forEach((casilla) => {
     actualizar();
 });
 
+// Nueva solicitud de acceso: botones para marcar o desmarcar a todos los participantes.
+document.querySelectorAll('[data-marcar-todos]').forEach((seccion) => {
+    const botones = seccion.querySelector('[data-botones-marcar]');
+
+    if (!botones) {
+        return;
+    }
+
+    botones.hidden = false;
+    botones.querySelectorAll('[data-marcar]').forEach((boton) => {
+        boton.addEventListener('click', () => {
+            seccion.querySelectorAll('input[data-marcable]').forEach((casilla) => {
+                casilla.checked = boton.dataset.marcar === '1';
+            });
+        });
+    });
+});
+
+// Solicitud de acceso: la fecha otorgado solo se ve en el estado Otorgado.
+// Es solo una ayuda: el servidor la exige en Otorgado y la vacía en los demás estados.
+document.querySelectorAll('select[data-estado-acceso]').forEach((estado) => {
+    const seccion = estado.form.querySelector('[data-solo-otorgado]');
+
+    const actualizar = () => {
+        seccion.hidden = estado.value !== 'Otorgado';
+    };
+
+    estado.addEventListener('change', actualizar);
+    actualizar();
+});
+
 // Botón para ver u ocultar la contraseña.
 document.querySelectorAll('[data-ver-clave]').forEach((boton) => {
     const campo = boton.parentElement.querySelector('input');
