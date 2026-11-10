@@ -1,23 +1,23 @@
 @extends('layouts.app')
 
-@section('titulo', 'Bloques')
+@section('titulo', 'Procesos')
 
 @section('contenido')
     <div class="pagina-encabezado">
         <div>
-            <h1 class="pagina-titulo">Bloques</h1>
-            <p class="pagina-subtitulo">Cada bloque tiene sus grupos y sus actividades.</p>
+            <h1 class="pagina-titulo">Procesos</h1>
+            <p class="pagina-subtitulo">Cada proceso tiene sus grupos y sus actividades.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
         @can('administrar')
-            <a href="{{ route('bloques.crear') }}" class="btn btn-primary">Nuevo bloque</a>
+            <a href="{{ route('bloques.crear') }}" class="btn btn-primary">Nuevo proceso</a>
         @endcan
     </div>
 
     <div class="tarjeta">
         <form method="GET" action="{{ route('bloques.index') }}" class="herramientas">
-            <label for="buscar" class="visually-hidden">Buscar bloque</label>
+            <label for="buscar" class="visually-hidden">Buscar proceso</label>
             <input id="buscar" type="search" name="buscar" value="{{ $buscar }}" class="form-control buscador" placeholder="Buscar por nombre">
 
             @if ($empresas->isNotEmpty())
@@ -80,7 +80,7 @@
                     @empty
                         <tr>
                             <td colspan="4" class="tabla-vacia">
-                                {{ $buscar !== '' ? 'Ningún bloque coincide con tu búsqueda.' : 'No hay bloques para mostrar.' }}
+                                {{ $buscar !== '' ? 'Ningún proceso coincide con tu búsqueda.' : 'No hay procesos para mostrar.' }}
                             </td>
                         </tr>
                     @endforelse
@@ -89,7 +89,7 @@
         </div>
 
         <div class="pie-tabla">
-            <span>{{ $bloques->total() }} {{ $bloques->total() === 1 ? 'bloque' : 'bloques' }}</span>
+            <span>{{ $bloques->total() }} {{ $bloques->total() === 1 ? 'proceso' : 'procesos' }}</span>
             {{ $bloques->links() }}
         </div>
     </div>
@@ -98,7 +98,7 @@
     @can('administrar')
         @foreach ($bloques->where('estado', true) as $bloque)
             <x-confirmar id="baja-{{ $bloque->id_bloque }}" titulo="Dar de baja" :accion="route('bloques.baja', $bloque)" boton="Dar de baja">
-                ¿Quieres dar de baja el bloque {{ $bloque->nombre }}? Podrás reactivarlo después.
+                ¿Quieres dar de baja el proceso {{ $bloque->nombre }}? Podrás reactivarlo después.
             </x-confirmar>
         @endforeach
     @endcan

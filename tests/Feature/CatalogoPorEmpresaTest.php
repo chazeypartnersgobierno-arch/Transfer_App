@@ -28,9 +28,10 @@ class CatalogoPorEmpresaTest extends TestCase
         ];
     }
 
+    /** Cómo se llama en pantalla: la ruta bloques se muestra como "proceso". */
     private function singular(string $ruta): string
     {
-        return rtrim($ruta, 's');
+        return $ruta === 'bloques' ? 'proceso' : rtrim($ruta, 's');
     }
 
     private function textoNuevo(string $ruta): string

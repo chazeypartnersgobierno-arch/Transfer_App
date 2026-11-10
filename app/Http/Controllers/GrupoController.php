@@ -63,7 +63,7 @@ class GrupoController extends Controller
         $bloques = $this->bloquesParaElegir($request);
 
         if ($bloques->isEmpty()) {
-            return redirect()->route('grupos.index')->with('error', 'Primero registra un bloque activo.');
+            return redirect()->route('grupos.index')->with('error', 'Primero registra un proceso activo.');
         }
 
         return view('grupos.formulario', [
@@ -132,7 +132,7 @@ class GrupoController extends Controller
     public function reactivar(Grupo $grupo, GeneradorDeSeguimientos $generador): RedirectResponse
     {
         if (! $grupo->bloque->estado) {
-            return back()->with('error', "No se puede reactivar {$grupo->nombre}: su bloque está dado de baja.");
+            return back()->with('error', "No se puede reactivar {$grupo->nombre}: su proceso está dado de baja.");
         }
 
         $generados = DB::transaction(function () use ($grupo, $generador) {
@@ -187,12 +187,12 @@ class GrupoController extends Controller
     private function mensajes(): array
     {
         return [
-            'id_bloque.required' => 'Elige un bloque.',
-            'id_bloque.integer' => 'Elige un bloque de la lista.',
-            'id_bloque.in' => 'El bloque no existe, está dado de baja o es de otra empresa.',
+            'id_bloque.required' => 'Elige un proceso.',
+            'id_bloque.integer' => 'Elige un proceso de la lista.',
+            'id_bloque.in' => 'El proceso no existe, está dado de baja o es de otra empresa.',
             'nombre.required' => 'Escribe el nombre del grupo.',
             'nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
-            'nombre.unique' => 'Este bloque ya tiene un grupo con este nombre.',
+            'nombre.unique' => 'Este proceso ya tiene un grupo con este nombre.',
         ];
     }
 }

@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Grupos</h1>
-            <p class="pagina-subtitulo">Grupos de participantes de cada bloque.</p>
+            <p class="pagina-subtitulo">Grupos de participantes de cada proceso.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
@@ -30,9 +30,9 @@
                 </select>
             @endif
 
-            <label for="filtro_bloque" class="visually-hidden">Filtrar por bloque</label>
+            <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
             <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
-                <option value="">Todos los bloques</option>
+                <option value="">Todos los procesos</option>
                 @foreach ($bloques as $id => $nombre)
                     <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
                 @endforeach
@@ -51,7 +51,7 @@
                 <thead>
                     <tr>
                         <th scope="col">Nombre</th>
-                        <th scope="col">Bloque</th>
+                        <th scope="col">Proceso</th>
                         @if (auth()->user()->esChazey())
                             <th scope="col">Empresa</th>
                         @endif
@@ -66,7 +66,7 @@
                     @forelse ($grupos as $grupo)
                         <tr>
                             <td class="celda-titulo">{{ $grupo->nombre }}</td>
-                            <td class="celda-detalle" data-etiqueta="Bloque">{{ $grupo->bloque->nombre }}</td>
+                            <td class="celda-detalle" data-etiqueta="Proceso">{{ $grupo->bloque->nombre }}</td>
                             @if (auth()->user()->esChazey())
                                 <td class="celda-detalle" data-etiqueta="Empresa">{{ $grupo->bloque->empresa->nombre }}</td>
                             @endif

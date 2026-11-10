@@ -13,7 +13,7 @@
         <div>
             <h1 class="pagina-titulo">{{ $titulo }}</h1>
             @if ($esNuevo)
-                <p class="pagina-subtitulo">El bloque no se puede cambiar después.</p>
+                <p class="pagina-subtitulo">El proceso no se puede cambiar después.</p>
             @endif
         </div>
     </div>
@@ -26,7 +26,7 @@
             @endunless
 
             @if ($esNuevo)
-                <x-lista name="id_bloque" label="Bloque" :opciones="$opcionesDeBloque" :value="old('id_bloque')" vacia="Elige un bloque" required />
+                <x-lista name="id_bloque" label="Proceso" :opciones="$opcionesDeBloque" :value="old('id_bloque')" vacia="Elige un proceso" required />
             @endif
 
             <x-campo name="nombre" label="Nombre" :value="old('nombre', $grupo->nombre)" maxlength="255" required />
@@ -34,7 +34,7 @@
             @unless ($esNuevo)
                 <dl class="datos-fijos">
                     <div>
-                        <dt>Bloque</dt>
+                        <dt>Proceso</dt>
                         <dd>{{ $grupo->bloque->nombre }}</dd>
                     </div>
                     <div>

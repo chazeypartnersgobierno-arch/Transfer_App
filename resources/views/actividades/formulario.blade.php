@@ -34,14 +34,14 @@
                 {{-- data-empresa indica de qué empresa es cada bloque. --}}
                 <x-lista
                     name="id_bloque"
-                    label="Bloque"
+                    label="Proceso"
                     :opciones="$bloques->pluck('nombre', 'id_bloque')->all()"
                     :value="old('id_bloque')"
                     :datos="$bloques->mapWithKeys(fn ($bloque) => [$bloque->id_bloque => ['data-empresa' => $bloque->id_empresa]])->all()"
-                    vacia="Elige un bloque"
+                    vacia="Elige un proceso"
                     required
                 />
-                <p class="ayuda-campo">La actividad se genera para los grupos de este bloque.</p>
+                <p class="ayuda-campo">La actividad se genera para los grupos de este proceso.</p>
             @else
                 @method('PUT')
             @endif
@@ -60,7 +60,7 @@
                         <dd>{{ $actividad->tipo->value }}</dd>
                     </div>
                     <div>
-                        <dt>Bloque</dt>
+                        <dt>Proceso</dt>
                         <dd>{{ $actividad->bloque->nombre }}</dd>
                     </div>
                 </dl>

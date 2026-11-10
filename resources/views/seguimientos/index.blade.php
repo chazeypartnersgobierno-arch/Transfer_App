@@ -11,17 +11,17 @@
     </div>
 
     {{--
-        Equipo del bloque (responsable, documentador y líderes): uno por bloque, por eso se
-        muestra una sola vez aquí, al filtrar por bloque. Los campos empiezan bloqueados y se
+        Equipo del proceso (responsable, documentador y líderes): uno por proceso, por eso se
+        muestra una sola vez aquí, al filtrar por proceso. Los campos empiezan bloqueados y se
         abren con "Editar" (public/js/app.js); sin JavaScript quedan abiertos y se puede guardar.
     --}}
     @if ($equipo !== null)
         @php($conErrores = $errors->hasAny(array_keys(\App\Models\Seguimiento::CAMPOS_DEL_BLOQUE)))
         <div class="tarjeta equipo-bloque mb-3" id="equipo">
             @if (! $equipo['bloque']->estado)
-                <x-alerta tipo="advertencia">El bloque está dado de baja: su equipo solo se puede consultar.</x-alerta>
+                <x-alerta tipo="advertencia">El proceso está dado de baja: su equipo solo se puede consultar.</x-alerta>
             @elseif ($equipo['total'] === 0)
-                <x-alerta tipo="advertencia">Este bloque todavía no tiene seguimientos.</x-alerta>
+                <x-alerta tipo="advertencia">Este proceso todavía no tiene seguimientos.</x-alerta>
             @elseif ($equipo['distintos']->isNotEmpty())
                 <x-alerta tipo="advertencia">
                     Hay valores distintos en: {{ $equipo['distintos']->implode(', ') }}. Al guardar, todos quedan iguales.
@@ -34,7 +34,7 @@
                 @method('PUT')
 
                 <div class="equipo-bloque-encabezado">
-                    <h2 class="tarjeta-titulo mb-0">Equipo del bloque {{ $equipo['bloque']->nombre }}</h2>
+                    <h2 class="tarjeta-titulo mb-0">Equipo del proceso {{ $equipo['bloque']->nombre }}</h2>
                     @if ($equipo['editable'])
                         {{-- Empieza oculto: el JavaScript lo muestra. --}}
                         <button type="button" class="btn btn-sm btn-outline-primary" data-equipo-editar hidden>Editar</button>
@@ -81,9 +81,9 @@
                 </select>
             @endif
 
-            <label for="filtro_bloque" class="visually-hidden">Filtrar por bloque</label>
+            <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
             <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
-                <option value="">Todos los bloques</option>
+                <option value="">Todos los procesos</option>
                 @foreach ($bloques as $id => $nombre)
                     <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
                 @endforeach

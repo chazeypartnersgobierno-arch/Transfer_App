@@ -57,7 +57,7 @@ class BloqueController extends Controller
 
         $bloque = Bloque::create($datos);
 
-        return redirect()->route('bloques.index')->with('exito', "Se creó el bloque {$bloque->nombre}.");
+        return redirect()->route('bloques.index')->with('exito', "Se creó el proceso {$bloque->nombre}.");
     }
 
     public function editar(Bloque $bloque): View
@@ -76,7 +76,7 @@ class BloqueController extends Controller
 
         $bloque->update($datos);
 
-        return redirect()->route('bloques.index')->with('exito', "Se actualizó el bloque {$bloque->nombre}.");
+        return redirect()->route('bloques.index')->with('exito', "Se actualizó el proceso {$bloque->nombre}.");
     }
 
     /**
@@ -101,7 +101,7 @@ class BloqueController extends Controller
 
         $bloque->update(['estado' => false]);
 
-        return back()->with('exito', "Se dio de baja el bloque {$bloque->nombre}.");
+        return back()->with('exito', "Se dio de baja el proceso {$bloque->nombre}.");
     }
 
     public function reactivar(Bloque $bloque): RedirectResponse
@@ -112,7 +112,7 @@ class BloqueController extends Controller
 
         $bloque->update(['estado' => true]);
 
-        return back()->with('exito', "Se reactivó el bloque {$bloque->nombre}.");
+        return back()->with('exito', "Se reactivó el proceso {$bloque->nombre}.");
     }
 
     /**
@@ -144,9 +144,9 @@ class BloqueController extends Controller
             'id_empresa.required' => 'Elige una empresa.',
             'id_empresa.integer' => 'Elige una empresa de la lista.',
             'id_empresa.exists' => 'La empresa no existe o está dada de baja.',
-            'nombre.required' => 'Escribe el nombre del bloque.',
+            'nombre.required' => 'Escribe el nombre del proceso.',
             'nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
-            'nombre.unique' => 'Esta empresa ya tiene un bloque con este nombre.',
+            'nombre.unique' => 'Esta empresa ya tiene un proceso con este nombre.',
         ];
     }
 }

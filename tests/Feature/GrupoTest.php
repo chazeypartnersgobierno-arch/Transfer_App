@@ -171,7 +171,7 @@ class GrupoTest extends TestCase
 
         $this->actingAs($this->usuario())->get('/grupos/crear')
             ->assertRedirect(route('grupos.index'))
-            ->assertSessionHas('error', 'Primero registra un bloque activo.');
+            ->assertSessionHas('error', 'Primero registra un proceso activo.');
     }
 
     public function test_validaciones_con_mensajes_en_espanol(): void
@@ -181,13 +181,13 @@ class GrupoTest extends TestCase
         $admin = $this->usuario();
 
         $this->actingAs($admin)->post('/grupos', [])
-            ->assertSessionHasErrors(['id_bloque' => 'Elige un bloque.', 'nombre' => 'Escribe el nombre del grupo.']);
+            ->assertSessionHasErrors(['id_bloque' => 'Elige un proceso.', 'nombre' => 'Escribe el nombre del grupo.']);
 
         $this->actingAs($admin)->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Repetido'])
-            ->assertSessionHasErrors(['nombre' => 'Este bloque ya tiene un grupo con este nombre.']);
+            ->assertSessionHasErrors(['nombre' => 'Este proceso ya tiene un grupo con este nombre.']);
 
         $this->actingAs($admin)->post('/grupos', ['id_bloque' => $inactivo->id_bloque, 'nombre' => 'Otro'])
-            ->assertSessionHasErrors(['id_bloque' => 'El bloque no existe, está dado de baja o es de otra empresa.']);
+            ->assertSessionHasErrors(['id_bloque' => 'El proceso no existe, está dado de baja o es de otra empresa.']);
 
         $this->actingAs($admin)->post('/grupos', ['id_bloque' => ['x'], 'nombre' => 'Otro'])
             ->assertSessionHasErrors('id_bloque');
@@ -260,7 +260,7 @@ class GrupoTest extends TestCase
         $admin = $this->usuario();
 
         $this->actingAs($admin)->put("/grupos/{$grupo->id_grupo}", ['nombre' => 'Ocupado'])
-            ->assertSessionHasErrors(['nombre' => 'Este bloque ya tiene un grupo con este nombre.']);
+            ->assertSessionHasErrors(['nombre' => 'Este proceso ya tiene un grupo con este nombre.']);
 
         $this->actingAs($admin)->put("/grupos/{$grupo->id_grupo}", ['nombre' => 'Actual'])->assertSessionHasNoErrors();
     }
@@ -436,7 +436,7 @@ class GrupoTest extends TestCase
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
             'id_bloque' => $this->bloque->id_bloque,
-            'nombre' => 'Solo este bloque',
+            'nombre' => 'Solo este proceso',
         ])->assertSessionHas('exito');
 
         $this->assertSame(1, $propio->seguimientos()->count());
@@ -505,7 +505,7 @@ class GrupoTest extends TestCase
 
         $this->actingAs($admin)->post('/actividades', $datos)
             ->assertOk()
-            ->assertSee('Se generarán 6 seguimientos en el bloque Tesorería.');
+            ->assertSee('Se generarán 6 seguimientos en el proceso Tesorería.');
 
         $this->actingAs($admin)->post('/actividades', [...$datos, 'accion' => 'confirmar'])
             ->assertSessionHas('exito', 'Se creó la actividad Tres fases. Se generaron 6 seguimientos.');
@@ -523,7 +523,7 @@ class GrupoTest extends TestCase
             'id_bloque' => $this->bloque->id_bloque,
             'nombre' => 'General',
         ])->assertOk()
-            ->assertSee('en el bloque Tesorería')
+            ->assertSee('en el proceso Tesorería')
             ->assertSee('name="id_bloque" value="'.$this->bloque->id_bloque.'"', false);
     }
 
@@ -730,7 +730,7 @@ class GrupoTest extends TestCase
         $grupo = $this->grupo($inactivo, 'Grupo uno', false);
 
         $this->actingAs($this->usuario())->from('/grupos')->patch("/grupos/{$grupo->id_grupo}/reactivar")
-            ->assertSessionHas('error', 'No se puede reactivar Grupo uno: su bloque está dado de baja.');
+            ->assertSessionHas('error', 'No se puede reactivar Grupo uno: su proceso está dado de baja.');
 
         $this->assertFalse($grupo->fresh()->estado);
         $this->assertSame(0, Seguimiento::count());

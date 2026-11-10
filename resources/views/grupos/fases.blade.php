@@ -10,7 +10,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Fases del grupo {{ $grupo->nombre }}</h1>
-            <p class="pagina-subtitulo">Bloque {{ $grupo->bloque->nombre }} · {{ $grupo->bloque->empresa->nombre }}</p>
+            <p class="pagina-subtitulo">Proceso {{ $grupo->bloque->nombre }} · {{ $grupo->bloque->empresa->nombre }}</p>
         </div>
         <a href="{{ route('seguimientos.index', ['id_grupo' => $grupo->id_grupo, 'id_bloque' => $grupo->id_bloque]) }}" class="btn btn-outline-primary">Ver en la lista de seguimientos</a>
     </div>

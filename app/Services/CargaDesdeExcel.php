@@ -239,7 +239,7 @@ class CargaDesdeExcel
             $tipo = $revisada['tipo'];
 
             if ($bloque !== null && $tipo !== null && isset($yaCargadas["{$bloque->id_bloque}|{$tipo->value}"])) {
-                $errores[] = "El bloque {$bloque->nombre} ya tiene actividades de tipo {$tipo->value}.";
+                $errores[] = "El proceso {$bloque->nombre} ya tiene actividades de tipo {$tipo->value}.";
             }
 
             if ($errores === []) {
@@ -250,10 +250,10 @@ class CargaDesdeExcel
         }
 
         foreach ($yaCargadas as $existente) {
-            $resultado->erroresGenerales[] = "El bloque {$existente['bloque']} ya tiene {$existente['total']} "
+            $resultado->erroresGenerales[] = "El proceso {$existente['bloque']} ya tiene {$existente['total']} "
                 .($existente['total'] === 1 ? 'actividad' : 'actividades')
                 ." de tipo {$existente['tipo']} (se cuentan también las dadas de baja y las creadas a mano). "
-                .'Las actividades se cargan una sola vez por bloque y tipo: los cambios se hacen en la pantalla de Actividades.';
+                .'Las actividades se cargan una sola vez por proceso y tipo: los cambios se hacen en la pantalla de Actividades.';
         }
     }
 
@@ -355,7 +355,7 @@ class CargaDesdeExcel
                 $grupo = $bloque->grupos->first(fn (Grupo $g) => Texto::llave($g->nombre) === Texto::llave($textoGrupo));
 
                 if ($grupo === null) {
-                    $errores[] = "El grupo «{$textoGrupo}» no existe en el bloque {$bloque->nombre}.";
+                    $errores[] = "El grupo «{$textoGrupo}» no existe en el proceso {$bloque->nombre}.";
                 } elseif (! $grupo->estado) {
                     $errores[] = "El grupo {$grupo->nombre} está dado de baja.";
                     $grupo = null;
@@ -401,7 +401,7 @@ class CargaDesdeExcel
     private function buscarBloque(string $texto, Collection $bloques, array &$errores, bool $conTodos = false): ?Bloque
     {
         if ($texto === '') {
-            $errores[] = 'Falta el bloque.';
+            $errores[] = 'Falta el proceso.';
 
             return null;
         }
@@ -411,14 +411,14 @@ class CargaDesdeExcel
         if ($bloque === null) {
             // "Todos" se usaba antes: ahora cada actividad lleva un bloque real.
             $errores[] = $conTodos && Texto::llave($texto) === 'todos'
-                ? 'Ya no se usa «Todos»: cada actividad lleva un bloque de la empresa.'
-                : "El bloque «{$texto}» no existe en esta empresa.";
+                ? 'Ya no se usa «Todos»: cada actividad lleva un proceso de la empresa.'
+                : "El proceso «{$texto}» no existe en esta empresa.";
 
             return null;
         }
 
         if (! $bloque->estado) {
-            $errores[] = "El bloque {$bloque->nombre} está dado de baja.";
+            $errores[] = "El proceso {$bloque->nombre} está dado de baja.";
 
             return null;
         }

@@ -44,7 +44,7 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
         // Columnas de la hoja oculta Listas: A bloques, B grupos, C tipos.
         // Toda actividad lleva un bloque real: no hay opción "Todos".
         $columnasDeListas = [
-            ['Bloques', $bloques],
+            ['Procesos', $bloques],
             ['Grupos', $grupos],
             ['Tipos', $tipos],
         ];
@@ -85,16 +85,16 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
             [],
             ['Cómo usarla'],
             ['1. Llena las hojas Actividades y Participantes, una fila por registro, sin cambiar los encabezados ni el nombre de las hojas.'],
-            ['2. Usa las listas desplegables: traen los bloques y grupos activos al momento de descargar la plantilla.'],
-            ['   Si después agregas bloques o grupos en la app, descarga una plantilla nueva.'],
+            ['2. Usa las listas desplegables: traen los procesos y grupos activos al momento de descargar la plantilla.'],
+            ['   Si después agregas procesos o grupos en la app, descarga una plantilla nueva.'],
             ['3. Sube el archivo en la pantalla "Carga desde Excel". Antes de guardar verás nuevos, duplicados y errores por hoja y fila.'],
             ['4. Si hay errores no se guarda nada: corrígelos en el archivo y vuelve a subirlo.'],
             [],
             ['Reglas'],
             ['• Tipo Onboarding: la actividad genera 1 seguimiento por grupo, en la fase Onboarding.'],
             ['• Tipo Transición: la actividad pasa por las tres fases (Transferencia, Validación y Estabilización) y genera 3 seguimientos por grupo.'],
-            ['• Toda actividad lleva un bloque de la empresa, también las de Onboarding: cada bloque tiene su propio Onboarding.'],
-            ['• Las actividades se cargan una sola vez por bloque y tipo: si el bloque ya tiene actividades de ese tipo, se rechaza la carga.'],
+            ['• Toda actividad lleva un proceso de la empresa, también las de Onboarding: cada proceso tiene su propio Onboarding.'],
+            ['• Las actividades se cargan una sola vez por proceso y tipo: si el proceso ya tiene actividades de ese tipo, se rechaza la carga.'],
             ['  Los cambios posteriores se hacen en la app.'],
             ['• Las actividades se guardan en el orden de las filas. Las filas repetidas son error.'],
             ['• Un participante cuyo correo ya existe se marca como duplicado y no se vuelve a insertar.'],

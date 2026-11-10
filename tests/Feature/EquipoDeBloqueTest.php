@@ -100,7 +100,7 @@ class EquipoDeBloqueTest extends TestCase
 
         // Solo un enlace a la lista filtrada por su bloque, donde está el equipo.
         $this->actingAs($admin)->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")
-            ->assertDontSee('Equipo del bloque Tesorería')
+            ->assertDontSee('Equipo del proceso Tesorería')
             ->assertDontSee('Sofía')
             ->assertSee(route('seguimientos.index', ['id_bloque' => $this->bloque->id_bloque]).'#equipo', false)
             ->assertDontSee('name="responsable"', false)
@@ -137,14 +137,14 @@ class EquipoDeBloqueTest extends TestCase
 
         $this->actingAs($consultor)->get($this->lista())
             ->assertOk()
-            ->assertSee('Equipo del bloque Tesorería')
+            ->assertSee('Equipo del proceso Tesorería')
             ->assertSee('data-equipo-bloque', false)
             ->assertSee('Se actualizarán 4 seguimientos.');
 
         // Al guardar vuelve a la lista con sus filtros.
         $this->actingAs($consultor)->from($this->lista())->put($this->url(), self::EQUIPO)
             ->assertRedirect($this->lista())
-            ->assertSessionHas('exito', 'Se guardó el equipo del bloque Tesorería. Se actualizaron 4 seguimientos.');
+            ->assertSessionHas('exito', 'Se guardó el equipo del proceso Tesorería. Se actualizaron 4 seguimientos.');
 
         foreach ($propios as $seguimiento) {
             $this->assertSame(self::EQUIPO, $this->equipoDe($seguimiento));
@@ -174,7 +174,7 @@ class EquipoDeBloqueTest extends TestCase
             ->assertSessionHasErrors(['lider_transferencia' => 'Este campo no puede tener más de 255 caracteres.']);
 
         // Un bloque ajeno en el filtro se ignora: no aparece su equipo.
-        $this->actingAs($consultor)->get($this->lista($bloqueAjeno))->assertOk()->assertDontSee('Equipo del bloque Ajeno');
+        $this->actingAs($consultor)->get($this->lista($bloqueAjeno))->assertOk()->assertDontSee('Equipo del proceso Ajeno');
         $this->actingAs($consultor)->put($this->url($bloqueAjeno), self::EQUIPO)->assertNotFound();
     }
 
@@ -184,22 +184,22 @@ class EquipoDeBloqueTest extends TestCase
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get($this->lista($vacio))
-            ->assertSee('Este bloque todavía no tiene seguimientos')
+            ->assertSee('Este proceso todavía no tiene seguimientos')
             ->assertDontSee('data-equipo-bloque', false)
             ->assertDontSee('>Guardar<', false);
         $this->actingAs($admin)->from('/seguimientos')->put($this->url($vacio), self::EQUIPO)
-            ->assertSessionHas('error', 'El bloque Vacío todavía no tiene seguimientos.');
+            ->assertSessionHas('error', 'El proceso Vacío todavía no tiene seguimientos.');
 
         $seguimiento = $this->seguimiento($this->actividad('Uno'), null, 1, ['responsable' => 'Original']);
         $this->bloque->update(['estado' => false]);
 
         $this->actingAs($admin)->get($this->lista())
-            ->assertSee('El bloque está dado de baja')
+            ->assertSee('El proceso está dado de baja')
             ->assertSee('value="Original"', false)
             ->assertDontSee('data-equipo-bloque', false)
             ->assertDontSee('>Guardar<', false);
         $this->actingAs($admin)->from('/seguimientos')->put($this->url(), self::EQUIPO)
-            ->assertSessionHas('error', 'El bloque Tesorería está dado de baja: su equipo no se puede cambiar.');
+            ->assertSessionHas('error', 'El proceso Tesorería está dado de baja: su equipo no se puede cambiar.');
         $this->assertSame('Original', $seguimiento->fresh()->responsable);
     }
 
@@ -252,9 +252,9 @@ class EquipoDeBloqueTest extends TestCase
         $this->seguimiento($this->actividad('Uno'), null, 1, self::EQUIPO);
         $admin = $this->usuario();
 
-        $this->actingAs($admin)->get('/seguimientos')->assertDontSee('Equipo del bloque');
+        $this->actingAs($admin)->get('/seguimientos')->assertDontSee('Equipo del proceso');
         $this->actingAs($admin)->get($this->lista())
-            ->assertSee('Equipo del bloque Tesorería')
+            ->assertSee('Equipo del proceso Tesorería')
             ->assertSee('value="Sofía"', false)
             ->assertSee('data-original="Sofía"', false)
             ->assertSee(route('seguimientos.equipo.actualizar', $this->bloque), false)

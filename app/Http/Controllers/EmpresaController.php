@@ -64,7 +64,7 @@ class EmpresaController extends Controller
         // "usuarios" son los consultores activos con asignación activa a esta empresa.
         $consultas = [
             'usuarios' => $empresa->asignaciones()->activas()->whereHas('usuario', fn ($q) => $q->where('estado', true)),
-            'bloques' => $empresa->bloques()->where('estado', true),
+            'procesos' => $empresa->bloques()->where('estado', true), // los bloques se llaman "procesos" en pantalla
             'aplicativos' => $empresa->aplicativos()->where('estado', true),
             'actividades' => $empresa->actividades()->where('estado', true),
         ];

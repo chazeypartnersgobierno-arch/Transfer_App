@@ -172,9 +172,9 @@ class PlantillaDeCargaTest extends TestCase
 
         $this->assertStringContainsString('Empresa Uno (UNO)', $texto);
         $this->assertStringContainsString('Transición: la actividad pasa por las tres fases', $texto);
-        $this->assertStringContainsString('Toda actividad lleva un bloque', $texto);
+        $this->assertStringContainsString('Toda actividad lleva un proceso', $texto);
         $this->assertStringNotContainsString('Todos', $texto);
-        $this->assertStringContainsString('una sola vez por bloque y tipo', $texto);
+        $this->assertStringContainsString('una sola vez por proceso y tipo', $texto);
 
         foreach (['Macroproceso', 'Apellidos', 'Fecha de ingreso', 'Rol'] as $columna) {
             $this->assertStringContainsString($columna, $texto);

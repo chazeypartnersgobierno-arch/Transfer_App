@@ -6,7 +6,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Actividades</h1>
-            <p class="pagina-subtitulo">Lo que se transfiere en cada bloque.</p>
+            <p class="pagina-subtitulo">Lo que se transfiere en cada proceso.</p>
         </div>
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
@@ -38,9 +38,9 @@
                 @endforeach
             </select>
 
-            <label for="filtro_bloque" class="visually-hidden">Filtrar por bloque</label>
+            <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
             <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
-                <option value="">Todos los bloques</option>
+                <option value="">Todos los procesos</option>
                 @foreach ($bloques as $id => $nombre)
                     <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
                 @endforeach

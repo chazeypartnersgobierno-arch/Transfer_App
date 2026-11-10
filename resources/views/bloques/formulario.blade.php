@@ -3,7 +3,7 @@
 
 @php
     $esNuevo = ! $bloque->exists;
-    $titulo = $esNuevo ? 'Nuevo bloque' : 'Editar bloque';
+    $titulo = $esNuevo ? 'Nuevo proceso' : 'Editar proceso';
 @endphp
 
 @section('titulo', $titulo)

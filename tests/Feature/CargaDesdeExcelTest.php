@@ -267,10 +267,10 @@ class CargaDesdeExcelTest extends TestCase
             ['', 'Nómina', 'Inexistente', 'Onboarding'],
             ['', 'Viejo', 'De baja', 'Transición'],
         ]))
-            ->assertSee('Falta el bloque.')
-            ->assertSee('Ya no se usa «Todos»: cada actividad lleva un bloque de la empresa.')
-            ->assertSee('El bloque «Nómina» no existe en esta empresa.')
-            ->assertSee('El bloque Viejo está dado de baja.')
+            ->assertSee('Falta el proceso.')
+            ->assertSee('Ya no se usa «Todos»: cada actividad lleva un proceso de la empresa.')
+            ->assertSee('El proceso «Nómina» no existe en esta empresa.')
+            ->assertSee('El proceso Viejo está dado de baja.')
             ->assertSee('Corrige los errores en el archivo y vuelve a subirlo.')
             ->assertDontSee('Confirmar y guardar');
 
@@ -332,13 +332,13 @@ class CargaDesdeExcelTest extends TestCase
             'estado' => false,
         ]);
         $pagos = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
-        Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'id_bloque' => $pagos->id_bloque, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Otro bloque']);
+        Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'id_bloque' => $pagos->id_bloque, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Otro proceso']);
 
         $this->revisar($this->archivo([
             ['', 'Tesorería', 'Nueva de onboarding', 'Onboarding'],
         ]))
-            ->assertSee('El bloque Tesorería ya tiene 1 actividad de tipo Onboarding (se cuentan también las dadas de baja y las creadas a mano).')
-            ->assertSee('El bloque Tesorería ya tiene actividades de tipo Onboarding.')
+            ->assertSee('El proceso Tesorería ya tiene 1 actividad de tipo Onboarding (se cuentan también las dadas de baja y las creadas a mano).')
+            ->assertSee('El proceso Tesorería ya tiene actividades de tipo Onboarding.')
             ->assertDontSee('Confirmar y guardar');
 
         // El mismo bloque con el otro tipo sí se puede cargar.
@@ -437,7 +437,7 @@ class CargaDesdeExcelTest extends TestCase
             ->assertSee('La fecha de ingreso «31/02/2026» no es válida: usa el formato dd/mm/aaaa.')
             ->assertSee('La fecha de ingreso «2027-01-15» no es válida')
             ->assertSee('La fecha de ingreso «ayer» no es válida')
-            ->assertSee('El grupo «Grupo 9» no existe en el bloque Tesorería.')
+            ->assertSee('El grupo «Grupo 9» no existe en el proceso Tesorería.')
             ->assertSee('El grupo Grupo viejo está dado de baja.')
             ->assertSee('El rol no puede tener más de 50 caracteres.')
             ->assertSee('Falta el rol.')
@@ -500,6 +500,6 @@ class CargaDesdeExcelTest extends TestCase
     {
         $this->expectException(QueryException::class);
 
-        Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Sin bloque']);
+        Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Sin proceso']);
     }
 }

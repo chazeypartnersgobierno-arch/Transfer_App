@@ -1,6 +1,6 @@
 {{--
     Registrar una solicitud para uno o varios participantes a la vez (una por persona).
-    Arriba se filtra (empresa, bloque, grupo); abajo se elige el aplicativo y a quiénes.
+    Arriba se filtra (empresa, proceso, grupo); abajo se elige el aplicativo y a quiénes.
     Quien ya tiene una solicitud en curso de ese aplicativo se omite y se avisa al guardar.
 --}}
 @extends('layouts.app')
@@ -25,9 +25,9 @@
             @endif
 
             @if ($idEmpresa !== null)
-                <label for="filtro_bloque" class="visually-hidden">Filtrar por bloque</label>
+                <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
                 <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
-                    <option value="">Todos los bloques</option>
+                    <option value="">Todos los procesos</option>
                     @foreach ($bloques as $id => $nombre)
                         <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
                     @endforeach

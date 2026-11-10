@@ -19,13 +19,13 @@ class EquipoDeBloqueController extends Controller
     public function actualizar(Request $request, Bloque $bloque): RedirectResponse
     {
         if (! $bloque->estado) {
-            return back()->with('error', "El bloque {$bloque->nombre} está dado de baja: su equipo no se puede cambiar.");
+            return back()->with('error', "El proceso {$bloque->nombre} está dado de baja: su equipo no se puede cambiar.");
         }
 
         $total = Seguimiento::delBloque($bloque->id_bloque)->count();
 
         if ($total === 0) {
-            return back()->with('error', "El bloque {$bloque->nombre} todavía no tiene seguimientos.");
+            return back()->with('error', "El proceso {$bloque->nombre} todavía no tiene seguimientos.");
         }
 
         $reglas = array_fill_keys(array_keys(Seguimiento::CAMPOS_DEL_BLOQUE), ['nullable', 'string', 'max:255']);
@@ -36,7 +36,7 @@ class EquipoDeBloqueController extends Controller
         Seguimiento::delBloque($bloque->id_bloque)->update($datos);
 
         // De vuelta a la lista, con los filtros con los que se estaba trabajando.
-        return back()->with('exito', "Se guardó el equipo del bloque {$bloque->nombre}. "
+        return back()->with('exito', "Se guardó el equipo del proceso {$bloque->nombre}. "
             .($total === 1 ? 'Se actualizó 1 seguimiento.' : "Se actualizaron {$total} seguimientos."));
     }
 }

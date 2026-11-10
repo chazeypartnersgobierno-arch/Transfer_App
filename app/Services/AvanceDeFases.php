@@ -96,7 +96,7 @@ class AvanceDeFases
 
         ['terminadas' => $terminadas, 'total' => $total] = $this->avance($anterior, $grupo);
 
-        return "Esta fase se habilitará cuando concluya {$anterior->nombre} del bloque {$grupo->bloque->nombre} – {$grupo->nombre} "
+        return "Esta fase se habilitará cuando concluya {$anterior->nombre} del proceso {$grupo->bloque->nombre} – {$grupo->nombre} "
             ."({$terminadas} de {$total} ".($total === 1 ? 'actividad terminada' : 'actividades terminadas').').';
     }
 

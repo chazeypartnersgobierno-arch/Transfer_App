@@ -193,7 +193,7 @@ class AvanceDeFasesTest extends TestCase
         $this->de($this->grupo1, 1, $this->onboarding1)->update(['estado_actividad' => EstadoActividad::Completada]);
 
         $this->assertSame(
-            'Esta fase se habilitará cuando concluya Onboarding del bloque Tesorería – Grupo 1 (1 de 2 actividades terminadas).',
+            'Esta fase se habilitará cuando concluya Onboarding del proceso Tesorería – Grupo 1 (1 de 2 actividades terminadas).',
             $this->servicio()->mensajeDeBloqueo($this->fase(2), $this->grupo1)
         );
         $this->assertNull($this->servicio()->mensajeDeBloqueo($this->fase(1), $this->grupo1));
@@ -224,12 +224,12 @@ class AvanceDeFasesTest extends TestCase
             ->assertOk()
             ->assertSee('Consultar seguimiento')
             ->assertSee('alert alert-warning aviso-bloqueo', false)
-            ->assertSee('Esta fase se habilitará cuando concluya Onboarding del bloque Tesorería – Grupo 1 (0 de 2 actividades terminadas).')
+            ->assertSee('Esta fase se habilitará cuando concluya Onboarding del proceso Tesorería – Grupo 1 (0 de 2 actividades terminadas).')
             ->assertSee('<fieldset disabled', false)
             ->assertDontSee('Nueva sesión');
 
         $this->actingAs($this->admin)->put("/seguimientos/{$bloqueado->id_seguimiento}", ['estado_actividad' => 'Completada'])
-            ->assertSessionHas('error', 'Esta fase se habilitará cuando concluya Onboarding del bloque Tesorería – Grupo 1 (0 de 2 actividades terminadas).');
+            ->assertSessionHas('error', 'Esta fase se habilitará cuando concluya Onboarding del proceso Tesorería – Grupo 1 (0 de 2 actividades terminadas).');
         $this->assertNull($bloqueado->fresh()->estado_actividad);
 
         // Onboarding sí se edita.
@@ -254,7 +254,7 @@ class AvanceDeFasesTest extends TestCase
         $datos = ['fecha' => '2027-03-10', 'tema' => 'Tema', 'modalidad' => 'Virtual', 'seguimientos' => [$bloqueado->id_seguimiento]];
 
         $this->actingAs($this->admin)->get("/seguimientos/{$bloqueado->id_seguimiento}/sesiones/crear")
-            ->assertSessionHas('error', 'Esta fase se habilitará cuando concluya Onboarding del bloque Tesorería – Grupo 1 (0 de 2 actividades terminadas).');
+            ->assertSessionHas('error', 'Esta fase se habilitará cuando concluya Onboarding del proceso Tesorería – Grupo 1 (0 de 2 actividades terminadas).');
         $this->actingAs($this->admin)->post("/seguimientos/{$bloqueado->id_seguimiento}/sesiones", $datos)->assertSessionHas('error');
 
         // Con el grupo 1 habilitado y el grupo 2 no: el grupo 2 aparece sin poder elegirse y el servidor lo rechaza.
@@ -264,10 +264,10 @@ class AvanceDeFasesTest extends TestCase
         $this->actingAs($this->admin)->get("/seguimientos/{$bloqueado->id_seguimiento}/sesiones/crear")
             ->assertOk()
             ->assertSee('value="'.$otro->id_seguimiento.'" class="form-check-input" data-elegir-grupo  disabled', false) // dos espacios: el @checked vacío
-            ->assertSee('Esta fase se habilitará cuando concluya Onboarding del bloque Tesorería – Grupo 2');
+            ->assertSee('Esta fase se habilitará cuando concluya Onboarding del proceso Tesorería – Grupo 2');
 
         $this->actingAs($this->admin)->post("/seguimientos/{$bloqueado->id_seguimiento}/sesiones", [...$datos, 'seguimientos' => [$bloqueado->id_seguimiento, $otro->id_seguimiento]])
-            ->assertSessionHasErrors(['seguimientos' => 'La fase todavía no está habilitada para: Grupo 2 (Esta fase se habilitará cuando concluya Onboarding del bloque Tesorería – Grupo 2 (0 de 2 actividades terminadas).)']);
+            ->assertSessionHasErrors(['seguimientos' => 'La fase todavía no está habilitada para: Grupo 2 (Esta fase se habilitará cuando concluya Onboarding del proceso Tesorería – Grupo 2 (0 de 2 actividades terminadas).)']);
         $this->assertSame(0, Sesion::count());
 
         $this->actingAs($this->admin)->post("/seguimientos/{$bloqueado->id_seguimiento}/sesiones", $datos)->assertSessionHas('exito');
@@ -290,7 +290,7 @@ class AvanceDeFasesTest extends TestCase
         $this->completar($this->grupo1, 1);
 
         $this->actingAs($this->admin)->get("/seguimientos/{$validacion->id_seguimiento}/avances/crear")
-            ->assertSessionHas('error', 'Esta fase se habilitará cuando concluya Transferencia del bloque Tesorería – Grupo 1 (0 de 1 actividad terminada).');
+            ->assertSessionHas('error', 'Esta fase se habilitará cuando concluya Transferencia del proceso Tesorería – Grupo 1 (0 de 1 actividad terminada).');
         $this->actingAs($this->admin)->post("/seguimientos/{$validacion->id_seguimiento}/avances", $datos)->assertSessionHas('error');
         $this->assertSame(0, AvanceValidacion::count());
 
@@ -322,7 +322,7 @@ class AvanceDeFasesTest extends TestCase
         // Una fase bloqueada no carga sus actividades: muestra el aviso.
         $this->actingAs($this->admin)->get($url.'?fase='.$this->fase(3)->id_fase)
             ->assertOk()
-            ->assertSee('Esta fase se habilitará cuando concluya Transferencia del bloque Tesorería – Grupo 1 (0 de 1 actividad terminada).')
+            ->assertSee('Esta fase se habilitará cuando concluya Transferencia del proceso Tesorería – Grupo 1 (0 de 1 actividad terminada).')
             ->assertDontSee('Conciliar cuentas');
 
         // Otra empresa no lo ve.

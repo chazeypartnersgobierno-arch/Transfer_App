@@ -110,8 +110,8 @@ class ActividadTest extends TestCase
         $bloqueA2 = $this->bloque($a, 'Dos');
         $bloqueB = $this->bloque($b, 'Tres');
         $this->actividad($a, TipoActividad::Onboarding, null, ['nombre' => 'En onboarding']);
-        $this->actividad($a, TipoActividad::Transicion, $bloqueA1, ['nombre' => 'En bloque uno']);
-        $this->actividad($a, TipoActividad::Transicion, $bloqueA2, ['nombre' => 'En bloque dos']);
+        $this->actividad($a, TipoActividad::Transicion, $bloqueA1, ['nombre' => 'En proceso uno']);
+        $this->actividad($a, TipoActividad::Transicion, $bloqueA2, ['nombre' => 'En proceso dos']);
         $this->actividad($b, TipoActividad::Transicion, $bloqueB, ['nombre' => 'De la otra']);
         $admin = $this->usuario();
 
@@ -119,10 +119,10 @@ class ActividadTest extends TestCase
             ->assertSee('De la otra')->assertDontSee('En onboarding');
 
         $this->actingAs($admin)->get('/actividades?tipo=Onboarding')
-            ->assertSee('En onboarding')->assertDontSee('En bloque uno');
+            ->assertSee('En onboarding')->assertDontSee('En proceso uno');
 
         $this->actingAs($admin)->get("/actividades?id_bloque={$bloqueA1->id_bloque}")
-            ->assertSee('En bloque uno')->assertDontSee('En bloque dos');
+            ->assertSee('En proceso uno')->assertDontSee('En proceso dos');
 
         // Con otra empresa elegida, un bloque de la anterior se ignora, no deja la lista vacía.
         $this->actingAs($admin)->get("/actividades?id_empresa={$b->id_empresa}&id_bloque={$bloqueA1->id_bloque}")
@@ -218,7 +218,7 @@ class ActividadTest extends TestCase
                 'tipo' => $tipo,
                 'id_bloque' => 'todos',
                 'nombre' => 'Inducción general',
-            ])->assertSessionHasErrors(['id_bloque' => 'Elige un bloque de la lista.']);
+            ])->assertSessionHasErrors(['id_bloque' => 'Elige un proceso de la lista.']);
         }
 
         $this->assertSame(0, Actividad::count());
@@ -234,7 +234,7 @@ class ActividadTest extends TestCase
                 'id_empresa' => $empresa->id_empresa,
                 'tipo' => $tipo,
                 'nombre' => 'Sin elegir',
-            ])->assertSessionHasErrors(['id_bloque' => 'Elige un bloque.']);
+            ])->assertSessionHasErrors(['id_bloque' => 'Elige un proceso.']);
         }
 
         $this->assertSame(0, Actividad::count());
@@ -260,7 +260,7 @@ class ActividadTest extends TestCase
         $empresa = $this->empresa('AAA');
         $otra = $this->empresa('BBB');
         $admin = $this->usuario();
-        $mensaje = 'El bloque no existe, está dado de baja o es de otra empresa.';
+        $mensaje = 'El proceso no existe, está dado de baja o es de otra empresa.';
 
         $this->actingAs($admin)->post('/actividades', $this->datos($empresa, $this->bloque($otra)))
             ->assertSessionHasErrors(['id_bloque' => $mensaje]);
@@ -359,7 +359,7 @@ class ActividadTest extends TestCase
         $this->actingAs($this->usuario())->get('/actividades/crear')
             ->assertOk()
             ->assertSee('data-formulario-actividad', false)
-            ->assertDontSee('Todos los bloques')
+            ->assertDontSee('Todos los procesos')
             ->assertSee('name="tipo"', false)
             ->assertDontSee('data-campo-bloque', false)
             ->assertSee('data-empresa="'.$empresa->id_empresa.'"', false)
@@ -475,11 +475,11 @@ class ActividadTest extends TestCase
     {
         $empresa = $this->empresa();
         $bloque = $this->bloque($empresa, 'Uno', false);
-        $conBloque = $this->actividad($empresa, TipoActividad::Transicion, $bloque, ['nombre' => 'Con bloque', 'estado' => false]);
+        $conBloque = $this->actividad($empresa, TipoActividad::Transicion, $bloque, ['nombre' => 'Con proceso', 'estado' => false]);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->from('/actividades')->patch("/actividades/{$conBloque->id_actividad}/reactivar")
-            ->assertSessionHas('error', 'No se puede reactivar Con bloque: su bloque está dado de baja.');
+            ->assertSessionHas('error', 'No se puede reactivar Con proceso: su proceso está dado de baja.');
         $this->assertFalse($conBloque->fresh()->estado);
 
         $inactiva = $this->empresa('INACTIVA', false);

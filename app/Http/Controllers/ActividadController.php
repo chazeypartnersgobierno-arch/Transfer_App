@@ -197,7 +197,7 @@ class ActividadController extends Controller
         }
 
         if (! $actividad->bloque->estado) {
-            return back()->with('error', "No se puede reactivar {$actividad->nombre}: su bloque está dado de baja.");
+            return back()->with('error', "No se puede reactivar {$actividad->nombre}: su proceso está dado de baja.");
         }
 
         $generados = DB::transaction(function () use ($actividad, $generador) {
@@ -250,9 +250,9 @@ class ActividadController extends Controller
             'id_empresa.exists' => 'La empresa no existe o está dada de baja.',
             'tipo.required' => 'Elige un tipo.',
             'tipo.enum' => 'Elige un tipo de la lista.',
-            'id_bloque.required' => 'Elige un bloque.',
-            'id_bloque.integer' => 'Elige un bloque de la lista.',
-            'id_bloque.exists' => 'El bloque no existe, está dado de baja o es de otra empresa.',
+            'id_bloque.required' => 'Elige un proceso.',
+            'id_bloque.integer' => 'Elige un proceso de la lista.',
+            'id_bloque.exists' => 'El proceso no existe, está dado de baja o es de otra empresa.',
             'macroproceso.max' => 'El macroproceso no puede tener más de 255 caracteres.',
             'nombre.required' => 'Escribe el nombre de la actividad.',
             'nombre.max' => 'El nombre no puede tener más de 500 caracteres.',

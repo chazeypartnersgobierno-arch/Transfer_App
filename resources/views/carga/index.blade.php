@@ -16,7 +16,7 @@
         <div class="tarjeta tarjeta-formulario mb-3">
             <h2 class="tarjeta-titulo">1. Descarga la plantilla</h2>
             <p class="texto-secundario">
-                Si después agregas bloques o grupos, descárgala de nuevo.
+                Si después agregas procesos o grupos, descárgala de nuevo.
             </p>
 
             {{-- GET: descargar no cambia datos. --}}

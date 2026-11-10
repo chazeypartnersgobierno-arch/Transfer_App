@@ -18,6 +18,7 @@ Fases en orden: Onboarding → Transferencia → Validación → Estabilización
 ## Convenciones de Laravel en este proyecto
 
 - Las tablas no siguen los nombres en inglés de Laravel: en cada modelo define `$table`, `$primaryKey` (`id_<tabla>`) y las FK en las relaciones.
+- En pantalla, en los mensajes y en la plantilla de carga, los bloques se llaman **procesos** ("Proceso", "Procesos", "Equipo del proceso"). En la base y en el código siguen siendo `bloques`, `id_bloque`, `Bloque`, y las rutas `bloques.*`. Este documento usa "bloque".
 - Fechas automáticas: `const CREATED_AT = 'fecha_creacion'` y `const UPDATED_AT = 'fecha_actualizacion'` (en `avances_validacion`, `UPDATED_AT = null`).
 - La contraseña de `usuarios` está en `contrasena_hash`: ajusta el modelo para que el login de Laravel use ese campo y `correo` como usuario.
 - Explica el código de forma sencilla: estoy aprendiendo Laravel.
