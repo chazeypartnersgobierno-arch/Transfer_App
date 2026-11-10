@@ -23,7 +23,7 @@
         ...$accesos,
         ['empresas.index', 'empresa', 'Empresas'],
         ['fases.index', 'fase', 'Fases'],
-        ['bloques.index', 'bloque', 'Procesos'],
+        ['procesos.index', 'proceso', 'Procesos'],
         ['grupos.index', 'grupo', 'Grupos'],
         ['participantes.index', 'participante', 'Participantes'],
         ['aplicativos.index', 'aplicativo', 'Aplicativos'],

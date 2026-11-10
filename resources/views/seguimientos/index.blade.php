@@ -16,9 +16,9 @@
         abren con "Editar" (public/js/app.js); sin JavaScript quedan abiertos y se puede guardar.
     --}}
     @if ($equipo !== null)
-        @php($conErrores = $errors->hasAny(array_keys(\App\Models\Seguimiento::CAMPOS_DEL_BLOQUE)))
-        <div class="tarjeta equipo-bloque mb-3" id="equipo">
-            @if (! $equipo['bloque']->estado)
+        @php($conErrores = $errors->hasAny(array_keys(\App\Models\Seguimiento::CAMPOS_DEL_PROCESO)))
+        <div class="tarjeta equipo-proceso mb-3" id="equipo">
+            @if (! $equipo['proceso']->estado)
                 <x-alerta tipo="advertencia">El proceso está dado de baja: su equipo solo se puede consultar.</x-alerta>
             @elseif ($equipo['total'] === 0)
                 <x-alerta tipo="advertencia">Este proceso todavía no tiene seguimientos.</x-alerta>
@@ -28,13 +28,13 @@
                 </x-alerta>
             @endif
 
-            <form method="POST" action="{{ route('seguimientos.equipo.actualizar', $equipo['bloque']) }}"
-                @if ($equipo['editable']) data-equipo-bloque @if ($conErrores) data-abierto @endif @endif>
+            <form method="POST" action="{{ route('seguimientos.equipo.actualizar', $equipo['proceso']) }}"
+                @if ($equipo['editable']) data-equipo-proceso @if ($conErrores) data-abierto @endif @endif>
                 @csrf
                 @method('PUT')
 
-                <div class="equipo-bloque-encabezado">
-                    <h2 class="tarjeta-titulo mb-0">Equipo del proceso {{ $equipo['bloque']->nombre }}</h2>
+                <div class="equipo-proceso-encabezado">
+                    <h2 class="tarjeta-titulo mb-0">Equipo del proceso {{ $equipo['proceso']->nombre }}</h2>
                     @if ($equipo['editable'])
                         {{-- Empieza oculto: el JavaScript lo muestra. --}}
                         <button type="button" class="btn btn-sm btn-outline-primary" data-equipo-editar hidden>Editar</button>
@@ -43,7 +43,7 @@
 
                 <fieldset @disabled(! $equipo['editable'])>
                     <div class="row">
-                        @foreach (\App\Models\Seguimiento::CAMPOS_DEL_BLOQUE as $campo => $etiqueta)
+                        @foreach (\App\Models\Seguimiento::CAMPOS_DEL_PROCESO as $campo => $etiqueta)
                             <div class="col-sm-6 col-xl-3">
                                 {{-- data-original: el valor guardado, para que "Cancelar" lo regrese. --}}
                                 <x-campo :name="$campo" :label="$etiqueta" :value="old($campo, $equipo['valores'][$campo])" maxlength="255"
@@ -54,7 +54,7 @@
                 </fieldset>
 
                 @if ($equipo['editable'])
-                    <div class="equipo-bloque-acciones" data-equipo-acciones>
+                    <div class="equipo-proceso-acciones" data-equipo-acciones>
                         <span class="texto-secundario small">
                             Se {{ $equipo['total'] === 1 ? 'actualizará 1 seguimiento' : "actualizarán {$equipo['total']} seguimientos" }}.
                         </span>
@@ -81,11 +81,11 @@
                 </select>
             @endif
 
-            <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
-            <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
+            <label for="filtro_proceso" class="visually-hidden">Filtrar por proceso</label>
+            <select id="filtro_proceso" name="id_proceso" class="form-select filtro" data-enviar-al-cambiar>
                 <option value="">Todos los procesos</option>
-                @foreach ($bloques as $id => $nombre)
-                    <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
+                @foreach ($procesos as $id => $nombre)
+                    <option value="{{ $id }}" @selected($id === $idProceso)>{{ $nombre }}</option>
                 @endforeach
             </select>
 
@@ -149,9 +149,9 @@
                                     <div class="texto-secundario small">{{ $seguimiento->actividad->macroproceso }}</div>
                                 @endif
                             </td>
-                            <td class="celda-detalle" data-etiqueta="Grupo"><a href="{{ route('grupos.fases', $seguimiento->grupo) }}" title="Ver las fases del grupo">{{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}</a></td>
+                            <td class="celda-detalle" data-etiqueta="Grupo"><a href="{{ route('grupos.fases', $seguimiento->grupo) }}" title="Ver las fases del grupo">{{ $seguimiento->grupo->proceso->nombre }} › {{ $seguimiento->grupo->nombre }}</a></td>
                             @if (auth()->user()->esChazey())
-                                <td class="celda-detalle" data-etiqueta="Empresa">{{ $seguimiento->grupo->bloque->empresa->nombre }}</td>
+                                <td class="celda-detalle" data-etiqueta="Empresa">{{ $seguimiento->grupo->proceso->empresa->nombre }}</td>
                             @endif
                             <td class="celda-detalle" data-etiqueta="Fase">
                                 {{ $seguimiento->fase->nombre }}

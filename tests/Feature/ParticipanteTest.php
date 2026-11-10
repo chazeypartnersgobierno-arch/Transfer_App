@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\RolApp;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Participante;
@@ -22,7 +22,7 @@ class ParticipanteTest extends TestCase
 
     private Empresa $empresa;
 
-    private Bloque $bloque;
+    private Proceso $proceso;
 
     private Grupo $grupo;
 
@@ -35,8 +35,8 @@ class ParticipanteTest extends TestCase
         parent::setUp();
 
         $this->empresa = Empresa::create(['nombre' => 'Empresa Uno', 'sigla' => 'UNO']);
-        $this->bloque = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
-        $this->grupo = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 1']);
+        $this->proceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
+        $this->grupo = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 1']);
         $this->admin = $this->usuario(RolApp::Admin);
         $this->consultor = $this->usuario(RolApp::Consultor, $this->empresa);
     }
@@ -65,13 +65,13 @@ class ParticipanteTest extends TestCase
         ]);
     }
 
-    /** Otra empresa con su bloque y grupo. */
+    /** Otra empresa con su proceso y grupo. */
     private function grupoAjeno(): Grupo
     {
         $ajena = Empresa::create(['nombre' => 'Empresa Ajena', 'sigla' => 'AJE']);
-        $bloque = Bloque::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Pagos']);
+        $proceso = Proceso::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Pagos']);
 
-        return Grupo::create(['id_bloque' => $bloque->id_bloque, 'nombre' => 'Grupo ajeno']);
+        return Grupo::create(['id_proceso' => $proceso->id_proceso, 'nombre' => 'Grupo ajeno']);
     }
 
     private function datos(array $cambios = []): array
@@ -151,7 +151,7 @@ class ParticipanteTest extends TestCase
 
     public function test_filtra_por_grupo_y_busca_por_nombre_o_correo(): void
     {
-        $otro = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 2']);
+        $otro = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 2']);
         $this->participante(null, 'Ana');
         $this->participante($otro, 'Bruno');
         $this->participante(null, 'Carla', ['estado' => false]);
@@ -194,7 +194,7 @@ class ParticipanteTest extends TestCase
     public function test_valida_los_datos(): void
     {
         $this->participante($this->grupoAjeno(), 'Repetido', ['estado' => false]);
-        $grupoDeBaja = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'De baja', 'estado' => false]);
+        $grupoDeBaja = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'De baja', 'estado' => false]);
 
         $casos = [
             'correo' => [['correo' => 'REPETIDO@empresa.com'], 'Ya hay un participante con este correo (puede estar dado de baja o en otra empresa).'],
@@ -216,8 +216,8 @@ class ParticipanteTest extends TestCase
 
     public function test_cambia_de_grupo_solo_dentro_de_su_empresa(): void
     {
-        $otroBloque = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
-        $otroGrupo = Grupo::create(['id_bloque' => $otroBloque->id_bloque, 'nombre' => 'Grupo B']);
+        $otroProceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
+        $otroGrupo = Grupo::create(['id_proceso' => $otroProceso->id_proceso, 'nombre' => 'Grupo B']);
         $ajeno = $this->grupoAjeno();
         $ana = $this->participante();
         $url = "/participantes/{$ana->id_participante}";

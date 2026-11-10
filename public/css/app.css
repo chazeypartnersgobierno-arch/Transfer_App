@@ -637,12 +637,12 @@ body {
     white-space: nowrap;
 }
 
-/* Equipo del bloque: tarjeta arriba de la lista de seguimientos */
-.equipo-bloque {
+/* Equipo del proceso: tarjeta arriba de la lista de seguimientos */
+.equipo-proceso {
     padding: 1rem 1.25rem .25rem;
 }
 
-.equipo-bloque-encabezado {
+.equipo-proceso-encabezado {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -651,7 +651,7 @@ body {
     margin-bottom: .75rem;
 }
 
-.equipo-bloque-acciones {
+.equipo-proceso-acciones {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -660,7 +660,7 @@ body {
     margin-bottom: .75rem;
 }
 
-.equipo-bloque-acciones .texto-secundario {
+.equipo-proceso-acciones .texto-secundario {
     margin-right: auto;
 }
 

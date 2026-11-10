@@ -7,7 +7,7 @@ use App\Enums\RolApp;
 use App\Enums\TipoActividad;
 use App\Models\Actividad;
 use App\Models\AvanceValidacion;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -28,7 +28,7 @@ class AvanceDeFasesTest extends TestCase
 
     private Empresa $empresa;
 
-    private Bloque $bloque;
+    private Proceso $proceso;
 
     private Grupo $grupo1;
 
@@ -49,9 +49,9 @@ class AvanceDeFasesTest extends TestCase
         $this->travelTo('2027-03-20 10:00:00');
         (new FaseSeeder)->run();
         $this->empresa = Empresa::create(['nombre' => 'Empresa Uno', 'sigla' => 'UNO']);
-        $this->bloque = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
-        $this->grupo1 = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 1']);
-        $this->grupo2 = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 2']);
+        $this->proceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
+        $this->grupo1 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 1']);
+        $this->grupo2 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 2']);
         $this->onboarding1 = $this->actividad('Conocer el área', TipoActividad::Onboarding);
         $this->onboarding2 = $this->actividad('Accesos', TipoActividad::Onboarding);
         $this->transicion = $this->actividad('Conciliar cuentas', TipoActividad::Transicion);
@@ -84,7 +84,7 @@ class AvanceDeFasesTest extends TestCase
     {
         return Actividad::create([
             'id_empresa' => $this->empresa->id_empresa,
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'tipo' => $tipo,
             'nombre' => $nombre,
         ]);
@@ -176,7 +176,7 @@ class AvanceDeFasesTest extends TestCase
 
     public function test_fase_sin_actividades_cuenta_como_completa_y_las_de_baja_no_cuentan(): void
     {
-        $sinOnboarding = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 3']);
+        $sinOnboarding = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 3']);
         $this->seguimiento($sinOnboarding, $this->transicion, 2);
         $this->assertTrue($this->servicio()->faseHabilitada($this->fase(2), $sinOnboarding));
 

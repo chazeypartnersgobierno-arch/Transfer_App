@@ -18,7 +18,7 @@ class FasesDelGrupoController extends Controller
 {
     public function mostrar(Request $request, Grupo $grupo): View
     {
-        $grupo->load('bloque.empresa');
+        $grupo->load('proceso.empresa');
         $avance = app(AvanceDeFases::class);
         $actual = $avance->faseActual($grupo);
 

@@ -58,7 +58,7 @@
                 <ul class="menu-lista">
                     <li><x-menu-enlace ruta="empresas.index" activo-en="empresas.*" icono="empresa">Empresas</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="fases.index" activo-en="fases.*" icono="fase">Fases</x-menu-enlace></li>
-                    <li><x-menu-enlace ruta="bloques.index" activo-en="bloques.*" icono="bloque">Procesos</x-menu-enlace></li>
+                    <li><x-menu-enlace ruta="procesos.index" activo-en="procesos.*" icono="proceso">Procesos</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="grupos.index" activo-en="grupos.*" icono="grupo">Grupos</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="participantes.index" activo-en="participantes.*" icono="participante">Participantes</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="aplicativos.index" activo-en="aplicativos.*" icono="aplicativo">Aplicativos</x-menu-enlace></li>

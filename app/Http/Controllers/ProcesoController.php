@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -10,7 +10,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
-class BloqueController extends Controller
+class ProcesoController extends Controller
 {
     public function index(Request $request): View
     {
@@ -19,7 +19,7 @@ class BloqueController extends Controller
         $verBajas = $request->boolean('ver_bajas');
         $idEmpresa = is_numeric($request->query('id_empresa')) ? (int) $request->query('id_empresa') : null;
 
-        $bloques = Bloque::visiblePara($usuario)
+        $procesos = Proceso::visiblePara($usuario)
             ->with('empresa') // trae las empresas de una vez, sin una consulta por cada fila
             ->when(! $verBajas, fn ($consulta) => $consulta->where('estado', true))
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
@@ -32,7 +32,7 @@ class BloqueController extends Controller
         // Solo Chazey ve varias empresas, así que solo a Chazey se le muestra el filtro.
         $empresas = $usuario->esChazey() ? Empresa::orderBy('nombre')->pluck('nombre', 'id_empresa') : collect();
 
-        return view('bloques.index', compact('bloques', 'buscar', 'verBajas', 'idEmpresa', 'empresas'));
+        return view('procesos.index', compact('procesos', 'buscar', 'verBajas', 'idEmpresa', 'empresas'));
     }
 
     public function crear(Request $request): View|RedirectResponse
@@ -40,10 +40,10 @@ class BloqueController extends Controller
         $empresas = $this->empresasParaElegir();
 
         if ($empresas->isEmpty()) {
-            return redirect()->route('bloques.index')->with('error', 'Primero registra una empresa activa.');
+            return redirect()->route('procesos.index')->with('error', 'Primero registra una empresa activa.');
         }
 
-        return view('bloques.formulario', ['bloque' => new Bloque, 'empresas' => $empresas]);
+        return view('procesos.formulario', ['proceso' => new Proceso, 'empresas' => $empresas]);
     }
 
     public function guardar(Request $request): RedirectResponse
@@ -55,40 +55,40 @@ class BloqueController extends Controller
             'nombre' => $this->reglasDeNombre($idEmpresa),
         ], $this->mensajes());
 
-        $bloque = Bloque::create($datos);
+        $proceso = Proceso::create($datos);
 
-        return redirect()->route('bloques.index')->with('exito', "Se creó el proceso {$bloque->nombre}.");
+        return redirect()->route('procesos.index')->with('exito', "Se creó el proceso {$proceso->nombre}.");
     }
 
-    public function editar(Bloque $bloque): View
+    public function editar(Proceso $proceso): View
     {
-        return view('bloques.formulario', ['bloque' => $bloque, 'empresas' => collect()]);
+        return view('procesos.formulario', ['proceso' => $proceso, 'empresas' => collect()]);
     }
 
     /**
      * Solo se puede cambiar el nombre: la empresa queda fija al crearlo.
      */
-    public function actualizar(Request $request, Bloque $bloque): RedirectResponse
+    public function actualizar(Request $request, Proceso $proceso): RedirectResponse
     {
         $datos = $request->validate([
-            'nombre' => $this->reglasDeNombre($bloque->id_empresa, $bloque),
+            'nombre' => $this->reglasDeNombre($proceso->id_empresa, $proceso),
         ], $this->mensajes());
 
-        $bloque->update($datos);
+        $proceso->update($datos);
 
-        return redirect()->route('bloques.index')->with('exito', "Se actualizó el proceso {$bloque->nombre}.");
+        return redirect()->route('procesos.index')->with('exito', "Se actualizó el proceso {$proceso->nombre}.");
     }
 
     /**
      * No se borra nada: la baja solo cambia estado a 0.
      */
-    public function darDeBaja(Bloque $bloque): RedirectResponse
+    public function darDeBaja(Proceso $proceso): RedirectResponse
     {
-        // Revisa cada tipo de registro que depende del bloque y anota los que siguen activos.
+        // Revisa cada tipo de registro que depende del proceso y anota los que siguen activos.
         $pendientes = [];
 
         foreach (['grupos', 'actividades'] as $relacion) {
-            if ($bloque->{$relacion}()->where('estado', true)->exists()) {
+            if ($proceso->{$relacion}()->where('estado', true)->exists()) {
                 $pendientes[] = $relacion;
             }
         }
@@ -96,23 +96,23 @@ class BloqueController extends Controller
         if ($pendientes !== []) {
             $lista = Arr::join($pendientes, ', ', ' y ');
 
-            return back()->with('error', "No se puede dar de baja {$bloque->nombre}. Todavía tiene activos: {$lista}.");
+            return back()->with('error', "No se puede dar de baja {$proceso->nombre}. Todavía tiene activos: {$lista}.");
         }
 
-        $bloque->update(['estado' => false]);
+        $proceso->update(['estado' => false]);
 
-        return back()->with('exito', "Se dio de baja el proceso {$bloque->nombre}.");
+        return back()->with('exito', "Se dio de baja el proceso {$proceso->nombre}.");
     }
 
-    public function reactivar(Bloque $bloque): RedirectResponse
+    public function reactivar(Proceso $proceso): RedirectResponse
     {
-        if (! $bloque->empresa->estado) {
-            return back()->with('error', "No se puede reactivar {$bloque->nombre}: su empresa está dada de baja.");
+        if (! $proceso->empresa->estado) {
+            return back()->with('error', "No se puede reactivar {$proceso->nombre}: su empresa está dada de baja.");
         }
 
-        $bloque->update(['estado' => true]);
+        $proceso->update(['estado' => true]);
 
-        return back()->with('exito', "Se reactivó el proceso {$bloque->nombre}.");
+        return back()->with('exito', "Se reactivó el proceso {$proceso->nombre}.");
     }
 
     /**
@@ -126,15 +126,15 @@ class BloqueController extends Controller
     /**
      * El nombre no se repite dentro de una misma empresa; al editar, puede seguir siendo el mismo.
      */
-    private function reglasDeNombre(int $idEmpresa, ?Bloque $bloque = null): array
+    private function reglasDeNombre(int $idEmpresa, ?Proceso $proceso = null): array
     {
         return [
             'required',
             'string',
             'max:255',
-            Rule::unique('bloques', 'nombre')
+            Rule::unique('procesos', 'nombre')
                 ->where('id_empresa', $idEmpresa)
-                ->ignore($bloque?->id_bloque, 'id_bloque'),
+                ->ignore($proceso?->id_proceso, 'id_proceso'),
         ];
     }
 

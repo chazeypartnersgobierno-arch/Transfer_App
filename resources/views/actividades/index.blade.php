@@ -38,11 +38,11 @@
                 @endforeach
             </select>
 
-            <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
-            <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
+            <label for="filtro_proceso" class="visually-hidden">Filtrar por proceso</label>
+            <select id="filtro_proceso" name="id_proceso" class="form-select filtro" data-enviar-al-cambiar>
                 <option value="">Todos los procesos</option>
-                @foreach ($bloques as $id => $nombre)
-                    <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
+                @foreach ($procesos as $id => $nombre)
+                    <option value="{{ $id }}" @selected($id === $idProceso)>{{ $nombre }}</option>
                 @endforeach
             </select>
 
@@ -76,7 +76,7 @@
                         <tr>
                             <td class="celda-titulo">{{ $actividad->nombre }}</td>
                             <td class="celda-detalle" data-etiqueta="Macroproceso">{{ $actividad->macroproceso ?: '—' }}</td>
-                            <td class="celda-detalle" data-etiqueta="Proceso">{{ $actividad->bloque->nombre }}</td>
+                            <td class="celda-detalle" data-etiqueta="Proceso">{{ $actividad->proceso->nombre }}</td>
                             <td class="celda-detalle" data-etiqueta="Tipo">{{ $actividad->tipo->value }}</td>
                             @if (auth()->user()->esChazey())
                                 <td class="celda-detalle" data-etiqueta="Empresa">{{ $actividad->empresa->nombre }}</td>

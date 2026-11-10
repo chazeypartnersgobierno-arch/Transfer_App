@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\RolApp;
 use App\Enums\TipoActividad;
 use App\Models\Actividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -25,7 +25,7 @@ class GrupoTest extends TestCase
 
     private Empresa $empresa;
 
-    private Bloque $bloque;
+    private Proceso $proceso;
 
     protected function setUp(): void
     {
@@ -33,7 +33,7 @@ class GrupoTest extends TestCase
 
         (new FaseSeeder)->run();
         $this->empresa = $this->crearEmpresa('PROPIA');
-        $this->bloque = $this->crearBloque($this->empresa, 'Tesorería');
+        $this->proceso = $this->crearProceso($this->empresa, 'Tesorería');
     }
 
     private function usuario(RolApp $rol = RolApp::Admin, ?Empresa $empresa = null): Usuario
@@ -53,14 +53,14 @@ class GrupoTest extends TestCase
         return Empresa::create(['nombre' => "Empresa {$sigla}", 'sigla' => $sigla, 'estado' => $estado]);
     }
 
-    private function crearBloque(Empresa $empresa, string $nombre, bool $estado = true): Bloque
+    private function crearProceso(Empresa $empresa, string $nombre, bool $estado = true): Proceso
     {
-        return Bloque::create(['id_empresa' => $empresa->id_empresa, 'nombre' => $nombre, 'estado' => $estado]);
+        return Proceso::create(['id_empresa' => $empresa->id_empresa, 'nombre' => $nombre, 'estado' => $estado]);
     }
 
-    private function grupo(?Bloque $bloque = null, string $nombre = 'Grupo uno', bool $estado = true): Grupo
+    private function grupo(?Proceso $proceso = null, string $nombre = 'Grupo uno', bool $estado = true): Grupo
     {
-        return Grupo::create(['id_bloque' => ($bloque ?? $this->bloque)->id_bloque, 'nombre' => $nombre, 'estado' => $estado]);
+        return Grupo::create(['id_proceso' => ($proceso ?? $this->proceso)->id_proceso, 'nombre' => $nombre, 'estado' => $estado]);
     }
 
     private function fase(int $orden): Fase
@@ -68,15 +68,15 @@ class GrupoTest extends TestCase
         return Fase::where('orden', $orden)->sole();
     }
 
-    /** Actividad de un bloque. Por defecto es de Onboarding, que genera 1 seguimiento por grupo. */
-    private function deBloque(string $nombre = 'De bloque', ?Bloque $bloque = null, bool $estado = true, TipoActividad $tipo = TipoActividad::Onboarding): Actividad
+    /** Actividad de un proceso. Por defecto es de Onboarding, que genera 1 seguimiento por grupo. */
+    private function deProceso(string $nombre = 'De proceso', ?Proceso $proceso = null, bool $estado = true, TipoActividad $tipo = TipoActividad::Onboarding): Actividad
     {
-        $bloque ??= $this->bloque;
+        $proceso ??= $this->proceso;
 
         return Actividad::create([
-            'id_empresa' => $bloque->id_empresa,
+            'id_empresa' => $proceso->id_empresa,
             'tipo' => $tipo,
-            'id_bloque' => $bloque->id_bloque,
+            'id_proceso' => $proceso->id_proceso,
             'nombre' => $nombre,
             'estado' => $estado,
         ]);
@@ -106,11 +106,11 @@ class GrupoTest extends TestCase
     public function test_lista_y_filtros(): void
     {
         $otraEmpresa = $this->crearEmpresa('OTRA');
-        $otroBloque = $this->crearBloque($otraEmpresa, 'Compras');
-        $mismoEmpresa = $this->crearBloque($this->empresa, 'Pagos');
-        $this->grupo($this->bloque, 'Grupo A');
+        $otroProceso = $this->crearProceso($otraEmpresa, 'Compras');
+        $mismoEmpresa = $this->crearProceso($this->empresa, 'Pagos');
+        $this->grupo($this->proceso, 'Grupo A');
         $this->grupo($mismoEmpresa, 'Grupo B');
-        $this->grupo($otroBloque, 'Grupo C');
+        $this->grupo($otroProceso, 'Grupo C');
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/grupos')
@@ -125,24 +125,24 @@ class GrupoTest extends TestCase
         $this->actingAs($admin)->get("/grupos?id_empresa={$otraEmpresa->id_empresa}")
             ->assertSee('Grupo C')->assertDontSee('Grupo A');
 
-        $this->actingAs($admin)->get("/grupos?id_bloque={$mismoEmpresa->id_bloque}")
+        $this->actingAs($admin)->get("/grupos?id_proceso={$mismoEmpresa->id_proceso}")
             ->assertSee('Grupo B')->assertDontSee('Grupo A');
 
         $this->actingAs($admin)->get('/grupos?buscar=Grupo+A')
             ->assertSee('Grupo A')->assertDontSee('Grupo B');
 
-        // Con otra empresa elegida, un bloque de la anterior se ignora.
-        $this->actingAs($admin)->get("/grupos?id_empresa={$otraEmpresa->id_empresa}&id_bloque={$mismoEmpresa->id_bloque}")
+        // Con otra empresa elegida, un proceso de la anterior se ignora.
+        $this->actingAs($admin)->get("/grupos?id_empresa={$otraEmpresa->id_empresa}&id_proceso={$mismoEmpresa->id_proceso}")
             ->assertSee('Grupo C');
 
-        $this->actingAs($admin)->get('/grupos?buscar[]=x&id_bloque[]=y')->assertOk();
+        $this->actingAs($admin)->get('/grupos?buscar[]=x&id_proceso[]=y')->assertOk();
         $this->actingAs($admin)->get('/grupos?buscar=%25')->assertDontSee('Grupo A');
     }
 
     public function test_pagina_y_conserva_la_busqueda(): void
     {
         for ($i = 1; $i <= 16; $i++) {
-            $this->grupo($this->bloque, sprintf('Demo %02d', $i));
+            $this->grupo($this->proceso, sprintf('Demo %02d', $i));
         }
 
         $this->actingAs($this->usuario())->get('/grupos?buscar=Demo')
@@ -152,22 +152,22 @@ class GrupoTest extends TestCase
             ->assertSee('buscar=Demo&amp;page=2', false);
     }
 
-    public function test_el_formulario_ofrece_solo_bloques_activos_con_su_sigla(): void
+    public function test_el_formulario_ofrece_solo_procesos_activos_con_su_sigla(): void
     {
-        $this->crearBloque($this->empresa, 'Bloque inactivo', false);
+        $this->crearProceso($this->empresa, 'Proceso inactivo', false);
         $inactiva = $this->crearEmpresa('INACTIVA', false);
-        $this->crearBloque($inactiva, 'De empresa inactiva');
+        $this->crearProceso($inactiva, 'De empresa inactiva');
 
         $this->actingAs($this->usuario())->get('/grupos/crear')
             ->assertOk()
             ->assertSee('Tesorería (PROPIA)')
-            ->assertDontSee('Bloque inactivo')
+            ->assertDontSee('Proceso inactivo')
             ->assertDontSee('De empresa inactiva');
     }
 
-    public function test_sin_bloques_activos_no_abre_el_formulario(): void
+    public function test_sin_procesos_activos_no_abre_el_formulario(): void
     {
-        $this->bloque->update(['estado' => false]);
+        $this->proceso->update(['estado' => false]);
 
         $this->actingAs($this->usuario())->get('/grupos/crear')
             ->assertRedirect(route('grupos.index'))
@@ -176,34 +176,34 @@ class GrupoTest extends TestCase
 
     public function test_validaciones_con_mensajes_en_espanol(): void
     {
-        $this->grupo($this->bloque, 'Repetido');
-        $inactivo = $this->crearBloque($this->empresa, 'Inactivo', false);
+        $this->grupo($this->proceso, 'Repetido');
+        $inactivo = $this->crearProceso($this->empresa, 'Inactivo', false);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->post('/grupos', [])
-            ->assertSessionHasErrors(['id_bloque' => 'Elige un proceso.', 'nombre' => 'Escribe el nombre del grupo.']);
+            ->assertSessionHasErrors(['id_proceso' => 'Elige un proceso.', 'nombre' => 'Escribe el nombre del grupo.']);
 
-        $this->actingAs($admin)->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Repetido'])
+        $this->actingAs($admin)->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Repetido'])
             ->assertSessionHasErrors(['nombre' => 'Este proceso ya tiene un grupo con este nombre.']);
 
-        $this->actingAs($admin)->post('/grupos', ['id_bloque' => $inactivo->id_bloque, 'nombre' => 'Otro'])
-            ->assertSessionHasErrors(['id_bloque' => 'El proceso no existe, está dado de baja o es de otra empresa.']);
+        $this->actingAs($admin)->post('/grupos', ['id_proceso' => $inactivo->id_proceso, 'nombre' => 'Otro'])
+            ->assertSessionHasErrors(['id_proceso' => 'El proceso no existe, está dado de baja o es de otra empresa.']);
 
-        $this->actingAs($admin)->post('/grupos', ['id_bloque' => ['x'], 'nombre' => 'Otro'])
-            ->assertSessionHasErrors('id_bloque');
+        $this->actingAs($admin)->post('/grupos', ['id_proceso' => ['x'], 'nombre' => 'Otro'])
+            ->assertSessionHasErrors('id_proceso');
 
-        $this->actingAs($admin)->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => str_repeat('A', 256)])
+        $this->actingAs($admin)->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => str_repeat('A', 256)])
             ->assertSessionHasErrors('nombre');
 
         $this->assertSame(1, Grupo::count());
     }
 
-    public function test_otro_bloque_puede_usar_el_mismo_nombre(): void
+    public function test_otro_proceso_puede_usar_el_mismo_nombre(): void
     {
-        $this->grupo($this->bloque, 'Compartido');
-        $otro = $this->crearBloque($this->empresa, 'Otro');
+        $this->grupo($this->proceso, 'Compartido');
+        $otro = $this->crearProceso($this->empresa, 'Otro');
 
-        $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $otro->id_bloque, 'nombre' => 'Compartido'])
+        $this->actingAs($this->usuario())->post('/grupos', ['id_proceso' => $otro->id_proceso, 'nombre' => 'Compartido'])
             ->assertSessionHasNoErrors();
 
         $this->assertSame(2, Grupo::where('nombre', 'Compartido')->count());
@@ -223,7 +223,7 @@ class GrupoTest extends TestCase
             ->assertDontSee('Dar de baja');
 
         $this->actingAs($consultor)->get('/grupos/crear')->assertForbidden();
-        $this->actingAs($consultor)->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'X'])->assertForbidden();
+        $this->actingAs($consultor)->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'X'])->assertForbidden();
         $this->actingAs($consultor)->get("{$url}/editar")->assertForbidden();
         $this->actingAs($consultor)->put($url, ['nombre' => 'X'])->assertForbidden();
         $this->actingAs($consultor)->patch("{$url}/baja")->assertForbidden();
@@ -237,26 +237,26 @@ class GrupoTest extends TestCase
     public function test_al_editar_solo_cambia_el_nombre(): void
     {
         $grupo = $this->grupo();
-        $otro = $this->crearBloque($this->empresa, 'Otro');
+        $otro = $this->crearProceso($this->empresa, 'Otro');
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get("/grupos/{$grupo->id_grupo}/editar")
             ->assertOk()
             ->assertSee('Tesorería')
-            ->assertDontSee('name="id_bloque"', false);
+            ->assertDontSee('name="id_proceso"', false);
 
-        $this->actingAs($admin)->put("/grupos/{$grupo->id_grupo}", ['nombre' => 'Renombrado', 'id_bloque' => $otro->id_bloque])
+        $this->actingAs($admin)->put("/grupos/{$grupo->id_grupo}", ['nombre' => 'Renombrado', 'id_proceso' => $otro->id_proceso])
             ->assertSessionHasNoErrors();
 
         $grupo->refresh();
         $this->assertSame('Renombrado', $grupo->nombre);
-        $this->assertSame($this->bloque->id_bloque, $grupo->id_bloque);
+        $this->assertSame($this->proceso->id_proceso, $grupo->id_proceso);
     }
 
-    public function test_al_editar_valida_el_nombre_dentro_de_su_bloque(): void
+    public function test_al_editar_valida_el_nombre_dentro_de_su_proceso(): void
     {
-        $this->grupo($this->bloque, 'Ocupado');
-        $grupo = $this->grupo($this->bloque, 'Actual');
+        $this->grupo($this->proceso, 'Ocupado');
+        $grupo = $this->grupo($this->proceso, 'Actual');
         $admin = $this->usuario();
 
         $this->actingAs($admin)->put("/grupos/{$grupo->id_grupo}", ['nombre' => 'Ocupado'])
@@ -267,31 +267,31 @@ class GrupoTest extends TestCase
 
     // ===== Generación al crear un grupo =====
 
-    public function test_crear_un_grupo_genera_solo_las_actividades_activas_de_su_bloque(): void
+    public function test_crear_un_grupo_genera_solo_las_actividades_activas_de_su_proceso(): void
     {
-        $general = $this->deBloque('General');
-        $delBloque = $this->deBloque();
+        $general = $this->deProceso('General');
+        $delProceso = $this->deProceso();
 
         // Ninguna de estas le corresponde.
-        $this->deBloque('De otro bloque', $this->crearBloque($this->empresa, 'Otro'));
-        $this->deBloque('Bloque ajeno', $this->crearBloque($this->crearEmpresa('OTRA'), 'Ajeno'));
-        $this->deBloque('De bloque inactiva', null, false);
+        $this->deProceso('De otro proceso', $this->crearProceso($this->empresa, 'Otro'));
+        $this->deProceso('Proceso ajeno', $this->crearProceso($this->crearEmpresa('OTRA'), 'Ajeno'));
+        $this->deProceso('De proceso inactiva', null, false);
 
         $this->actingAs($this->usuario())
-            ->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Nuevo'])
+            ->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Nuevo'])
             ->assertRedirect(route('grupos.index'))
             ->assertSessionHas('exito', 'Se creó el grupo Nuevo con 2 seguimientos.');
 
         $grupo = Grupo::where('nombre', 'Nuevo')->sole();
         $this->assertTrue($grupo->estado);
-        $this->assertSame([$general->id_actividad, $delBloque->id_actividad], $this->actividadesDe($grupo));
+        $this->assertSame([$general->id_actividad, $delProceso->id_actividad], $this->actividadesDe($grupo));
     }
 
     public function test_los_seguimientos_generados_nacen_vacios(): void
     {
-        $this->deBloque('General');
+        $this->deProceso('General');
 
-        $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Nuevo']);
+        $this->actingAs($this->usuario())->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Nuevo']);
 
         $seguimiento = Seguimiento::sole();
         $this->assertTrue($seguimiento->estado);
@@ -302,7 +302,7 @@ class GrupoTest extends TestCase
 
     public function test_crear_un_grupo_sin_actividades_lo_indica(): void
     {
-        $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Solo'])
+        $this->actingAs($this->usuario())->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Solo'])
             ->assertSessionHas('exito', 'Se creó el grupo Solo sin seguimientos todavía.');
 
         $this->assertSame(0, Seguimiento::count());
@@ -310,7 +310,7 @@ class GrupoTest extends TestCase
 
     public function test_si_falla_la_generacion_tampoco_queda_el_grupo(): void
     {
-        $this->deBloque('General');
+        $this->deProceso('General');
 
         $this->app->instance(GeneradorDeSeguimientos::class, new class extends GeneradorDeSeguimientos
         {
@@ -321,7 +321,7 @@ class GrupoTest extends TestCase
         });
 
         $this->actingAs($this->usuario())
-            ->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Fallido'])
+            ->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Fallido'])
             ->assertServerError();
 
         $this->assertFalse(Grupo::where('nombre', 'Fallido')->exists());
@@ -332,12 +332,12 @@ class GrupoTest extends TestCase
 
     public function test_crear_una_actividad_avisa_antes_y_no_guarda_sin_confirmar(): void
     {
-        $this->grupo($this->bloque, 'Grupo A');
-        $this->grupo($this->bloque, 'Grupo B');
+        $this->grupo($this->proceso, 'Grupo A');
+        $this->grupo($this->proceso, 'Grupo B');
         $datos = [
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'nombre' => 'Nueva actividad de prueba',
             'macroproceso' => 'Pagos',
         ];
@@ -363,14 +363,14 @@ class GrupoTest extends TestCase
 
     public function test_sin_grupos_a_los_que_aplique_no_pide_confirmacion(): void
     {
-        // Un grupo de otro bloque y uno de baja no reciben la actividad.
-        $this->grupo($this->crearBloque($this->empresa, 'Otro'));
-        $this->grupo($this->bloque, 'De baja', false);
+        // Un grupo de otro proceso y uno de baja no reciben la actividad.
+        $this->grupo($this->crearProceso($this->empresa, 'Otro'));
+        $this->grupo($this->proceso, 'De baja', false);
 
         $this->actingAs($this->usuario())->post('/actividades', [
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'nombre' => 'Directa',
         ])->assertRedirect(route('actividades.index'))->assertSessionHas('exito', 'Se creó la actividad Directa.');
 
@@ -385,7 +385,7 @@ class GrupoTest extends TestCase
             'accion' => 'corregir',
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'nombre' => 'A corregir',
         ])->assertRedirect(route('actividades.crear'))->assertSessionHasInput('nombre', 'A corregir');
 
@@ -395,47 +395,47 @@ class GrupoTest extends TestCase
     public function test_confirmar_vuelve_a_validar(): void
     {
         $this->grupo();
-        $this->deBloque('Ya existe');
+        $this->deProceso('Ya existe');
 
         $this->actingAs($this->usuario())->post('/actividades', [
             'accion' => 'confirmar',
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'nombre' => 'Ya existe',
         ])->assertSessionHasErrors('nombre');
 
         $this->assertSame(1, Actividad::count());
     }
 
-    public function test_ya_no_existe_la_opcion_todos_los_bloques(): void
+    public function test_ya_no_existe_la_opcion_todos_los_procesos(): void
     {
-        $this->grupo($this->bloque, 'En un bloque');
+        $this->grupo($this->proceso, 'En un proceso');
 
         foreach (['todos', ''] as $valor) {
             $this->actingAs($this->usuario())->post('/actividades', [
                 'accion' => 'confirmar',
                 'id_empresa' => $this->empresa->id_empresa,
                 'tipo' => 'Onboarding',
-                'id_bloque' => $valor,
+                'id_proceso' => $valor,
                 'nombre' => 'Inducción',
-            ])->assertSessionHasErrors('id_bloque');
+            ])->assertSessionHasErrors('id_proceso');
         }
 
         $this->assertSame(0, Actividad::count());
         $this->assertSame(0, Seguimiento::count());
     }
 
-    public function test_actividad_con_bloque_solo_llega_a_los_grupos_de_ese_bloque(): void
+    public function test_actividad_con_proceso_solo_llega_a_los_grupos_de_ese_proceso(): void
     {
-        $propio = $this->grupo($this->bloque, 'Propio');
-        $otro = $this->grupo($this->crearBloque($this->empresa, 'Otro'), 'De otro bloque');
+        $propio = $this->grupo($this->proceso, 'Propio');
+        $otro = $this->grupo($this->crearProceso($this->empresa, 'Otro'), 'De otro proceso');
 
         $this->actingAs($this->usuario())->post('/actividades', [
             'accion' => 'confirmar',
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'nombre' => 'Solo este proceso',
         ])->assertSessionHas('exito');
 
@@ -447,9 +447,9 @@ class GrupoTest extends TestCase
 
     public function test_onboarding_genera_un_seguimiento_en_la_fase_de_orden_1(): void
     {
-        $this->deBloque('Solo una fase');
+        $this->deProceso('Solo una fase');
 
-        $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Nuevo'])
+        $this->actingAs($this->usuario())->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Nuevo'])
             ->assertSessionHas('exito', 'Se creó el grupo Nuevo con 1 seguimiento.');
 
         $this->assertSame($this->fase(1)->id_fase, Seguimiento::sole()->id_fase);
@@ -457,9 +457,9 @@ class GrupoTest extends TestCase
 
     public function test_transicion_genera_tres_seguimientos_uno_por_fase(): void
     {
-        $actividad = $this->deBloque('Tres fases', null, true, TipoActividad::Transicion);
+        $actividad = $this->deProceso('Tres fases', null, true, TipoActividad::Transicion);
 
-        $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Nuevo'])
+        $this->actingAs($this->usuario())->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Nuevo'])
             ->assertSessionHas('exito', 'Se creó el grupo Nuevo con 3 seguimientos.');
 
         $this->assertSame(
@@ -468,24 +468,24 @@ class GrupoTest extends TestCase
         );
     }
 
-    public function test_un_bloque_con_ambos_tipos_suma_sus_fases(): void
+    public function test_un_proceso_con_ambos_tipos_suma_sus_fases(): void
     {
-        $this->deBloque('Onboarding uno');
-        $this->deBloque('Onboarding dos');
-        $this->deBloque('Transición uno', null, true, TipoActividad::Transicion);
+        $this->deProceso('Onboarding uno');
+        $this->deProceso('Onboarding dos');
+        $this->deProceso('Transición uno', null, true, TipoActividad::Transicion);
 
-        $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Nuevo'])
+        $this->actingAs($this->usuario())->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Nuevo'])
             ->assertSessionHas('exito', 'Se creó el grupo Nuevo con 5 seguimientos.');
     }
 
-    public function test_el_onboarding_de_un_bloque_no_llega_a_otro_bloque(): void
+    public function test_el_onboarding_de_un_proceso_no_llega_a_otro_proceso(): void
     {
-        $this->deBloque('Solo Tesorería');
-        $otro = $this->crearBloque($this->empresa, 'Desempeño');
-        $this->deBloque('Solo Desempeño', $otro);
+        $this->deProceso('Solo Tesorería');
+        $otro = $this->crearProceso($this->empresa, 'Desempeño');
+        $this->deProceso('Solo Desempeño', $otro);
         $admin = $this->usuario();
 
-        $this->actingAs($admin)->post('/grupos', ['id_bloque' => $otro->id_bloque, 'nombre' => 'De Desempeño']);
+        $this->actingAs($admin)->post('/grupos', ['id_proceso' => $otro->id_proceso, 'nombre' => 'De Desempeño']);
 
         $grupo = Grupo::where('nombre', 'De Desempeño')->sole();
         $this->assertSame(['Solo Desempeño'], $grupo->seguimientos()->with('actividad')->get()->pluck('actividad.nombre')->all());
@@ -493,12 +493,12 @@ class GrupoTest extends TestCase
 
     public function test_crear_una_transicion_avisa_el_total_real_de_seguimientos(): void
     {
-        $this->grupo($this->bloque, 'Grupo A');
-        $this->grupo($this->bloque, 'Grupo B');
+        $this->grupo($this->proceso, 'Grupo A');
+        $this->grupo($this->proceso, 'Grupo B');
         $datos = [
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Transición',
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'nombre' => 'Tres fases',
         ];
         $admin = $this->usuario();
@@ -513,23 +513,23 @@ class GrupoTest extends TestCase
         $this->assertSame(6, Seguimiento::count());
     }
 
-    public function test_confirmar_conserva_el_bloque_elegido(): void
+    public function test_confirmar_conserva_el_proceso_elegido(): void
     {
         $this->grupo();
 
         $this->actingAs($this->usuario())->post('/actividades', [
             'id_empresa' => $this->empresa->id_empresa,
             'tipo' => 'Onboarding',
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'nombre' => 'General',
         ])->assertOk()
             ->assertSee('en el proceso Tesorería')
-            ->assertSee('name="id_bloque" value="'.$this->bloque->id_bloque.'"', false);
+            ->assertSee('name="id_proceso" value="'.$this->proceso->id_proceso.'"', false);
     }
 
     public function test_reactivar_una_transicion_incompleta_solo_genera_las_fases_que_faltan(): void
     {
-        $actividad = $this->deBloque('Tres fases', null, false, TipoActividad::Transicion);
+        $actividad = $this->deProceso('Tres fases', null, false, TipoActividad::Transicion);
         $grupo = $this->grupo();
         $this->seguimiento($grupo, $actividad, ['id_fase' => $this->fase(2)->id_fase, 'comentarios' => 'Se conserva']);
         $admin = $this->usuario();
@@ -546,9 +546,9 @@ class GrupoTest extends TestCase
     public function test_generar_funciona_aunque_se_renombren_las_fases(): void
     {
         $this->fase(2)->update(['nombre' => 'Nombre nuevo']);
-        $this->deBloque('Tres fases', null, true, TipoActividad::Transicion);
+        $this->deProceso('Tres fases', null, true, TipoActividad::Transicion);
 
-        $this->actingAs($this->usuario())->post('/grupos', ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Nuevo'])
+        $this->actingAs($this->usuario())->post('/grupos', ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Nuevo'])
             ->assertSessionHas('exito', 'Se creó el grupo Nuevo con 3 seguimientos.');
     }
 
@@ -557,8 +557,8 @@ class GrupoTest extends TestCase
     public function test_la_baja_avisa_cuantos_seguimientos_tiene_el_grupo_y_los_conserva(): void
     {
         $grupo = $this->grupo();
-        $actividad = $this->deBloque('General');
-        $otra = $this->deBloque();
+        $actividad = $this->deProceso('General');
+        $otra = $this->deProceso();
         $this->seguimiento($grupo, $actividad, ['comentarios' => 'Se conserva']);
         $this->seguimiento($grupo, $otra);
         $admin = $this->usuario();
@@ -579,8 +579,8 @@ class GrupoTest extends TestCase
 
     public function test_la_baja_avisa_cuantos_seguimientos_tiene_la_actividad_y_los_conserva(): void
     {
-        $actividad = $this->deBloque('General');
-        $this->seguimiento($this->grupo($this->bloque, 'A'), $actividad, ['comentarios' => 'Se conserva']);
+        $actividad = $this->deProceso('General');
+        $this->seguimiento($this->grupo($this->proceso, 'A'), $actividad, ['comentarios' => 'Se conserva']);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/actividades')
@@ -604,8 +604,8 @@ class GrupoTest extends TestCase
 
     public function test_los_dados_de_baja_se_ocultan_por_defecto(): void
     {
-        $this->grupo($this->bloque, 'Activo');
-        $this->grupo($this->bloque, 'Inactivo', false);
+        $this->grupo($this->proceso, 'Activo');
+        $this->grupo($this->proceso, 'Inactivo', false);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/grupos')->assertSee('Activo')->assertDontSee('celda-titulo">Inactivo', false);
@@ -614,10 +614,10 @@ class GrupoTest extends TestCase
 
     public function test_los_seguimientos_de_baja_no_cuentan_en_el_trabajo(): void
     {
-        $grupo = $this->grupo($this->bloque, 'A');
-        $otroGrupo = $this->grupo($this->bloque, 'B');
-        $actividad = $this->deBloque('Uno');
-        $otraActividad = $this->deBloque('Dos');
+        $grupo = $this->grupo($this->proceso, 'A');
+        $otroGrupo = $this->grupo($this->proceso, 'B');
+        $actividad = $this->deProceso('Uno');
+        $otraActividad = $this->deProceso('Dos');
         $seguimiento = $this->seguimiento($grupo, $actividad);
         $delOtroGrupo = $this->seguimiento($otroGrupo, $actividad);
         $deLaOtraActividad = $this->seguimiento($grupo, $otraActividad);
@@ -639,11 +639,11 @@ class GrupoTest extends TestCase
 
     public function test_reactivar_un_grupo_avisa_y_genera_solo_lo_que_falta(): void
     {
-        $existente = $this->deBloque('Existente');
-        $grupo = $this->grupo($this->bloque, 'Grupo uno', false);
+        $existente = $this->deProceso('Existente');
+        $grupo = $this->grupo($this->proceso, 'Grupo uno', false);
         $this->seguimiento($grupo, $existente, ['comentarios' => 'Se conserva']);
-        $nueva = $this->deBloque('Creada durante la baja');
-        $this->deBloque('Inactiva', null, false);
+        $nueva = $this->deProceso('Creada durante la baja');
+        $this->deProceso('Inactiva', null, false);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/grupos?ver_bajas=1')
@@ -661,8 +661,8 @@ class GrupoTest extends TestCase
 
     public function test_reactivar_un_grupo_completo_no_genera_nada(): void
     {
-        $actividad = $this->deBloque('General');
-        $grupo = $this->grupo($this->bloque, 'Grupo uno', false);
+        $actividad = $this->deProceso('General');
+        $grupo = $this->grupo($this->proceso, 'Grupo uno', false);
         $this->seguimiento($grupo, $actividad);
         $admin = $this->usuario();
 
@@ -676,11 +676,11 @@ class GrupoTest extends TestCase
 
     public function test_reactivar_una_actividad_avisa_y_genera_solo_para_grupos_activos(): void
     {
-        $actividad = $this->deBloque('Actividad', null, false);
-        $conSeguimiento = $this->grupo($this->bloque, 'Ya la tiene');
+        $actividad = $this->deProceso('Actividad', null, false);
+        $conSeguimiento = $this->grupo($this->proceso, 'Ya la tiene');
         $this->seguimiento($conSeguimiento, $actividad, ['comentarios' => 'Se conserva']);
-        $sinSeguimiento = $this->grupo($this->bloque, 'Creado durante la baja');
-        $inactivo = $this->grupo($this->bloque, 'De baja', false);
+        $sinSeguimiento = $this->grupo($this->proceso, 'Creado durante la baja');
+        $inactivo = $this->grupo($this->proceso, 'De baja', false);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get('/actividades?ver_bajas=1')
@@ -697,8 +697,8 @@ class GrupoTest extends TestCase
 
     public function test_reactivar_dos_veces_no_duplica(): void
     {
-        $this->deBloque('General');
-        $grupo = $this->grupo($this->bloque, 'Grupo uno', false);
+        $this->deProceso('General');
+        $grupo = $this->grupo($this->proceso, 'Grupo uno', false);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->from('/grupos')->patch("/grupos/{$grupo->id_grupo}/reactivar");
@@ -710,10 +710,10 @@ class GrupoTest extends TestCase
     public function test_el_generador_ignora_grupos_y_actividades_de_baja(): void
     {
         $generador = new GeneradorDeSeguimientos;
-        $actividadActiva = $this->deBloque('Activa');
-        $actividadInactiva = $this->deBloque('Inactiva', null, false);
-        $grupoActivo = $this->grupo($this->bloque, 'Activo');
-        $grupoInactivo = $this->grupo($this->bloque, 'Inactivo', false);
+        $actividadActiva = $this->deProceso('Activa');
+        $actividadInactiva = $this->deProceso('Inactiva', null, false);
+        $grupoActivo = $this->grupo($this->proceso, 'Activo');
+        $grupoInactivo = $this->grupo($this->proceso, 'Inactivo', false);
 
         $this->assertSame(0, $generador->generarParaGrupo($grupoInactivo));
         $this->assertSame(0, $generador->generarParaActividad($actividadInactiva));
@@ -723,10 +723,10 @@ class GrupoTest extends TestCase
         $this->assertSame([$actividadActiva->id_actividad], $this->actividadesDe($grupoActivo));
     }
 
-    public function test_no_se_reactiva_si_su_bloque_esta_de_baja(): void
+    public function test_no_se_reactiva_si_su_proceso_esta_de_baja(): void
     {
-        $this->deBloque('General');
-        $inactivo = $this->crearBloque($this->empresa, 'Inactivo', false);
+        $this->deProceso('General');
+        $inactivo = $this->crearProceso($this->empresa, 'Inactivo', false);
         $grupo = $this->grupo($inactivo, 'Grupo uno', false);
 
         $this->actingAs($this->usuario())->from('/grupos')->patch("/grupos/{$grupo->id_grupo}/reactivar")
@@ -736,20 +736,20 @@ class GrupoTest extends TestCase
         $this->assertSame(0, Seguimiento::count());
     }
 
-    public function test_la_baja_de_un_bloque_se_bloquea_con_grupos_activos(): void
+    public function test_la_baja_de_un_proceso_se_bloquea_con_grupos_activos(): void
     {
         $grupo = $this->grupo();
         $admin = $this->usuario();
-        $url = "/bloques/{$this->bloque->id_bloque}/baja";
+        $url = "/procesos/{$this->proceso->id_proceso}/baja";
 
-        $this->actingAs($admin)->from('/bloques')->patch($url)
+        $this->actingAs($admin)->from('/procesos')->patch($url)
             ->assertSessionHas('error', 'No se puede dar de baja Tesorería. Todavía tiene activos: grupos.');
-        $this->assertTrue($this->bloque->fresh()->estado);
+        $this->assertTrue($this->proceso->fresh()->estado);
 
         $grupo->update(['estado' => false]);
 
-        $this->actingAs($admin)->from('/bloques')->patch($url)->assertSessionHas('exito');
-        $this->assertFalse($this->bloque->fresh()->estado);
+        $this->actingAs($admin)->from('/procesos')->patch($url)->assertSessionHas('exito');
+        $this->assertFalse($this->proceso->fresh()->estado);
     }
 
     public function test_el_menu_y_el_inicio_muestran_grupos(): void

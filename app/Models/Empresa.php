@@ -33,9 +33,9 @@ class Empresa extends Model
         return $this->hasMany(AsignacionEmpresa::class, 'id_empresa', 'id_empresa');
     }
 
-    public function bloques(): HasMany
+    public function procesos(): HasMany
     {
-        return $this->hasMany(Bloque::class, 'id_empresa', 'id_empresa');
+        return $this->hasMany(Proceso::class, 'id_empresa', 'id_empresa');
     }
 
     public function aplicativos(): HasMany

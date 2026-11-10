@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoActividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -40,25 +40,25 @@ class SeguimientoController extends Controller
         $empresas = $usuario->esChazey() ? Empresa::orderBy('nombre')->pluck('nombre', 'id_empresa') : collect();
         $conSigla = $usuario->esChazey() && $idEmpresa === null;
 
-        $bloques = Bloque::visiblePara($usuario)
+        $procesos = Proceso::visiblePara($usuario)
             ->with('empresa')
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
             ->orderBy('nombre')
             ->get()
-            ->mapWithKeys(fn (Bloque $b) => [$b->id_bloque => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
+            ->mapWithKeys(fn (Proceso $b) => [$b->id_proceso => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
 
         // Un filtro que ya no está en su lista (por ejemplo, al cambiar de empresa) se ignora.
-        $idBloque = $this->numeroDeLaUrl($request, 'id_bloque');
-        $idBloque = $idBloque !== null && $bloques->has($idBloque) ? $idBloque : null;
+        $idProceso = $this->numeroDeLaUrl($request, 'id_proceso');
+        $idProceso = $idProceso !== null && $procesos->has($idProceso) ? $idProceso : null;
 
-        // Los grupos dependen del bloque elegido; sin bloque, los de las empresas visibles.
+        // Los grupos dependen del proceso elegido; sin proceso, los de las empresas visibles.
         $grupos = Grupo::visiblePara($usuario)
-            ->with('bloque')
-            ->when($idBloque !== null, fn ($consulta) => $consulta->where('id_bloque', $idBloque))
-            ->when($idBloque === null && $idEmpresa !== null, fn ($consulta) => $consulta->whereHas('bloque', fn ($q) => $q->where('id_empresa', $idEmpresa)))
+            ->with('proceso')
+            ->when($idProceso !== null, fn ($consulta) => $consulta->where('id_proceso', $idProceso))
+            ->when($idProceso === null && $idEmpresa !== null, fn ($consulta) => $consulta->whereHas('proceso', fn ($q) => $q->where('id_empresa', $idEmpresa)))
             ->get()
-            ->sortBy(fn (Grupo $g) => [$g->bloque->nombre, $g->nombre])
-            ->mapWithKeys(fn (Grupo $g) => [$g->id_grupo => $idBloque !== null ? $g->nombre : "{$g->bloque->nombre} › {$g->nombre}"]);
+            ->sortBy(fn (Grupo $g) => [$g->proceso->nombre, $g->nombre])
+            ->mapWithKeys(fn (Grupo $g) => [$g->id_grupo => $idProceso !== null ? $g->nombre : "{$g->proceso->nombre} › {$g->nombre}"]);
 
         $idGrupo = $this->numeroDeLaUrl($request, 'id_grupo');
         $idGrupo = $idGrupo !== null && $grupos->has($idGrupo) ? $idGrupo : null;
@@ -67,13 +67,13 @@ class SeguimientoController extends Controller
         $idFase = $idFase !== null && $fases->has($idFase) ? $idFase : null;
 
         $seguimientos = Seguimiento::visiblePara($usuario)
-            ->with(['actividad', 'grupo.bloque.empresa', 'fase']) // todo de una vez, sin una consulta por fila
+            ->with(['actividad', 'grupo.proceso.empresa', 'fase']) // todo de una vez, sin una consulta por fila
             ->withCount('sesiones')
             ->with('avanceActual') // el % actual de los de Validación
             // Por defecto, solo los de grupos y actividades activos.
             ->when(! $verBajas, fn ($consulta) => $consulta->enTrabajo())
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('actividad', fn ($q) => $q->where('id_empresa', $idEmpresa)))
-            ->when($idBloque !== null, fn ($consulta) => $consulta->whereHas('grupo', fn ($q) => $q->where('id_bloque', $idBloque)))
+            ->when($idProceso !== null, fn ($consulta) => $consulta->whereHas('grupo', fn ($q) => $q->where('id_proceso', $idProceso)))
             ->when($idGrupo !== null, fn ($consulta) => $consulta->where('id_grupo', $idGrupo))
             ->when($idFase !== null, fn ($consulta) => $consulta->where('id_fase', $idFase))
             ->when($estado === self::RETRASADO, fn ($consulta) => $consulta->retrasados())
@@ -96,38 +96,38 @@ class SeguimientoController extends Controller
             ->pluck('id_seguimiento')
             ->flip();
 
-        // Con un bloque elegido, arriba de la tabla se muestra (y se cambia) su equipo.
-        $equipo = $idBloque !== null ? $this->equipoDelBloque(Bloque::findOrFail($idBloque)) : null;
+        // Con un proceso elegido, arriba de la tabla se muestra (y se cambia) su equipo.
+        $equipo = $idProceso !== null ? $this->equipoDelProceso(Proceso::findOrFail($idProceso)) : null;
 
         return view('seguimientos.index', compact(
-            'seguimientos', 'buscar', 'verBajas', 'idEmpresa', 'idBloque', 'idGrupo', 'idFase', 'estado',
-            'empresas', 'bloques', 'grupos', 'fases', 'estados', 'bloqueados', 'equipo'
+            'seguimientos', 'buscar', 'verBajas', 'idEmpresa', 'idProceso', 'idGrupo', 'idFase', 'estado',
+            'empresas', 'procesos', 'grupos', 'fases', 'estados', 'bloqueados', 'equipo'
         ));
     }
 
     /**
-     * Datos de la tarjeta "Equipo del bloque": el bloque, sus valores actuales, cuántos
+     * Datos de la tarjeta "Equipo del proceso": el proceso, sus valores actuales, cuántos
      * seguimientos se actualizarán al guardar y en qué campos hay valores distintos.
-     * Se guarda con EquipoDeBloqueController.
+     * Se guarda con EquipoDeProcesoController.
      */
-    private function equipoDelBloque(Bloque $bloque): array
+    private function equipoDelProceso(Proceso $proceso): array
     {
-        $consulta = Seguimiento::delBloque($bloque->id_bloque);
+        $consulta = Seguimiento::delProceso($proceso->id_proceso);
 
         // Si los seguimientos tienen valores distintos (por ejemplo, de antes de esta regla),
         // se avisa: al guardar se igualan. distinct() cuenta también el vacío (NULL) como un valor.
-        $distintos = collect(Seguimiento::CAMPOS_DEL_BLOQUE)
+        $distintos = collect(Seguimiento::CAMPOS_DEL_PROCESO)
             ->filter(fn ($etiqueta, $campo) => (clone $consulta)->select($campo)->distinct()->get()->count() > 1)
             ->values();
 
         $total = (clone $consulta)->count();
 
         return [
-            'bloque' => $bloque,
-            'valores' => app(GeneradorDeSeguimientos::class)->equipoDelBloque($bloque->id_bloque),
+            'proceso' => $proceso,
+            'valores' => app(GeneradorDeSeguimientos::class)->equipoDelProceso($proceso->id_proceso),
             'total' => $total,
             'distintos' => $distintos,
-            'editable' => $bloque->estado && $total > 0,
+            'editable' => $proceso->estado && $total > 0,
         ];
     }
 
@@ -138,7 +138,7 @@ class SeguimientoController extends Controller
     {
         $seguimiento->load([
             'actividad',
-            'grupo.bloque.empresa',
+            'grupo.proceso.empresa',
             'fase',
             'autor',
             // Cada sesión con su autor, cuántos registros de asistencia tiene y cuántos asistieron.
@@ -159,7 +159,7 @@ class SeguimientoController extends Controller
     }
 
     /**
-     * Actividad, grupo, fase y el equipo del bloque quedan fijos. fecha_cierre la llena el modelo al pasar a
+     * Actividad, grupo, fase y el equipo del proceso quedan fijos. fecha_cierre la llena el modelo al pasar a
      * Completada (ver Seguimiento::booted), por eso no se recibe del formulario.
      */
     public function actualizar(Request $request, Seguimiento $seguimiento): RedirectResponse
@@ -180,8 +180,8 @@ class SeguimientoController extends Controller
             'estado_actividad' => ['required', Rule::enum(EstadoActividad::class)],
             'documentacion' => ['nullable', 'string', 'max:500'],
             'comentarios' => ['nullable', 'string', 'max:10000'],
-            // El experto es individual. Responsable, documentador y líderes son del bloque:
-            // no se reciben aquí, se capturan en EquipoDeBloqueController.
+            // El experto es individual. Responsable, documentador y líderes son del proceso:
+            // no se reciben aquí, se capturan en EquipoDeProcesoController.
             'experto' => ['nullable', 'string', 'max:255'],
         ], [
             'fecha_inicio.date' => 'Escribe una fecha de inicio válida.',

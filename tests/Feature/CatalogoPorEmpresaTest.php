@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\RolApp;
 use App\Models\Aplicativo;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * Bloques y aplicativos siguen las mismas reglas, así que cada prueba corre para ambos.
+ * Procesos y aplicativos siguen las mismas reglas, así que cada prueba corre para ambos.
  */
 class CatalogoPorEmpresaTest extends TestCase
 {
@@ -23,15 +23,14 @@ class CatalogoPorEmpresaTest extends TestCase
     public static function catalogos(): array
     {
         return [
-            'bloques' => ['bloques', Bloque::class],
+            'procesos' => ['procesos', Proceso::class],
             'aplicativos' => ['aplicativos', Aplicativo::class],
         ];
     }
 
-    /** Cómo se llama en pantalla: la ruta bloques se muestra como "proceso". */
     private function singular(string $ruta): string
     {
-        return $ruta === 'bloques' ? 'proceso' : rtrim($ruta, 's');
+        return rtrim($ruta, 's');
     }
 
     private function textoNuevo(string $ruta): string
@@ -298,7 +297,7 @@ class CatalogoPorEmpresaTest extends TestCase
     {
         $this->actingAs($this->usuario(RolApp::Consultor))->get('/')
             ->assertOk()
-            ->assertSee(route('bloques.index'), false)
+            ->assertSee(route('procesos.index'), false)
             ->assertSee(route('aplicativos.index'), false);
     }
 }

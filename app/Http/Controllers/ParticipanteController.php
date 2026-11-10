@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Participante;
@@ -32,20 +32,20 @@ class ParticipanteController extends Controller
         $empresas = $usuario->esChazey() ? Empresa::orderBy('nombre')->pluck('nombre', 'id_empresa') : collect();
         $conSigla = $usuario->esChazey() && $idEmpresa === null;
 
-        $bloques = Bloque::visiblePara($usuario)
+        $procesos = Proceso::visiblePara($usuario)
             ->with('empresa')
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
             ->orderBy('nombre')
             ->get()
-            ->mapWithKeys(fn (Bloque $b) => [$b->id_bloque => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
+            ->mapWithKeys(fn (Proceso $b) => [$b->id_proceso => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
 
-        // Un bloque o grupo que ya no está en su lista (por ejemplo, al cambiar de empresa) se ignora.
-        $idBloque = $this->numero($request, 'id_bloque');
-        $idBloque = $idBloque !== null && $bloques->has($idBloque) ? $idBloque : null;
+        // Un proceso o grupo que ya no está en su lista (por ejemplo, al cambiar de empresa) se ignora.
+        $idProceso = $this->numero($request, 'id_proceso');
+        $idProceso = $idProceso !== null && $procesos->has($idProceso) ? $idProceso : null;
 
         $grupos = Grupo::visiblePara($usuario)
-            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('bloque', fn ($q) => $q->where('id_empresa', $idEmpresa)))
-            ->when($idBloque !== null, fn ($consulta) => $consulta->where('id_bloque', $idBloque))
+            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('proceso', fn ($q) => $q->where('id_empresa', $idEmpresa)))
+            ->when($idProceso !== null, fn ($consulta) => $consulta->where('id_proceso', $idProceso))
             ->orderBy('nombre')
             ->pluck('nombre', 'id_grupo');
 
@@ -53,10 +53,10 @@ class ParticipanteController extends Controller
         $idGrupo = $idGrupo !== null && $grupos->has($idGrupo) ? $idGrupo : null;
 
         $participantes = Participante::visiblePara($usuario)
-            ->with('grupo.bloque.empresa') // trae grupo, bloque y empresa de una vez
+            ->with('grupo.proceso.empresa') // trae grupo, proceso y empresa de una vez
             ->when(! $verBajas, fn ($consulta) => $consulta->where('estado', true))
-            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('grupo.bloque', fn ($q) => $q->where('id_empresa', $idEmpresa)))
-            ->when($idBloque !== null, fn ($consulta) => $consulta->whereHas('grupo', fn ($q) => $q->where('id_bloque', $idBloque)))
+            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('grupo.proceso', fn ($q) => $q->where('id_empresa', $idEmpresa)))
+            ->when($idProceso !== null, fn ($consulta) => $consulta->whereHas('grupo', fn ($q) => $q->where('id_proceso', $idProceso)))
             ->when($idGrupo !== null, fn ($consulta) => $consulta->where('id_grupo', $idGrupo))
             ->when($buscar !== '', function ($consulta) use ($buscar) {
                 // addcslashes: para que % y _ se busquen como texto normal.
@@ -71,7 +71,7 @@ class ParticipanteController extends Controller
             ->withQueryString();
 
         return view('participantes.index', compact(
-            'participantes', 'buscar', 'verBajas', 'idEmpresa', 'idBloque', 'idGrupo', 'empresas', 'bloques', 'grupos'
+            'participantes', 'buscar', 'verBajas', 'idEmpresa', 'idProceso', 'idGrupo', 'empresas', 'procesos', 'grupos'
         ));
     }
 
@@ -140,22 +140,22 @@ class ParticipanteController extends Controller
     }
 
     /**
-     * Grupos para la lista "Bloque › Grupo": activos, de bloques y empresas activos.
+     * Grupos para la lista "Proceso › Grupo": activos, de procesos y empresas activos.
      * Al editar, solo los de la empresa del participante, más su grupo actual
      * (para que pueda quedarse donde está aunque ese grupo esté de baja).
      *
-     * @return Collection<int, string> id_grupo => "Bloque › Grupo"
+     * @return Collection<int, string> id_grupo => "Proceso › Grupo"
      */
     private function gruposParaElegir(Usuario $usuario, ?Participante $participante = null): Collection
     {
-        $idEmpresa = $participante?->grupo->bloque->id_empresa;
+        $idEmpresa = $participante?->grupo->proceso->id_empresa;
         $conSigla = $usuario->esChazey() && $idEmpresa === null;
 
         return Grupo::visiblePara($usuario)
-            ->with('bloque.empresa')
+            ->with('proceso.empresa')
             ->where(function ($consulta) use ($idEmpresa, $participante) {
                 $consulta->where('estado', true)
-                    ->whereHas('bloque', fn ($q) => $q->where('estado', true)
+                    ->whereHas('proceso', fn ($q) => $q->where('estado', true)
                         ->when($idEmpresa !== null, fn ($b) => $b->where('id_empresa', $idEmpresa))
                         ->whereHas('empresa', fn ($e) => $e->where('estado', true)));
 
@@ -164,9 +164,9 @@ class ParticipanteController extends Controller
                 }
             })
             ->get()
-            ->sortBy(fn (Grupo $g) => [$g->bloque->empresa->nombre, $g->bloque->nombre, $g->nombre])
+            ->sortBy(fn (Grupo $g) => [$g->proceso->empresa->nombre, $g->proceso->nombre, $g->nombre])
             ->mapWithKeys(fn (Grupo $g) => [
-                $g->id_grupo => "{$g->bloque->nombre} › {$g->nombre}".($conSigla ? " ({$g->bloque->empresa->sigla})" : ''),
+                $g->id_grupo => "{$g->proceso->nombre} › {$g->nombre}".($conSigla ? " ({$g->proceso->empresa->sigla})" : ''),
             ]);
     }
 

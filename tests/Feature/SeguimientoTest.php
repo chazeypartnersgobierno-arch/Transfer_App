@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\EstadoActividad;
 use App\Enums\TipoActividad;
 use App\Models\Actividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -31,11 +31,11 @@ class SeguimientoTest extends TestCase
         (new FaseSeeder)->run();
 
         $empresa = Empresa::create(['nombre' => 'Empresa', 'sigla' => 'EMP']);
-        $bloque = Bloque::create(['id_empresa' => $empresa->id_empresa, 'nombre' => 'Bloque']);
-        $this->grupo = Grupo::create(['id_bloque' => $bloque->id_bloque, 'nombre' => 'Grupo']);
+        $proceso = Proceso::create(['id_empresa' => $empresa->id_empresa, 'nombre' => 'Proceso']);
+        $this->grupo = Grupo::create(['id_proceso' => $proceso->id_proceso, 'nombre' => 'Grupo']);
         $this->actividad = Actividad::create([
             'id_empresa' => $empresa->id_empresa,
-            'id_bloque' => $bloque->id_bloque,
+            'id_proceso' => $proceso->id_proceso,
             'tipo' => TipoActividad::Transicion,
             'nombre' => 'Actividad',
         ]);

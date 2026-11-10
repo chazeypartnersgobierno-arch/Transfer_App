@@ -6,7 +6,7 @@ use App\Enums\TipoActividad;
 use App\Exports\PlantillaDeCarga;
 use App\Imports\LectorDeCarga;
 use App\Models\Actividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Participante;
@@ -53,14 +53,14 @@ class CargaDesdeExcel
             return $resultado;
         }
 
-        // Todos los bloques de la empresa, también los de baja, para decir si "no existe" o "está de baja".
-        $bloques = Bloque::where('id_empresa', $empresa->id_empresa)
+        // Todos los procesos de la empresa, también los de baja, para decir si "no existe" o "está de baja".
+        $procesos = Proceso::where('id_empresa', $empresa->id_empresa)
             ->with('grupos')
             ->get()
-            ->keyBy(fn (Bloque $bloque) => Texto::llave($bloque->nombre));
+            ->keyBy(fn (Proceso $proceso) => Texto::llave($proceso->nombre));
 
-        $this->revisarActividades($resultado, $empresa, $actividades, $bloques);
-        $this->revisarParticipantes($resultado, $participantes, $bloques);
+        $this->revisarActividades($resultado, $empresa, $actividades, $procesos);
+        $this->revisarParticipantes($resultado, $participantes, $procesos);
 
         return $resultado;
     }
@@ -111,8 +111,9 @@ class CargaDesdeExcel
         $filas = $hojas[$hoja];
         $primera = array_map(fn ($valor) => Texto::llave($valor), $filas[0] ?? []);
 
-        // La plantilla anterior tenía una columna Bloque y otra Proceso de texto libre.
-        // Ahora la columna Proceso trae el bloque: se rechaza para no confundir una con otra.
+        // La plantilla anterior tenía una columna Bloque (hoy proceso) y otra Proceso de texto libre.
+        // Ahora la columna Proceso trae el proceso: si viene la columna Bloque se rechaza,
+        // para no tomar el texto libre viejo como proceso.
         if (in_array(Texto::llave('Bloque'), $primera, true)) {
             $resultado->erroresGenerales[] = "La hoja {$hoja} tiene la columna Bloque: es una plantilla anterior. Descarga la plantilla nueva en esta pantalla.";
 
@@ -160,9 +161,9 @@ class CargaDesdeExcel
     }
 
     /**
-     * @param  Collection<string, Bloque>  $bloques
+     * @param  Collection<string, Proceso>  $procesos
      */
-    private function revisarActividades(ResultadoDeCarga $resultado, Empresa $empresa, array $filas, Collection $bloques): void
+    private function revisarActividades(ResultadoDeCarga $resultado, Empresa $empresa, array $filas, Collection $procesos): void
     {
         $revisadas = [];
         $vistas = []; // llave de la fila => número de la primera fila igual
@@ -170,8 +171,8 @@ class CargaDesdeExcel
         foreach ($filas as ['fila' => $numero, 'valores' => $valores]) {
             $macroproceso = Texto::limpiar($valores['Macroproceso']);
             $nombre = Texto::limpiar($valores['Actividad']);
-            // La columna Proceso trae el nombre del bloque.
-            $textoBloque = Texto::limpiar($valores['Proceso']);
+            // La columna Proceso trae el nombre del proceso.
+            $textoProceso = Texto::limpiar($valores['Proceso']);
             $textoTipo = Texto::limpiar($valores['Tipo']);
 
             $errores = $this->revisarLargo('El macroproceso', $macroproceso, 255);
@@ -182,7 +183,7 @@ class CargaDesdeExcel
                 $errores = [...$errores, ...$this->revisarLargo('La actividad', $nombre, 500)];
             }
 
-            $bloque = $this->buscarBloque($textoBloque, $bloques, $errores, conTodos: true);
+            $proceso = $this->buscarProceso($textoProceso, $procesos, $errores, conTodos: true);
 
             $tipo = null;
             if ($textoTipo === '') {
@@ -195,7 +196,7 @@ class CargaDesdeExcel
                 }
             }
 
-            $llave = implode('|', array_map(fn ($v) => Texto::llave($v), [$textoBloque, $textoTipo, $macroproceso, $nombre]));
+            $llave = implode('|', array_map(fn ($v) => Texto::llave($v), [$textoProceso, $textoTipo, $macroproceso, $nombre]));
 
             if (isset($vistas[$llave])) {
                 $errores[] = "Repite la fila {$vistas[$llave]}.";
@@ -208,15 +209,15 @@ class CargaDesdeExcel
                 'mostrar' => [
                     'Actividad' => $nombre,
                     'Macroproceso' => $macroproceso,
-                    'Proceso' => $textoBloque,
+                    'Proceso' => $textoProceso,
                     'Tipo' => $tipo?->value ?? $textoTipo,
                 ],
                 'errores' => $errores,
-                'bloque' => $bloque,
+                'proceso' => $proceso,
                 'tipo' => $tipo,
                 'guardar' => [
                     'id_empresa' => $empresa->id_empresa,
-                    'id_bloque' => $bloque?->id_bloque,
+                    'id_proceso' => $proceso?->id_proceso,
                     'tipo' => $tipo?->value,
                     'macroproceso' => $macroproceso === '' ? null : $macroproceso,
                     'nombre' => $nombre,
@@ -226,31 +227,31 @@ class CargaDesdeExcel
 
         $yaCargadas = $this->actividadesExistentes($empresa, $revisadas);
 
-        // Grupos activos por bloque, para contar los seguimientos que se generarán.
+        // Grupos activos por proceso, para contar los seguimientos que se generarán.
         $gruposActivos = Grupo::where('estado', true)
-            ->whereIn('id_bloque', collect($revisadas)->pluck('bloque.id_bloque')->filter()->unique())
-            ->selectRaw('id_bloque, COUNT(*) AS total')
-            ->groupBy('id_bloque')
-            ->pluck('total', 'id_bloque');
+            ->whereIn('id_proceso', collect($revisadas)->pluck('proceso.id_proceso')->filter()->unique())
+            ->selectRaw('id_proceso, COUNT(*) AS total')
+            ->groupBy('id_proceso')
+            ->pluck('total', 'id_proceso');
 
         foreach ($revisadas as $revisada) {
             $errores = $revisada['errores'];
-            $bloque = $revisada['bloque'];
+            $proceso = $revisada['proceso'];
             $tipo = $revisada['tipo'];
 
-            if ($bloque !== null && $tipo !== null && isset($yaCargadas["{$bloque->id_bloque}|{$tipo->value}"])) {
-                $errores[] = "El proceso {$bloque->nombre} ya tiene actividades de tipo {$tipo->value}.";
+            if ($proceso !== null && $tipo !== null && isset($yaCargadas["{$proceso->id_proceso}|{$tipo->value}"])) {
+                $errores[] = "El proceso {$proceso->nombre} ya tiene actividades de tipo {$tipo->value}.";
             }
 
             if ($errores === []) {
-                $resultado->seguimientosPorGenerar += ($gruposActivos[$bloque->id_bloque] ?? 0) * count($tipo->ordenesDeFase());
+                $resultado->seguimientosPorGenerar += ($gruposActivos[$proceso->id_proceso] ?? 0) * count($tipo->ordenesDeFase());
             }
 
             $resultado->agregarFila('Actividades', $revisada['fila'], $revisada['mostrar'], $errores, $revisada['guardar']);
         }
 
         foreach ($yaCargadas as $existente) {
-            $resultado->erroresGenerales[] = "El proceso {$existente['bloque']} ya tiene {$existente['total']} "
+            $resultado->erroresGenerales[] = "El proceso {$existente['proceso']} ya tiene {$existente['total']} "
                 .($existente['total'] === 1 ? 'actividad' : 'actividades')
                 ." de tipo {$existente['tipo']} (se cuentan también las dadas de baja y las creadas a mano). "
                 .'Las actividades se cargan una sola vez por proceso y tipo: los cambios se hacen en la pantalla de Actividades.';
@@ -258,30 +259,30 @@ class CargaDesdeExcel
     }
 
     /**
-     * Combinaciones de bloque y tipo del archivo que ya tienen actividades en la base,
+     * Combinaciones de proceso y tipo del archivo que ya tienen actividades en la base,
      * con una sola consulta.
      *
-     * @return array<string, array{bloque: string, tipo: string, total: int}> Llave "id_bloque|tipo".
+     * @return array<string, array{proceso: string, tipo: string, total: int}> Llave "id_proceso|tipo".
      */
     private function actividadesExistentes(Empresa $empresa, array $revisadas): array
     {
-        $bloquesDelArchivo = collect($revisadas)
-            ->filter(fn ($r) => $r['bloque'] !== null && $r['tipo'] !== null)
-            ->mapWithKeys(fn ($r) => ["{$r['bloque']->id_bloque}|{$r['tipo']->value}" => $r['bloque']]);
+        $procesosDelArchivo = collect($revisadas)
+            ->filter(fn ($r) => $r['proceso'] !== null && $r['tipo'] !== null)
+            ->mapWithKeys(fn ($r) => ["{$r['proceso']->id_proceso}|{$r['tipo']->value}" => $r['proceso']]);
 
-        if ($bloquesDelArchivo->isEmpty()) {
+        if ($procesosDelArchivo->isEmpty()) {
             return [];
         }
 
         return Actividad::where('id_empresa', $empresa->id_empresa)
-            ->whereIn('id_bloque', $bloquesDelArchivo->pluck('id_bloque')->unique())
-            ->selectRaw('id_bloque, tipo, COUNT(*) AS total')
-            ->groupBy('id_bloque', 'tipo')
+            ->whereIn('id_proceso', $procesosDelArchivo->pluck('id_proceso')->unique())
+            ->selectRaw('id_proceso, tipo, COUNT(*) AS total')
+            ->groupBy('id_proceso', 'tipo')
             ->toBase() // filas simples: sin convertir tipo al enum
             ->get()
-            ->filter(fn ($fila) => $bloquesDelArchivo->has("{$fila->id_bloque}|{$fila->tipo}"))
-            ->mapWithKeys(fn ($fila) => ["{$fila->id_bloque}|{$fila->tipo}" => [
-                'bloque' => $bloquesDelArchivo["{$fila->id_bloque}|{$fila->tipo}"]->nombre,
+            ->filter(fn ($fila) => $procesosDelArchivo->has("{$fila->id_proceso}|{$fila->tipo}"))
+            ->mapWithKeys(fn ($fila) => ["{$fila->id_proceso}|{$fila->tipo}" => [
+                'proceso' => $procesosDelArchivo["{$fila->id_proceso}|{$fila->tipo}"]->nombre,
                 'tipo' => $fila->tipo,
                 'total' => (int) $fila->total,
             ]])
@@ -289,9 +290,9 @@ class CargaDesdeExcel
     }
 
     /**
-     * @param  Collection<string, Bloque>  $bloques
+     * @param  Collection<string, Proceso>  $procesos
      */
-    private function revisarParticipantes(ResultadoDeCarga $resultado, array $filas, Collection $bloques): void
+    private function revisarParticipantes(ResultadoDeCarga $resultado, array $filas, Collection $procesos): void
     {
         // Primero, cuántas veces aparece cada correo en el archivo.
         $filasPorCorreo = [];
@@ -311,7 +312,7 @@ class CargaDesdeExcel
             $nombre = Texto::limpiar($valores['Nombre']);
             $apellidos = Texto::limpiar($valores['Apellidos']);
             $correo = mb_strtolower(Texto::limpiar($valores['Correo']));
-            $textoBloque = Texto::limpiar($valores['Proceso']);
+            $textoProceso = Texto::limpiar($valores['Proceso']);
             $textoGrupo = Texto::limpiar($valores['Grupo']);
             $rol = Texto::limpiar($valores['Rol']);
 
@@ -347,15 +348,15 @@ class CargaDesdeExcel
             $fecha = $this->fecha($valores['Fecha de ingreso'], $errores);
 
             $grupo = null;
-            $bloque = $this->buscarBloque($textoBloque, $bloques, $errores);
+            $proceso = $this->buscarProceso($textoProceso, $procesos, $errores);
 
             if ($textoGrupo === '') {
                 $errores[] = 'Falta el grupo.';
-            } elseif ($bloque !== null) {
-                $grupo = $bloque->grupos->first(fn (Grupo $g) => Texto::llave($g->nombre) === Texto::llave($textoGrupo));
+            } elseif ($proceso !== null) {
+                $grupo = $proceso->grupos->first(fn (Grupo $g) => Texto::llave($g->nombre) === Texto::llave($textoGrupo));
 
                 if ($grupo === null) {
-                    $errores[] = "El grupo «{$textoGrupo}» no existe en el proceso {$bloque->nombre}.";
+                    $errores[] = "El grupo «{$textoGrupo}» no existe en el proceso {$proceso->nombre}.";
                 } elseif (! $grupo->estado) {
                     $errores[] = "El grupo {$grupo->nombre} está dado de baja.";
                     $grupo = null;
@@ -382,23 +383,23 @@ class CargaDesdeExcel
      */
     private function mostrarParticipante(array $valores): array
     {
-        $bloque = Texto::limpiar($valores['Proceso']);
+        $proceso = Texto::limpiar($valores['Proceso']);
         $grupo = Texto::limpiar($valores['Grupo']);
 
         return [
             'Nombre' => trim(Texto::limpiar($valores['Nombre']).' '.Texto::limpiar($valores['Apellidos'])),
             'Correo' => mb_strtolower(Texto::limpiar($valores['Correo'])),
-            'Grupo' => $bloque.($grupo !== '' ? " › {$grupo}" : ''),
+            'Grupo' => $proceso.($grupo !== '' ? " › {$grupo}" : ''),
             'Rol' => Texto::limpiar($valores['Rol']),
         ];
     }
 
     /**
-     * Busca el bloque por nombre. Distingue entre "no existe" y "está dado de baja".
+     * Busca el proceso por nombre. Distingue entre "no existe" y "está dado de baja".
      *
-     * @param  Collection<string, Bloque>  $bloques
+     * @param  Collection<string, Proceso>  $procesos
      */
-    private function buscarBloque(string $texto, Collection $bloques, array &$errores, bool $conTodos = false): ?Bloque
+    private function buscarProceso(string $texto, Collection $procesos, array &$errores, bool $conTodos = false): ?Proceso
     {
         if ($texto === '') {
             $errores[] = 'Falta el proceso.';
@@ -406,10 +407,10 @@ class CargaDesdeExcel
             return null;
         }
 
-        $bloque = $bloques->get(Texto::llave($texto));
+        $proceso = $procesos->get(Texto::llave($texto));
 
-        if ($bloque === null) {
-            // "Todos" se usaba antes: ahora cada actividad lleva un bloque real.
+        if ($proceso === null) {
+            // "Todos" se usaba antes: ahora cada actividad lleva un proceso real.
             $errores[] = $conTodos && Texto::llave($texto) === 'todos'
                 ? 'Ya no se usa «Todos»: cada actividad lleva un proceso de la empresa.'
                 : "El proceso «{$texto}» no existe en esta empresa.";
@@ -417,13 +418,13 @@ class CargaDesdeExcel
             return null;
         }
 
-        if (! $bloque->estado) {
-            $errores[] = "El proceso {$bloque->nombre} está dado de baja.";
+        if (! $proceso->estado) {
+            $errores[] = "El proceso {$proceso->nombre} está dado de baja.";
 
             return null;
         }
 
-        return $bloque;
+        return $proceso;
     }
 
     /**

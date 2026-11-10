@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EstadoAcceso;
 use App\Models\AccesoSolicitado;
 use App\Models\Aplicativo;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Participante;
@@ -51,7 +51,7 @@ class AccesoSolicitadoController extends Controller
         $idAplicativo = $this->elegido($this->numero($request, 'id_aplicativo'), $aplicativos);
 
         $grupos = $this->nombresDeGrupos(Grupo::visiblePara($usuario)
-            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('bloque', fn ($q) => $q->where('id_empresa', $idEmpresa))), $conSigla);
+            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('proceso', fn ($q) => $q->where('id_empresa', $idEmpresa))), $conSigla);
         $idGrupo = $this->elegido($this->numero($request, 'id_grupo'), $grupos);
 
         // Desde la lista de participantes se llega con la persona ya elegida.
@@ -59,7 +59,7 @@ class AccesoSolicitadoController extends Controller
         $participante = $idParticipante !== null ? Participante::visiblePara($usuario)->find($idParticipante) : null;
 
         $filtrados = AccesoSolicitado::visiblePara($usuario)
-            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('participante.grupo.bloque', fn ($q) => $q->where('id_empresa', $idEmpresa)))
+            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('participante.grupo.proceso', fn ($q) => $q->where('id_empresa', $idEmpresa)))
             ->when($idAplicativo !== null, fn ($consulta) => $consulta->where('id_aplicativo', $idAplicativo))
             ->when($idGrupo !== null, fn ($consulta) => $consulta->whereHas('participante', fn ($q) => $q->where('id_grupo', $idGrupo)))
             ->when($participante !== null, fn ($consulta) => $consulta->where('id_participante', $participante->id_participante))
@@ -79,7 +79,7 @@ class AccesoSolicitadoController extends Controller
 
         $accesos = (clone $filtrados)
             ->when($estado !== null, fn ($consulta) => $consulta->where('estado', $estado->value))
-            ->with(['participante.grupo.bloque.empresa', 'aplicativo'])
+            ->with(['participante.grupo.proceso.empresa', 'aplicativo'])
             ->orderByDesc('fecha_solicitud')
             ->orderByDesc('id_acceso_solicitado')
             ->paginate(15)
@@ -92,7 +92,7 @@ class AccesoSolicitadoController extends Controller
 
     /**
      * Pantalla para registrar: primero la empresa (si el usuario ve varias); después el
-     * aplicativo y los participantes, que se pueden filtrar por bloque y grupo.
+     * aplicativo y los participantes, que se pueden filtrar por proceso y grupo.
      */
     public function crear(Request $request): View|RedirectResponse
     {
@@ -109,23 +109,23 @@ class AccesoSolicitadoController extends Controller
             return view('accesos.crear', ['empresas' => $empresas, 'idEmpresa' => null]);
         }
 
-        $bloques = Bloque::where('id_empresa', $idEmpresa)->where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_bloque');
-        $idBloque = $this->elegido($this->numero($request, 'id_bloque'), $bloques);
+        $procesos = Proceso::where('id_empresa', $idEmpresa)->where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_proceso');
+        $idProceso = $this->elegido($this->numero($request, 'id_proceso'), $procesos);
 
         $grupos = $this->nombresDeGrupos(Grupo::where('estado', true)
-            ->whereHas('bloque', fn ($q) => $q->where('id_empresa', $idEmpresa)->where('estado', true))
-            ->when($idBloque !== null, fn ($consulta) => $consulta->where('id_bloque', $idBloque)), false);
+            ->whereHas('proceso', fn ($q) => $q->where('id_empresa', $idEmpresa)->where('estado', true))
+            ->when($idProceso !== null, fn ($consulta) => $consulta->where('id_proceso', $idProceso)), false);
         $idGrupo = $this->elegido($this->numero($request, 'id_grupo'), $grupos);
 
         return view('accesos.crear', [
             'empresas' => $empresas,
             'idEmpresa' => $idEmpresa,
             'aplicativos' => Aplicativo::where('id_empresa', $idEmpresa)->where('estado', true)->orderBy('nombre')->pluck('nombre', 'id_aplicativo'),
-            'bloques' => $bloques,
-            'idBloque' => $idBloque,
+            'procesos' => $procesos,
+            'idProceso' => $idProceso,
             'grupos' => $grupos,
             'idGrupo' => $idGrupo,
-            'participantes' => $this->participantesParaElegir($idEmpresa, $idBloque, $idGrupo),
+            'participantes' => $this->participantesParaElegir($idEmpresa, $idProceso, $idGrupo),
         ]);
     }
 
@@ -220,7 +220,7 @@ class AccesoSolicitadoController extends Controller
 
     public function editar(AccesoSolicitado $acceso): View
     {
-        $acceso->load(['participante.grupo.bloque.empresa', 'aplicativo']);
+        $acceso->load(['participante.grupo.proceso.empresa', 'aplicativo']);
 
         return view('accesos.editar', ['acceso' => $acceso, 'editable' => $acceso->sePuedeEditar()]);
     }
@@ -278,18 +278,18 @@ class AccesoSolicitadoController extends Controller
     }
 
     /**
-     * Participantes que se pueden elegir: activos, de grupos y bloques activos de la empresa.
+     * Participantes que se pueden elegir: activos, de grupos y procesos activos de la empresa.
      */
-    private function participantesParaElegir(int $idEmpresa, ?int $idBloque, ?int $idGrupo): \Illuminate\Database\Eloquent\Collection
+    private function participantesParaElegir(int $idEmpresa, ?int $idProceso, ?int $idGrupo): \Illuminate\Database\Eloquent\Collection
     {
         return Participante::where('estado', true)
             ->whereHas('grupo', fn ($g) => $g->where('estado', true)
-                ->when($idBloque !== null, fn ($q) => $q->where('id_bloque', $idBloque))
-                ->whereHas('bloque', fn ($b) => $b->where('id_empresa', $idEmpresa)->where('estado', true)))
+                ->when($idProceso !== null, fn ($q) => $q->where('id_proceso', $idProceso))
+                ->whereHas('proceso', fn ($b) => $b->where('id_empresa', $idEmpresa)->where('estado', true)))
             ->when($idGrupo !== null, fn ($consulta) => $consulta->where('id_grupo', $idGrupo))
-            ->with('grupo.bloque')
+            ->with('grupo.proceso')
             ->get()
-            ->sortBy(fn (Participante $p) => [$p->grupo->bloque->nombre, $p->grupo->nombre, $p->apellidos, $p->nombre])
+            ->sortBy(fn (Participante $p) => [$p->grupo->proceso->nombre, $p->grupo->nombre, $p->apellidos, $p->nombre])
             ->values();
     }
 
@@ -302,15 +302,15 @@ class AccesoSolicitadoController extends Controller
     }
 
     /**
-     * Lista "Bloque › Grupo" (con la sigla de la empresa si hace falta distinguirlas).
+     * Lista "Proceso › Grupo" (con la sigla de la empresa si hace falta distinguirlas).
      */
     private function nombresDeGrupos($consulta, bool $conSigla): Collection
     {
-        return $consulta->with('bloque.empresa')
+        return $consulta->with('proceso.empresa')
             ->get()
-            ->sortBy(fn (Grupo $g) => [$g->bloque->nombre, $g->nombre])
+            ->sortBy(fn (Grupo $g) => [$g->proceso->nombre, $g->nombre])
             ->mapWithKeys(fn (Grupo $g) => [
-                $g->id_grupo => "{$g->bloque->nombre} › {$g->nombre}".($conSigla ? " ({$g->bloque->empresa->sigla})" : ''),
+                $g->id_grupo => "{$g->proceso->nombre} › {$g->nombre}".($conSigla ? " ({$g->proceso->empresa->sigla})" : ''),
             ]);
     }
 

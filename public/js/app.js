@@ -5,21 +5,21 @@ document.querySelectorAll('[data-enviar-al-cambiar]').forEach((campo) => {
     campo.addEventListener('change', () => campo.form.requestSubmit());
 });
 
-// Formulario de actividad: los bloques dependen de la empresa elegida.
+// Formulario de actividad: los procesos dependen de la empresa elegida.
 // Es solo una ayuda: las reglas reales se validan en el servidor.
 document.querySelectorAll('form[data-formulario-actividad]').forEach((formulario) => {
     const empresa = formulario.querySelector('[name="id_empresa"]'); // no existe si el usuario tiene empresa
-    const bloque = formulario.querySelector('[name="id_bloque"]');
+    const proceso = formulario.querySelector('[name="id_proceso"]');
 
     const actualizar = () => {
-        // Muestra solo los bloques de la empresa elegida.
-        bloque.querySelectorAll('option[data-empresa]').forEach((opcion) => {
+        // Muestra solo los procesos de la empresa elegida.
+        proceso.querySelectorAll('option[data-empresa]').forEach((opcion) => {
             const visible = !empresa || opcion.dataset.empresa === empresa.value;
             opcion.hidden = !visible;
             opcion.disabled = !visible;
 
             if (!visible && opcion.selected) {
-                bloque.value = '';
+                proceso.value = '';
             }
         });
     };
@@ -152,10 +152,10 @@ document.querySelectorAll('[data-aviso-mayus]').forEach((aviso) => {
     campo.addEventListener('blur', () => { aviso.hidden = true; });
 });
 
-// Equipo del bloque (lista de seguimientos): los campos empiezan bloqueados y se abren con "Editar".
+// Equipo del proceso (lista de seguimientos): los campos empiezan bloqueados y se abren con "Editar".
 // "Cancelar" regresa los valores guardados (data-original) y los vuelve a bloquear.
 // Sin JavaScript los campos quedan abiertos y se puede guardar igual.
-document.querySelectorAll('form[data-equipo-bloque]').forEach((formulario) => {
+document.querySelectorAll('form[data-equipo-proceso]').forEach((formulario) => {
     const campos = formulario.querySelector('fieldset');
     const editar = formulario.querySelector('[data-equipo-editar]');
     const cancelar = formulario.querySelector('[data-equipo-cancelar]');

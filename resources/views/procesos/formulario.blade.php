@@ -2,7 +2,7 @@
 @extends('layouts.app')
 
 @php
-    $esNuevo = ! $bloque->exists;
+    $esNuevo = ! $proceso->exists;
     $titulo = $esNuevo ? 'Nuevo proceso' : 'Editar proceso';
 @endphp
 
@@ -14,7 +14,7 @@
     </div>
 
     <div class="tarjeta tarjeta-formulario">
-        <form method="POST" action="{{ $esNuevo ? route('bloques.guardar') : route('bloques.actualizar', $bloque) }}">
+        <form method="POST" action="{{ $esNuevo ? route('procesos.guardar') : route('procesos.actualizar', $proceso) }}">
             @csrf
             @unless ($esNuevo)
                 @method('PUT')
@@ -29,19 +29,19 @@
                 @enderror
             @endif
 
-            <x-campo name="nombre" label="Nombre" :value="old('nombre', $bloque->nombre)" maxlength="255" required autofocus />
+            <x-campo name="nombre" label="Nombre" :value="old('nombre', $proceso->nombre)" maxlength="255" required autofocus />
 
             @unless ($esNuevo)
                 <dl class="datos-fijos">
                     <div>
                         <dt>Empresa</dt>
-                        <dd>{{ $bloque->empresa->nombre }}</dd>
+                        <dd>{{ $proceso->empresa->nombre }}</dd>
                     </div>
                 </dl>
             @endunless
 
             <div class="formulario-acciones">
-                <a href="{{ route('bloques.index') }}" class="btn btn-outline-primary">Cancelar</a>
+                <a href="{{ route('procesos.index') }}" class="btn btn-outline-primary">Cancelar</a>
                 <x-boton>Guardar</x-boton>
             </div>
         </form>

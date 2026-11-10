@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Seguimiento;
@@ -25,25 +25,25 @@ class GrupoController extends Controller
         // Solo Chazey ve varias empresas, así que solo a Chazey se le muestra ese filtro.
         $empresas = $usuario->esChazey() ? Empresa::orderBy('nombre')->pluck('nombre', 'id_empresa') : collect();
 
-        // Si no se eligió empresa, Chazey ve bloques de varias: la sigla ayuda a distinguirlos.
+        // Si no se eligió empresa, Chazey ve procesos de varias: la sigla ayuda a distinguirlos.
         $conSigla = $usuario->esChazey() && $idEmpresa === null;
-        $bloques = Bloque::visiblePara($usuario)
+        $procesos = Proceso::visiblePara($usuario)
             ->with('empresa')
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
             ->orderBy('nombre')
             ->get()
-            ->mapWithKeys(fn (Bloque $b) => [$b->id_bloque => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
+            ->mapWithKeys(fn (Proceso $b) => [$b->id_proceso => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
 
-        // Un bloque que ya no está en la lista (por ejemplo, al cambiar de empresa) se ignora.
-        $idBloque = is_numeric($request->query('id_bloque')) ? (int) $request->query('id_bloque') : null;
-        $idBloque = $idBloque !== null && $bloques->has($idBloque) ? $idBloque : null;
+        // Un proceso que ya no está en la lista (por ejemplo, al cambiar de empresa) se ignora.
+        $idProceso = is_numeric($request->query('id_proceso')) ? (int) $request->query('id_proceso') : null;
+        $idProceso = $idProceso !== null && $procesos->has($idProceso) ? $idProceso : null;
 
         $grupos = Grupo::visiblePara($usuario)
-            ->with('bloque.empresa') // trae bloque y empresa de una vez, sin una consulta por cada fila
+            ->with('proceso.empresa') // trae proceso y empresa de una vez, sin una consulta por cada fila
             ->withCount('seguimientos') // agrega seguimientos_count a cada grupo
             ->when(! $verBajas, fn ($consulta) => $consulta->where('estado', true))
-            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('bloque', fn ($q) => $q->where('id_empresa', $idEmpresa)))
-            ->when($idBloque !== null, fn ($consulta) => $consulta->where('id_bloque', $idBloque))
+            ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('proceso', fn ($q) => $q->where('id_empresa', $idEmpresa)))
+            ->when($idProceso !== null, fn ($consulta) => $consulta->where('id_proceso', $idProceso))
             // addcslashes: para que % y _ se busquen como texto normal.
             ->when($buscar !== '', fn ($consulta) => $consulta->where('nombre', 'like', '%'.addcslashes($buscar, '%_\\').'%'))
             ->orderBy('nombre')
@@ -55,31 +55,31 @@ class GrupoController extends Controller
             ->reject(fn (Grupo $grupo) => $grupo->estado)
             ->mapWithKeys(fn (Grupo $grupo) => [$grupo->id_grupo => $generador->faltantesDeGrupo($grupo)->count()]);
 
-        return view('grupos.index', compact('grupos', 'buscar', 'verBajas', 'idEmpresa', 'idBloque', 'empresas', 'bloques', 'faltantes'));
+        return view('grupos.index', compact('grupos', 'buscar', 'verBajas', 'idEmpresa', 'idProceso', 'empresas', 'procesos', 'faltantes'));
     }
 
     public function crear(Request $request): View|RedirectResponse
     {
-        $bloques = $this->bloquesParaElegir($request);
+        $procesos = $this->procesosParaElegir($request);
 
-        if ($bloques->isEmpty()) {
+        if ($procesos->isEmpty()) {
             return redirect()->route('grupos.index')->with('error', 'Primero registra un proceso activo.');
         }
 
         return view('grupos.formulario', [
             'grupo' => new Grupo,
-            'opcionesDeBloque' => $this->opcionesDeBloque($request, $bloques),
+            'opcionesDeProceso' => $this->opcionesDeProceso($request, $procesos),
         ]);
     }
 
     public function guardar(Request $request, GeneradorDeSeguimientos $generador): RedirectResponse
     {
-        $idBloque = is_numeric($request->input('id_bloque')) ? (int) $request->input('id_bloque') : 0;
+        $idProceso = is_numeric($request->input('id_proceso')) ? (int) $request->input('id_proceso') : 0;
 
         $datos = $request->validate([
-            // Solo los bloques que este usuario puede elegir: activos y de su alcance.
-            'id_bloque' => ['required', 'integer', Rule::in($this->bloquesParaElegir($request)->pluck('id_bloque'))],
-            'nombre' => $this->reglasDeNombre($idBloque),
+            // Solo los procesos que este usuario puede elegir: activos y de su alcance.
+            'id_proceso' => ['required', 'integer', Rule::in($this->procesosParaElegir($request)->pluck('id_proceso'))],
+            'nombre' => $this->reglasDeNombre($idProceso),
         ], $this->mensajes());
 
         // Todo o nada: si falla la generación, tampoco queda el grupo.
@@ -99,16 +99,16 @@ class GrupoController extends Controller
 
     public function editar(Grupo $grupo): View
     {
-        return view('grupos.formulario', ['grupo' => $grupo, 'opcionesDeBloque' => collect()]);
+        return view('grupos.formulario', ['grupo' => $grupo, 'opcionesDeProceso' => collect()]);
     }
 
     /**
-     * Solo se puede cambiar el nombre. Si el bloque está mal, se da de baja y se crea otro grupo.
+     * Solo se puede cambiar el nombre. Si el proceso está mal, se da de baja y se crea otro grupo.
      */
     public function actualizar(Request $request, Grupo $grupo): RedirectResponse
     {
         $datos = $request->validate([
-            'nombre' => $this->reglasDeNombre($grupo->id_bloque, $grupo),
+            'nombre' => $this->reglasDeNombre($grupo->id_proceso, $grupo),
         ], $this->mensajes());
 
         $grupo->update($datos);
@@ -131,7 +131,7 @@ class GrupoController extends Controller
      */
     public function reactivar(Grupo $grupo, GeneradorDeSeguimientos $generador): RedirectResponse
     {
-        if (! $grupo->bloque->estado) {
+        if (! $grupo->proceso->estado) {
             return back()->with('error', "No se puede reactivar {$grupo->nombre}: su proceso está dado de baja.");
         }
 
@@ -147,11 +147,11 @@ class GrupoController extends Controller
     }
 
     /**
-     * Bloques activos de empresas activas que este usuario puede usar.
+     * Procesos activos de empresas activas que este usuario puede usar.
      */
-    private function bloquesParaElegir(Request $request)
+    private function procesosParaElegir(Request $request)
     {
-        return Bloque::visiblePara($request->user())
+        return Proceso::visiblePara($request->user())
             ->with('empresa')
             ->where('estado', true)
             ->whereHas('empresa', fn ($consulta) => $consulta->where('estado', true))
@@ -160,26 +160,26 @@ class GrupoController extends Controller
     }
 
     /**
-     * Texto de cada bloque en la lista. Chazey ve varias empresas: la sigla ayuda a distinguirlos.
+     * Texto de cada proceso en la lista. Chazey ve varias empresas: la sigla ayuda a distinguirlos.
      */
-    private function opcionesDeBloque(Request $request, $bloques)
+    private function opcionesDeProceso(Request $request, $procesos)
     {
         $conSigla = $request->user()->esChazey();
 
-        return $bloques->mapWithKeys(fn (Bloque $b) => [$b->id_bloque => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
+        return $procesos->mapWithKeys(fn (Proceso $b) => [$b->id_proceso => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
     }
 
     /**
-     * El nombre no se repite dentro de un mismo bloque; al editar, puede seguir siendo el mismo.
+     * El nombre no se repite dentro de un mismo proceso; al editar, puede seguir siendo el mismo.
      */
-    private function reglasDeNombre(int $idBloque, ?Grupo $grupo = null): array
+    private function reglasDeNombre(int $idProceso, ?Grupo $grupo = null): array
     {
         return [
             'required',
             'string',
             'max:255',
             Rule::unique('grupos', 'nombre')
-                ->where('id_bloque', $idBloque)
+                ->where('id_proceso', $idProceso)
                 ->ignore($grupo?->id_grupo, 'id_grupo'),
         ];
     }
@@ -187,9 +187,9 @@ class GrupoController extends Controller
     private function mensajes(): array
     {
         return [
-            'id_bloque.required' => 'Elige un proceso.',
-            'id_bloque.integer' => 'Elige un proceso de la lista.',
-            'id_bloque.in' => 'El proceso no existe, está dado de baja o es de otra empresa.',
+            'id_proceso.required' => 'Elige un proceso.',
+            'id_proceso.integer' => 'Elige un proceso de la lista.',
+            'id_proceso.in' => 'El proceso no existe, está dado de baja o es de otra empresa.',
             'nombre.required' => 'Escribe el nombre del grupo.',
             'nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
             'nombre.unique' => 'Este proceso ya tiene un grupo con este nombre.',

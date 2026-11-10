@@ -17,7 +17,7 @@ class Grupo extends Model
 
     const UPDATED_AT = 'fecha_actualizacion';
 
-    protected $fillable = ['id_bloque', 'nombre', 'estado'];
+    protected $fillable = ['id_proceso', 'nombre', 'estado'];
 
     protected function casts(): array
     {
@@ -26,9 +26,9 @@ class Grupo extends Model
         ];
     }
 
-    public function bloque(): BelongsTo
+    public function proceso(): BelongsTo
     {
-        return $this->belongsTo(Bloque::class, 'id_bloque', 'id_bloque');
+        return $this->belongsTo(Proceso::class, 'id_proceso', 'id_proceso');
     }
 
     public function seguimientos(): HasMany
@@ -42,14 +42,14 @@ class Grupo extends Model
     }
 
     /**
-     * Un grupo no tiene id_empresa: su empresa es la de su bloque.
+     * Un grupo no tiene id_empresa: su empresa es la de su proceso.
      * Chazey ve todos; los demás, solo los de su empresa.
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
         return $usuario->esChazey()
             ? $consulta
-            : $consulta->whereHas('bloque', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
+            : $consulta->whereHas('proceso', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
     }
 
     /**

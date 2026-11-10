@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\RolApp;
 use App\Models\Aplicativo;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -189,10 +189,10 @@ class EmpresaTest extends TestCase
         $this->assertTrue($empresa->fresh()->estado);
     }
 
-    public function test_la_baja_se_bloquea_con_bloques_o_aplicativos_activos(): void
+    public function test_la_baja_se_bloquea_con_procesos_o_aplicativos_activos(): void
     {
         $empresa = $this->empresa();
-        $bloque = Bloque::create(['id_empresa' => $empresa->id_empresa, 'nombre' => 'B']);
+        $proceso = Proceso::create(['id_empresa' => $empresa->id_empresa, 'nombre' => 'B']);
         $aplicativo = Aplicativo::create(['id_empresa' => $empresa->id_empresa, 'nombre' => 'A']);
         $admin = $this->usuario();
         $url = "/empresas/{$empresa->id_empresa}/baja";
@@ -201,7 +201,7 @@ class EmpresaTest extends TestCase
             ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}. Todavía tiene activos: procesos y aplicativos.");
         $this->assertTrue($empresa->fresh()->estado);
 
-        $bloque->update(['estado' => false]);
+        $proceso->update(['estado' => false]);
         $this->actingAs($admin)->from('/empresas')->patch($url)
             ->assertSessionHas('error', "No se puede dar de baja {$empresa->nombre}. Todavía tiene activos: aplicativos.");
         $this->assertTrue($empresa->fresh()->estado);

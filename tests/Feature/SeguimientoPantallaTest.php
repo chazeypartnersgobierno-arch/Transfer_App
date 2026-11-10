@@ -6,7 +6,7 @@ use App\Enums\EstadoActividad;
 use App\Enums\RolApp;
 use App\Enums\TipoActividad;
 use App\Models\Actividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -28,7 +28,7 @@ class SeguimientoPantallaTest extends TestCase
 
     private Empresa $empresa;
 
-    private Bloque $bloque;
+    private Proceso $proceso;
 
     private Grupo $grupo;
 
@@ -38,8 +38,8 @@ class SeguimientoPantallaTest extends TestCase
 
         (new FaseSeeder)->run();
         $this->empresa = Empresa::create(['nombre' => 'Empresa Uno', 'sigla' => 'UNO']);
-        $this->bloque = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
-        $this->grupo = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 1']);
+        $this->proceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
+        $this->grupo = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 1']);
     }
 
     private function usuario(RolApp $rol = RolApp::Admin, ?Empresa $empresa = null): Usuario
@@ -54,11 +54,11 @@ class SeguimientoPantallaTest extends TestCase
         ]), $empresa);
     }
 
-    private function actividad(string $nombre, ?Bloque $bloque = null, TipoActividad $tipo = TipoActividad::Onboarding, bool $estado = true): Actividad
+    private function actividad(string $nombre, ?Proceso $proceso = null, TipoActividad $tipo = TipoActividad::Onboarding, bool $estado = true): Actividad
     {
-        $bloque ??= $this->bloque;
+        $proceso ??= $this->proceso;
 
-        return Actividad::create(['id_empresa' => $bloque->id_empresa, 'id_bloque' => $bloque->id_bloque, 'tipo' => $tipo, 'nombre' => $nombre, 'estado' => $estado]);
+        return Actividad::create(['id_empresa' => $proceso->id_empresa, 'id_proceso' => $proceso->id_proceso, 'tipo' => $tipo, 'nombre' => $nombre, 'estado' => $estado]);
     }
 
     private function seguimiento(Actividad $actividad, ?Grupo $grupo = null, int $orden = 1, array $extra = []): Seguimiento
@@ -110,10 +110,10 @@ class SeguimientoPantallaTest extends TestCase
     public function test_un_usuario_con_empresa_no_ve_ni_edita_seguimientos_ajenos(): void
     {
         $ajena = Empresa::create(['nombre' => 'Ajena', 'sigla' => 'AJE']);
-        $bloqueAjeno = Bloque::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Ajeno']);
-        $grupoAjeno = Grupo::create(['id_bloque' => $bloqueAjeno->id_bloque, 'nombre' => 'G ajeno']);
+        $procesoAjeno = Proceso::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Ajeno']);
+        $grupoAjeno = Grupo::create(['id_proceso' => $procesoAjeno->id_proceso, 'nombre' => 'G ajeno']);
         $this->seguimiento($this->actividad('Propia'));
-        $ajeno = $this->seguimiento($this->actividad('Actividad ajena', $bloqueAjeno), $grupoAjeno);
+        $ajeno = $this->seguimiento($this->actividad('Actividad ajena', $procesoAjeno), $grupoAjeno);
         $consultor = $this->usuario(RolApp::Consultor, $this->empresa);
 
         $this->actingAs($consultor)->get('/seguimientos')
@@ -157,7 +157,7 @@ class SeguimientoPantallaTest extends TestCase
     {
         $this->seguimiento($this->actividad('Activa'));
         $this->seguimiento($this->actividad('Actividad de baja', null, TipoActividad::Onboarding, false));
-        $grupoDeBaja = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo de baja', 'estado' => false]);
+        $grupoDeBaja = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo de baja', 'estado' => false]);
         $this->seguimiento($this->actividad('Del grupo de baja'), $grupoDeBaja);
         $admin = $this->usuario();
 
@@ -173,19 +173,19 @@ class SeguimientoPantallaTest extends TestCase
             ->assertSee('Consultar');
     }
 
-    public function test_filtros_por_bloque_grupo_fase_y_busqueda(): void
+    public function test_filtros_por_proceso_grupo_fase_y_busqueda(): void
     {
-        $otroBloque = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
-        $grupoPagos = Grupo::create(['id_bloque' => $otroBloque->id_bloque, 'nombre' => 'Grupo P']);
-        $grupo2 = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 2']);
+        $otroProceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
+        $grupoPagos = Grupo::create(['id_proceso' => $otroProceso->id_proceso, 'nombre' => 'Grupo P']);
+        $grupo2 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 2']);
         $tesoreria = $this->actividad('De tesorería', null, TipoActividad::Transicion);
         $this->seguimiento($tesoreria, null, 2);
         $this->seguimiento($tesoreria, $grupo2, 3);
-        $this->seguimiento($this->actividad('De pagos', $otroBloque), $grupoPagos);
+        $this->seguimiento($this->actividad('De pagos', $otroProceso), $grupoPagos);
         $admin = $this->usuario();
         $fase3 = Fase::where('orden', 3)->sole();
 
-        $this->actingAs($admin)->get("/seguimientos?id_bloque={$otroBloque->id_bloque}")
+        $this->actingAs($admin)->get("/seguimientos?id_proceso={$otroProceso->id_proceso}")
             ->assertSee('De pagos')->assertDontSee('De tesorería');
 
         $this->actingAs($admin)->get("/seguimientos?id_grupo={$grupo2->id_grupo}")
@@ -197,8 +197,8 @@ class SeguimientoPantallaTest extends TestCase
         $this->actingAs($admin)->get('/seguimientos?buscar=pagos')
             ->assertSee('De pagos')->assertDontSee('De tesorería');
 
-        // Con un bloque elegido, la lista de grupos solo trae los de ese bloque.
-        $this->actingAs($admin)->get("/seguimientos?id_bloque={$otroBloque->id_bloque}")
+        // Con un proceso elegido, la lista de grupos solo trae los de ese proceso.
+        $this->actingAs($admin)->get("/seguimientos?id_proceso={$otroProceso->id_proceso}")
             ->assertSee('Grupo P')->assertDontSee('>Grupo 2<', false);
 
         // Un valor que no corresponde se ignora en vez de dejar la lista vacía.
@@ -363,7 +363,7 @@ class SeguimientoPantallaTest extends TestCase
     {
         $actividad = $this->actividad('De baja', null, TipoActividad::Onboarding, false);
         $web = $this->seguimiento($actividad, null, 1, ['documentacion' => 'https://sharepoint.empresa.com/doc']);
-        $texto = $this->seguimiento($actividad, Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Otro']), 1, ['documentacion' => 'javascript:alert(1)']);
+        $texto = $this->seguimiento($actividad, Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Otro']), 1, ['documentacion' => 'javascript:alert(1)']);
         $admin = $this->usuario();
 
         $this->actingAs($admin)->get("/seguimientos/{$web->id_seguimiento}/editar")->assertSee('Abrir la documentación');
@@ -374,7 +374,7 @@ class SeguimientoPantallaTest extends TestCase
     {
         $seguimiento = $this->seguimiento($this->actividad('Uno'));
         $otra = $this->actividad('Otra');
-        $otroGrupo = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Otro']);
+        $otroGrupo = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Otro']);
 
         $this->actingAs($this->usuario())->put("/seguimientos/{$seguimiento->id_seguimiento}", $this->datos([
             'id_actividad' => $otra->id_actividad,

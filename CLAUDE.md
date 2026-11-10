@@ -18,7 +18,7 @@ Fases en orden: Onboarding → Transferencia → Validación → Estabilización
 ## Convenciones de Laravel en este proyecto
 
 - Las tablas no siguen los nombres en inglés de Laravel: en cada modelo define `$table`, `$primaryKey` (`id_<tabla>`) y las FK en las relaciones.
-- En pantalla, en los mensajes y en la plantilla de carga, los bloques se llaman **procesos** ("Proceso", "Procesos", "Equipo del proceso"). En la base y en el código siguen siendo `bloques`, `id_bloque`, `Bloque`, y las rutas `bloques.*`. Este documento usa "bloque".
+- Antes, los procesos se llamaban "bloques". Todo se renombró a proceso: tabla `procesos`, `id_proceso`, modelo `Proceso`, rutas `procesos.*` (migración `2026_11_12_000003_renombrar_bloques_a_procesos`). Las migraciones anteriores conservan el nombre viejo. "Bloquea", "bloqueo" y "bloqueada" hablan del candado de las fases, no de procesos.
 - Fechas automáticas: `const CREATED_AT = 'fecha_creacion'` y `const UPDATED_AT = 'fecha_actualizacion'` (en `avances_validacion`, `UPDATED_AT = null`).
 - La contraseña de `usuarios` está en `contrasena_hash`: ajusta el modelo para que el login de Laravel use ese campo y `correo` como usuario.
 - Explica el código de forma sencilla: estoy aprendiendo Laravel.
@@ -42,9 +42,9 @@ Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`av
 |---|---|---|
 | empresas | nombre, sigla | — |
 | fases | nombre, orden, tiene_sesiones | — |
-| bloques | nombre | id_empresa → empresas |
-| grupos | nombre | id_bloque → bloques |
-| actividades | tipo, macroproceso, nombre | id_empresa → empresas, id_bloque → bloques (obligatorio) |
+| procesos | nombre | id_empresa → empresas |
+| grupos | nombre | id_proceso → procesos |
+| actividades | tipo, macroproceso, nombre | id_empresa → empresas, id_proceso → procesos (obligatorio) |
 | aplicativos | nombre | id_empresa → empresas |
 | participantes | nombre, apellidos, correo, rol, fecha_ingreso, comentarios | id_grupo → grupos |
 | usuarios | nombre, correo, contrasena_hash, rol_app | — (la empresa del consultor va en `usuario_empresa`; los participantes no son usuarios) |
@@ -61,7 +61,7 @@ Todas tienen `fecha_creacion` y `fecha_actualizacion` DATETIME automáticas (`av
 - asistencias: id_sesion + id_participante
 - avances_validacion: id_seguimiento + fecha_corte
 - participantes.correo, usuarios.correo, empresas.sigla
-- bloques: id_empresa + nombre · grupos: id_bloque + nombre · aplicativos: id_empresa + nombre
+- procesos: id_empresa + nombre · grupos: id_proceso + nombre · aplicativos: id_empresa + nombre
 
 ### Campos de estado y rol
 
@@ -79,7 +79,7 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 
 ### Participantes
 
-- Los administran el admin y el consultor (alta, edición, baja y reactivar; Gate `administrar-participantes`), porque el consultor es quien sabe quién entra o sale del grupo. Cada usuario solo ve los de su empresa (grupo → bloque → empresa).
+- Los administran el admin y el consultor (alta, edición, baja y reactivar; Gate `administrar-participantes`), porque el consultor es quien sabe quién entra o sale del grupo. Cada usuario solo ve los de su empresa (grupo → proceso → empresa).
 - Nombre, apellidos y rol se guardan sin espacios de más, igual que en la carga; el correo, en minúsculas y único en todas las empresas, aunque el otro esté de baja.
 - `fecha_ingreso` es opcional y puede ser futura, igual que en la carga.
 - Puede cambiar de grupo, solo a otro de su misma empresa. Puede quedarse en su grupo aunque ese grupo esté de baja, pero no se reactiva a un participante cuyo grupo está de baja.
@@ -88,8 +88,8 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 ### Accesos solicitados
 
 - Los registran y editan el admin y el consultor (Gate `administrar-accesos`); el consultor, solo para participantes de su empresa asignada. Los estados están en `App\Enums\EstadoAcceso`.
-- El aplicativo debe ser de la misma empresa que el participante. Para registrar, participante (de grupo y bloque activos) y aplicativo deben estar activos. Una solicitud de un participante o aplicativo dados de baja solo se consulta.
-- Se registran para uno o varios participantes a la vez (una solicitud por persona, en transacción), con filtro por bloque y grupo. Empiezan en Solicitado.
+- El aplicativo debe ser de la misma empresa que el participante. Para registrar, participante (de grupo y proceso activos) y aplicativo deben estar activos. Una solicitud de un participante o aplicativo dados de baja solo se consulta.
+- Se registran para uno o varios participantes a la vez (una solicitud por persona, en transacción), con filtro por proceso y grupo. Empiezan en Solicitado.
 - No hay dos solicitudes en curso del mismo participante para el mismo aplicativo: "en curso" es cualquier estado salvo Rechazado. Al registrar se omite a quien ya tiene una en curso y al terminar se muestra un resumen de registrados y omitidos, con nombres. Tampoco se reabre una Rechazada si ya hay otra en curso.
 - Los cambios de estado son libres, sin orden obligatorio. Al editar quedan fijos el participante y el aplicativo.
 - `fecha_solicitud` no puede ser futura. `fecha_otorgado` es obligatoria en Otorgado (con la fecha de hoy por defecto, editable), no puede ser anterior a `fecha_solicitud` ni futura, y se vacía al salir de Otorgado.
@@ -101,7 +101,7 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 - `porcentaje_esperado`: solo 0, 25, 50, 75 o 100. `porcentaje_real`: de 0 a 100.
 - `fecha_fin` no puede ser menor que `fecha_inicio`.
 - `fecha_cierre` se llena sola al pasar a Completada y se vacía al reabrir; vuelve a llenarse al pasar otra vez a Completada.
-- En `seguimientos`, `responsable`, `experto`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son texto libre de hasta 255 caracteres. `responsable`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son el equipo del bloque: iguales en todos los seguimientos de un bloque. Se guardan en cada seguimiento, se capturan una vez por bloque (tarjeta Equipo del bloque, arriba de la lista de Seguimientos al filtrar por bloque; sus campos se abren con "Editar" y al guardar actualiza todos sus seguimientos, también los de baja) y los seguimientos nuevos los copian. `experto` es individual de cada seguimiento.
+- En `seguimientos`, `responsable`, `experto`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son texto libre de hasta 255 caracteres. `responsable`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son el equipo del proceso: iguales en todos los seguimientos de un proceso. Se guardan en cada seguimiento, se capturan una vez por proceso (tarjeta Equipo del proceso, arriba de la lista de Seguimientos al filtrar por proceso; sus campos se abren con "Editar" y al guardar actualiza todos sus seguimientos, también los de baja) y los seguimientos nuevos los copian. `experto` es individual de cada seguimiento.
 - `documentacion` es texto libre de hasta 500 caracteres.
 - Un seguimiento de un grupo o una actividad dados de baja solo se consulta: no se edita.
 
@@ -111,7 +111,7 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 
 | Código | Etiqueta | Permisos |
 |---|---|---|
-| admin | Administrador | Todo: usuarios, catálogos (empresas, fases, bloques, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
+| admin | Administrador | Todo: usuarios, catálogos (empresas, fases, procesos, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
 | consultor | Consultor | Seguimientos, sesiones, asistencia, avances de validación, participantes y accesos solicitados (crear, editar, consultar; participantes también baja y reactivar), siempre de su empresa asignada; los demás catálogos solo lectura |
 
 - Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla), `dar-seguimiento`, `administrar-participantes` y `administrar-accesos` (admin y consultor), no solo ocultando botones.
@@ -120,7 +120,7 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión, y si ya estaba dentro sale en su siguiente clic (middleware `activo`, `App\Http\Middleware\UsuarioActivo`).
 - El correo del usuario se guarda en minúsculas y no se repite, aunque el otro esté de baja. La contraseña la pone el admin al crear (opcional al editar, mínimo 8 caracteres) y cada usuario la cambia en "Mi contraseña" escribiendo la actual.
 - Un admin no puede quitarse su propio rol ni darse de baja. Si un consultor pasa a admin, sus asignaciones se cierran; si un admin pasa a consultor, se le elige empresa en el mismo formulario.
-- Autor: `seguimientos.id_usuario` y `sesiones.id_usuario` guardan quien hizo la última captura o corrección (como en `avances_validacion`). La asistencia toma el autor de su sesión. Los seguimientos generados por la app quedan sin autor y guardar el Equipo del bloque no cambia el autor.
+- Autor: `seguimientos.id_usuario` y `sesiones.id_usuario` guardan quien hizo la última captura o corrección (como en `avances_validacion`). La asistencia toma el autor de su sesión. Los seguimientos generados por la app quedan sin autor y guardar el Equipo del proceso no cambia el autor.
 
 ## Asignaciones de empresa
 
@@ -128,21 +128,21 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Toda asignación pasa por `App\Services\AsignadorDeEmpresas`, en transacción. No se borran: se cierran (`activa = 0` y `fecha_fin`).
 - Regla actual: un consultor tiene UNA asignación activa. Al asignarlo a otra empresa, la anterior se cierra un día antes de la `fecha_inicio` de la nueva (así los periodos no se traslapan aunque se registre con fecha pasada); por eso la nueva debe empezar después de la anterior. Cerrar una asignación sin abrir otra, o pasar el consultor a admin, la cierra con fecha de hoy. La regla vive solo en `AsignadorDeEmpresas::cerrarLasAnteriores()`; para permitir varias se quita esa llamada (la visibilidad ya trabaja con una lista de empresas).
 - `fecha_inicio` es hoy por defecto, editable por el admin para registrar asignaciones que empezaron antes; no puede ser futura. No se asigna a una empresa de baja ni a la misma empresa que ya está activa.
-- Los datos pertenecen a la empresa, no al usuario: la empresa de un seguimiento (y de sus sesiones, asistencias y avances) sale de su cadena `seguimiento → actividad → bloque → empresa`, nunca de la asignación del usuario. Al cambiar a un consultor de empresa, lo que capturó se queda en la empresa original.
+- Los datos pertenecen a la empresa, no al usuario: la empresa de un seguimiento (y de sus sesiones, asistencias y avances) sale de su cadena `seguimiento → actividad → proceso → empresa`, nunca de la asignación del usuario. Al cambiar a un consultor de empresa, lo que capturó se queda en la empresa original.
 - La baja de una empresa se bloquea mientras tenga consultores activos con asignación activa a ella.
 
 ## Reglas de negocio
 
 - Las fases son las mismas para todas las empresas. En la app solo se edita su nombre: no se agregan ni se quitan, y el orden y `tiene_sesiones` son fijos. La lógica usa `orden` y `tiene_sesiones`, nunca el nombre. El orden se define solo en `fases.orden`: para cambiarlo se hace una migración de datos (como `2026_11_10_000001_poner_validacion_antes_de_estabilizacion`) y se actualiza `FaseSeeder`.
 - La fase va en el seguimiento, no en la actividad. El tipo de la actividad decide sus fases: Onboarding genera 1 seguimiento por grupo (fase de orden 1); Transición genera 3 por grupo (fases de orden 2, 3 y 4: Transferencia, Validación y Estabilización). Cada fase conserva sus reglas: Validación no tiene sesiones y lleva % esperado y real.
-- Toda actividad lleva un bloque real de su empresa, también las de Onboarding (cada bloque tiene su propio Onboarding). Se genera solo para los grupos de ese bloque. No existe la opción "Todos los bloques".
+- Toda actividad lleva un proceso real de su empresa, también las de Onboarding (cada proceso tiene su propio Onboarding). Se genera solo para los grupos de ese proceso. No existe la opción "Todos los procesos".
 - Las actividades se muestran en el orden en que se cargaron (por `id_actividad`); la carga las inserta en el orden del archivo.
-- Al crear una actividad, la app rechaza otra con la misma empresa, tipo, bloque, macroproceso y nombre, aunque esté dada de baja. Al editar, empresa, tipo y bloque quedan fijos.
+- Al crear una actividad, la app rechaza otra con la misma empresa, tipo, proceso, macroproceso y nombre, aunque esté dada de baja. Al editar, empresa, tipo y proceso quedan fijos.
 - Cada actividad se registra una sola vez en `actividades`.
 - Al crear un grupo, la app genera sus `seguimientos` según las reglas anteriores. Toda la generación pasa por `App\Services\GeneradorDeSeguimientos`, en transacción (todo o nada).
 - Solo se generan combinaciones con grupo y actividad activos, y nunca se tocan los seguimientos existentes.
 - Al crear una actividad o al reactivar un grupo o una actividad, se generan los seguimientos que falten. Antes se muestra cuántos se generarán y se pide confirmación.
-- Al editar un grupo solo cambia el nombre. Si el bloque está mal, se da de baja y se crea uno nuevo.
+- Al editar un grupo solo cambia el nombre. Si el proceso está mal, se da de baja y se crea uno nuevo.
 - Los seguimientos no bloquean la baja de un grupo o de una actividad y quedan intactos. Antes de la baja se muestra cuántos tiene y se pide confirmación.
 - Mientras el grupo o la actividad estén de baja, sus seguimientos no aparecen en las listas de trabajo ni cuentan en los porcentajes de avance (`Seguimiento::enTrabajo()`), pero se pueden consultar con un filtro.
 - Fases con `tiene_sesiones = 1` registran sesiones y asistencia. Validación no tiene sesiones: registra avances por fecha en `avances_validacion`.
@@ -155,8 +155,8 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Los avances de validación se capturan un grupo (un seguimiento) a la vez. La fecha de corte debe estar entre la `fecha_inicio` y la `fecha_fin` del seguimiento (ambas incluidas) y no puede ser futura; sin las dos fechas no se registran avances. Un seguimiento con avances no puede quitar sus fechas ni cambiarlas dejando avances fuera.
 - No hay dos avances con la misma fecha de corte en un seguimiento: si ya existe, se avisa y se corrige editando el existente. Los avances no se borran: se corrigen editándolos, e `id_usuario` queda con quien hizo la última captura o corrección.
 - Un grupo terminó una fase cuando todos sus seguimientos en trabajo de esa fase están en estado "Completada". Esto se calcula, no se guarda. Una fase sin seguimientos cuenta como completa.
-- Avance secuencial (`App\Services\AvanceDeFases`): la primera fase siempre está habilitada; cada una de las demás se habilita para un grupo cuando todas las anteriores están completas para ese grupo. Cada grupo avanza por su cuenta, sin depender de los otros grupos del bloque.
-- En una fase no habilitada, sus seguimientos solo se consultan: no se editan, ni se crean o editan sesiones o avances. Se valida en el servidor y se muestra un aviso con candado que dice qué fase falta concluir y cuántas de sus actividades están terminadas. El equipo del bloque sí se edita.
+- Avance secuencial (`App\Services\AvanceDeFases`): la primera fase siempre está habilitada; cada una de las demás se habilita para un grupo cuando todas las anteriores están completas para ese grupo. Cada grupo avanza por su cuenta, sin depender de los otros grupos del proceso.
+- En una fase no habilitada, sus seguimientos solo se consultan: no se editan, ni se crean o editan sesiones o avances. Se valida en el servidor y se muestra un aviso con candado que dice qué fase falta concluir y cuántas de sus actividades están terminadas. El equipo del proceso sí se edita.
 - Se permite reabrir una fase completa (pasar un seguimiento de Completada a otro estado), con un aviso: las fases siguientes vuelven a bloquearse y lo ya capturado en ellas queda intacto, solo de consulta.
 - La pantalla Fases del grupo muestra las fases en pestañas, en orden: completas con ✔, la actual resaltada y las bloqueadas deshabilitadas con candado. Una fase bloqueada no carga sus actividades.
 - Los datos se cargan desde Excel; después los usuarios solo dan seguimiento.
@@ -164,14 +164,14 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 ## Carga desde Excel
 
 - La empresa se elige en pantalla. La app genera la plantilla, con las hojas Instrucciones, Actividades y Participantes.
-- En la plantilla, la columna Proceso es el bloque (lista desplegable de bloques activos).
-- Actividades: Macroproceso, Proceso, Actividad, Tipo. Proceso, Actividad y Tipo son obligatorios; Proceso debe ser un bloque activo de la empresa (no se acepta "Todos"). El ID, las fechas y el Subproceso (de plantillas viejas) se ignoran: las fechas se capturan en pantalla en cada seguimiento.
+- En la plantilla, la columna Proceso trae un proceso de la lista desplegable (procesos activos).
+- Actividades: Macroproceso, Proceso, Actividad, Tipo. Proceso, Actividad y Tipo son obligatorios; Proceso debe ser un proceso activo de la empresa (no se acepta "Todos"). El ID, las fechas y el Subproceso (de plantillas viejas) se ignoran: las fechas se capturan en pantalla en cada seguimiento.
 - Una hoja con columna Bloque es de la plantilla anterior (tenía Bloque y Proceso de texto libre) y se rechaza pidiendo descargar la nueva.
 - Participantes: Nombre, Apellidos, Correo, Fecha de ingreso, Proceso, Grupo, Rol. Un correo que ya existe en la base (en cualquier empresa) se marca como duplicado y no se vuelve a insertar; un correo repetido dentro del archivo es error. La fecha de ingreso acepta fecha de Excel o texto dd/mm/aaaa; una fecha que no existe es error.
-- Bloques o grupos inexistentes o dados de baja son error, y el mensaje dice cuál de los dos casos es.
+- Procesos o grupos inexistentes o dados de baja son error, y el mensaje dice cuál de los dos casos es.
 - Al comparar datos del archivo se ignoran mayúsculas, acentos y espacios de más (igual que MySQL con utf8mb4_0900_ai_ci). Se guarda el texto limpio; los correos, en minúsculas.
 - El archivo subido espera en `storage/app/private/cargas` hasta confirmar o cancelar. Los que nadie confirmó se borran a las 24 horas (`php artisan cargas:limpiar`, programado a diario y también al abrir la pantalla de carga).
-- Se carga una sola vez por bloque y tipo: se rechaza la carga si el bloque ya tiene actividades de ese tipo, incluidas las dadas de baja o creadas a mano, indicando cuántas existen. Se calcula con una consulta. Los cambios posteriores se hacen en pantalla.
-- Las filas repetidas en el archivo son error. Bloques y grupos inexistentes también: no se crean solos.
+- Se carga una sola vez por proceso y tipo: se rechaza la carga si el proceso ya tiene actividades de ese tipo, incluidas las dadas de baja o creadas a mano, indicando cuántas existen. Se calcula con una consulta. Los cambios posteriores se hacen en pantalla.
+- Las filas repetidas en el archivo son error. Procesos y grupos inexistentes también: no se crean solos.
 - Vista previa antes de guardar: registros nuevos, duplicados y con error, con el detalle por hoja y fila. Con errores no se puede confirmar. Todo se guarda en una transacción.
 - Las capacitaciones quedan para un módulo aparte: la Tarea es el nombre de la capacitación, un proceso puede tener varias y probablemente tendrán sesiones y asistencia.

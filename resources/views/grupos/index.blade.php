@@ -30,11 +30,11 @@
                 </select>
             @endif
 
-            <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
-            <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
+            <label for="filtro_proceso" class="visually-hidden">Filtrar por proceso</label>
+            <select id="filtro_proceso" name="id_proceso" class="form-select filtro" data-enviar-al-cambiar>
                 <option value="">Todos los procesos</option>
-                @foreach ($bloques as $id => $nombre)
-                    <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
+                @foreach ($procesos as $id => $nombre)
+                    <option value="{{ $id }}" @selected($id === $idProceso)>{{ $nombre }}</option>
                 @endforeach
             </select>
 
@@ -66,9 +66,9 @@
                     @forelse ($grupos as $grupo)
                         <tr>
                             <td class="celda-titulo">{{ $grupo->nombre }}</td>
-                            <td class="celda-detalle" data-etiqueta="Proceso">{{ $grupo->bloque->nombre }}</td>
+                            <td class="celda-detalle" data-etiqueta="Proceso">{{ $grupo->proceso->nombre }}</td>
                             @if (auth()->user()->esChazey())
-                                <td class="celda-detalle" data-etiqueta="Empresa">{{ $grupo->bloque->empresa->nombre }}</td>
+                                <td class="celda-detalle" data-etiqueta="Empresa">{{ $grupo->proceso->empresa->nombre }}</td>
                             @endif
                             <td class="celda-detalle" data-etiqueta="Seguimientos">{{ $grupo->seguimientos_count }}</td>
                             <td class="celda-estado"><x-estado :activo="$grupo->estado" /></td>

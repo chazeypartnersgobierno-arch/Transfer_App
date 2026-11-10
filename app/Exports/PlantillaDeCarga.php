@@ -3,7 +3,7 @@
 namespace App\Exports;
 
 use App\Enums\TipoActividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use Maatwebsite\Excel\Concerns\Export;
@@ -12,12 +12,11 @@ use Maatwebsite\Excel\Events\AfterSheet;
 
 /**
  * Plantilla .xlsx para la carga desde Excel de una empresa.
- * Las listas desplegables traen sus bloques y grupos activos al momento de descargarla.
+ * Las listas desplegables traen sus procesos y grupos activos al momento de descargarla.
  * En Laravel Excel 4, un libro de varias hojas también se marca como Export.
  */
 class PlantillaDeCarga implements Export, WithMultipleSheets
 {
-    // En pantalla y en la plantilla, el bloque se llama "Proceso".
     public const ENCABEZADOS_ACTIVIDADES = ['Macroproceso', 'Proceso', 'Actividad', 'Tipo'];
 
     public const ENCABEZADOS_PARTICIPANTES = ['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Proceso', 'Grupo', 'Rol'];
@@ -26,14 +25,14 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
 
     public function sheets(): array
     {
-        $bloques = Bloque::where('id_empresa', $this->empresa->id_empresa)
+        $procesos = Proceso::where('id_empresa', $this->empresa->id_empresa)
             ->where('estado', true)
             ->orderBy('nombre')
             ->pluck('nombre');
 
-        // Un mismo nombre de grupo puede existir en varios bloques: en la lista va una vez.
+        // Un mismo nombre de grupo puede existir en varios procesos: en la lista va una vez.
         $grupos = Grupo::where('estado', true)
-            ->whereHas('bloque', fn ($q) => $q->where('id_empresa', $this->empresa->id_empresa)->where('estado', true))
+            ->whereHas('proceso', fn ($q) => $q->where('id_empresa', $this->empresa->id_empresa)->where('estado', true))
             ->orderBy('nombre')
             ->pluck('nombre')
             ->unique()
@@ -41,10 +40,10 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
 
         $tipos = collect(TipoActividad::cases())->pluck('value');
 
-        // Columnas de la hoja oculta Listas: A bloques, B grupos, C tipos.
-        // Toda actividad lleva un bloque real: no hay opción "Todos".
+        // Columnas de la hoja oculta Listas: A procesos, B grupos, C tipos.
+        // Toda actividad lleva un proceso real: no hay opción "Todos".
         $columnasDeListas = [
-            ['Procesos', $bloques],
+            ['Procesos', $procesos],
             ['Grupos', $grupos],
             ['Tipos', $tipos],
         ];
@@ -55,7 +54,7 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
                 'Actividades',
                 [self::ENCABEZADOS_ACTIVIDADES],
                 listas: array_filter([
-                    'B' => $this->rango('A', $bloques),
+                    'B' => $this->rango('A', $procesos),
                     'D' => $this->rango('C', $tipos),
                 ]),
                 anchos: ['A' => 28, 'B' => 28, 'C' => 60, 'D' => 16],
@@ -64,7 +63,7 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
                 'Participantes',
                 [self::ENCABEZADOS_PARTICIPANTES],
                 listas: array_filter([
-                    'E' => $this->rango('A', $bloques),
+                    'E' => $this->rango('A', $procesos),
                     'F' => $this->rango('B', $grupos),
                 ]),
                 anchos: ['A' => 24, 'B' => 28, 'C' => 34, 'D' => 18, 'E' => 28, 'F' => 24, 'G' => 24],

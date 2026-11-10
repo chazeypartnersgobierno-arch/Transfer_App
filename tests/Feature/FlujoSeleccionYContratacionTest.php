@@ -11,7 +11,7 @@ use App\Models\Actividad;
 use App\Models\Aplicativo;
 use App\Models\Asistencia;
 use App\Models\AvanceValidacion;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -25,7 +25,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * Prueba de punta a punta: recorre por las pantallas (peticiones HTTP) el seguimiento del bloque
+ * Prueba de punta a punta: recorre por las pantallas (peticiones HTTP) el seguimiento del proceso
  * "Selección y contratación" de EPM, como lo haría el consultor, desde Onboarding hasta Validación.
  *
  * A diferencia de las pruebas de cada módulo, aquí los datos se crean igual que en la app
@@ -42,7 +42,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
 
     private Empresa $epm;
 
-    private Bloque $bloque;
+    private Proceso $proceso;
 
     private Usuario $admin;
 
@@ -66,7 +66,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
         (new FaseSeeder)->run();
 
         $this->epm = Empresa::create(['nombre' => 'Empresas Públicas de Medellín', 'sigla' => 'EPM']);
-        $this->bloque = Bloque::create(['id_empresa' => $this->epm->id_empresa, 'nombre' => 'Selección y contratación']);
+        $this->proceso = Proceso::create(['id_empresa' => $this->epm->id_empresa, 'nombre' => 'Selección y contratación']);
         $this->admin = $this->usuario('admin@chazey.test', RolApp::Admin);
         $this->consultor = $this->asignarEmpresa($this->usuario('consultor@chazey.test', RolApp::Consultor), $this->epm);
 
@@ -95,11 +95,11 @@ class FlujoSeleccionYContratacionTest extends TestCase
         $this->assertSame(EstadoActividad::Pendiente, $this->seguimiento($this->grupo1, 'induccion', 1)->estadoActual());
     }
 
-    public function test_el_equipo_del_bloque_se_copia_a_todos_sus_seguimientos(): void
+    public function test_el_equipo_del_proceso_se_copia_a_todos_sus_seguimientos(): void
     {
-        $lista = route('seguimientos.index', ['id_bloque' => $this->bloque->id_bloque]);
+        $lista = route('seguimientos.index', ['id_proceso' => $this->proceso->id_proceso]);
         $this->actingAs($this->consultor)->from($lista)
-            ->put(route('seguimientos.equipo.actualizar', $this->bloque), $this->equipo())
+            ->put(route('seguimientos.equipo.actualizar', $this->proceso), $this->equipo())
             ->assertRedirect($lista)
             ->assertSessionHas('exito', fn ($m) => str_contains($m, '18 seguimientos'));
 
@@ -367,8 +367,8 @@ class FlujoSeleccionYContratacionTest extends TestCase
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'concluya Onboarding'));
         $this->assertSame(30, $avance->refresh()->porcentaje_real, 'Lo capturado queda intacto.');
 
-        // El equipo del bloque sí se edita aunque haya fases bloqueadas.
-        $this->put(route('seguimientos.equipo.actualizar', $this->bloque), $this->equipo())->assertSessionHas('exito');
+        // El equipo del proceso sí se edita aunque haya fases bloqueadas.
+        $this->put(route('seguimientos.equipo.actualizar', $this->proceso), $this->equipo())->assertSessionHas('exito');
 
         // Al completar otra vez, fecha_cierre se vuelve a llenar y todo se desbloquea.
         $this->travelTo('2027-04-16 09:00:00');
@@ -394,18 +394,18 @@ class FlujoSeleccionYContratacionTest extends TestCase
         $this->put(route('seguimientos.actualizar', $seguimiento), ['estado_actividad' => 'Completada'])->assertNotFound();
         $this->get(route('sesiones.editar', $sesion))->assertNotFound();
         $this->get(route('grupos.fases', $this->grupo1))->assertNotFound();
-        $this->put(route('seguimientos.equipo.actualizar', $this->bloque), $this->equipo())->assertNotFound();
+        $this->put(route('seguimientos.equipo.actualizar', $this->proceso), $this->equipo())->assertNotFound();
         $this->get(route('participantes.editar', $this->participantes['ana']))->assertNotFound();
 
         // El consultor no administra catálogos.
         $this->actingAs($this->consultor)
-            ->post(route('grupos.guardar'), ['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 3'])
+            ->post(route('grupos.guardar'), ['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 3'])
             ->assertForbidden();
 
         $this->assertNotSame(EstadoActividad::Completada, $seguimiento->refresh()->estado_actividad);
     }
 
-    public function test_participantes_y_accesos_del_bloque(): void
+    public function test_participantes_y_accesos_del_proceso(): void
     {
         $this->actingAs($this->consultor);
         $hcm = Aplicativo::create(['id_empresa' => $this->epm->id_empresa, 'nombre' => 'HCM']);
@@ -471,7 +471,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
         $this->actingAs($this->admin);
 
         // Grupo 1 sin actividades todavía: no genera seguimientos.
-        $this->post(route('grupos.guardar'), ['id_bloque' => $this->bloque->id_bloque, 'nombre' => '1'])
+        $this->post(route('grupos.guardar'), ['id_proceso' => $this->proceso->id_proceso, 'nombre' => '1'])
             ->assertSessionHas('exito', fn ($m) => str_contains($m, 'sin seguimientos'));
         $this->grupo1 = Grupo::where('nombre', '1')->sole();
 
@@ -487,7 +487,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
             $datos = [
                 'id_empresa' => $this->epm->id_empresa,
                 'tipo' => $tipo->value,
-                'id_bloque' => $this->bloque->id_bloque,
+                'id_proceso' => $this->proceso->id_proceso,
                 'macroproceso' => 'Selección y contratación',
                 'nombre' => $nombre,
             ];
@@ -508,13 +508,13 @@ class FlujoSeleccionYContratacionTest extends TestCase
 
         // La misma actividad otra vez: se rechaza.
         $this->post(route('actividades.guardar'), [
-            'id_empresa' => $this->epm->id_empresa, 'tipo' => 'Onboarding', 'id_bloque' => $this->bloque->id_bloque,
+            'id_empresa' => $this->epm->id_empresa, 'tipo' => 'Onboarding', 'id_proceso' => $this->proceso->id_proceso,
             'macroproceso' => 'Selección y contratación',
             'nombre' => 'Inducción general de CCS', 'accion' => 'confirmar',
         ])->assertSessionHasErrors();
 
         // Grupo 2, ya con actividades: genera 3 + 2×3 = 9.
-        $this->post(route('grupos.guardar'), ['id_bloque' => $this->bloque->id_bloque, 'nombre' => '2'])
+        $this->post(route('grupos.guardar'), ['id_proceso' => $this->proceso->id_proceso, 'nombre' => '2'])
             ->assertSessionHas('exito', fn ($m) => str_contains($m, '9'));
         $this->grupo2 = Grupo::where('nombre', '2')->sole();
     }

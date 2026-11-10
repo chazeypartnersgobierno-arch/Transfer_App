@@ -1,4 +1,4 @@
-{{-- Se usa para crear y para editar. Al editar solo cambia el nombre: el bloque queda fijo. --}}
+{{-- Se usa para crear y para editar. Al editar solo cambia el nombre: el proceso queda fijo. --}}
 @extends('layouts.app')
 
 @php
@@ -26,7 +26,7 @@
             @endunless
 
             @if ($esNuevo)
-                <x-lista name="id_bloque" label="Proceso" :opciones="$opcionesDeBloque" :value="old('id_bloque')" vacia="Elige un proceso" required />
+                <x-lista name="id_proceso" label="Proceso" :opciones="$opcionesDeProceso" :value="old('id_proceso')" vacia="Elige un proceso" required />
             @endif
 
             <x-campo name="nombre" label="Nombre" :value="old('nombre', $grupo->nombre)" maxlength="255" required />
@@ -35,11 +35,11 @@
                 <dl class="datos-fijos">
                     <div>
                         <dt>Proceso</dt>
-                        <dd>{{ $grupo->bloque->nombre }}</dd>
+                        <dd>{{ $grupo->proceso->nombre }}</dd>
                     </div>
                     <div>
                         <dt>Empresa</dt>
-                        <dd>{{ $grupo->bloque->empresa->nombre }}</dd>
+                        <dd>{{ $grupo->proceso->empresa->nombre }}</dd>
                     </div>
                 </dl>
             @endunless

@@ -60,13 +60,13 @@ class AccesoSolicitado extends Model
 
     /**
      * Filtra lo que un usuario puede ver: el admin, todo; el consultor, lo de las empresas de
-     * su asignación activa. La empresa sale del participante → grupo → bloque.
+     * su asignación activa. La empresa sale del participante → grupo → proceso.
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
         return $usuario->esChazey()
             ? $consulta
-            : $consulta->whereHas('participante.grupo.bloque', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
+            : $consulta->whereHas('participante.grupo.proceso', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
     }
 
     /**

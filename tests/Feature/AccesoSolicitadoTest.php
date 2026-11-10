@@ -6,7 +6,7 @@ use App\Enums\EstadoAcceso;
 use App\Enums\RolApp;
 use App\Models\AccesoSolicitado;
 use App\Models\Aplicativo;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Participante;
@@ -26,7 +26,7 @@ class AccesoSolicitadoTest extends TestCase
 
     private Empresa $empresa;
 
-    private Bloque $bloque;
+    private Proceso $proceso;
 
     private Grupo $grupo;
 
@@ -41,8 +41,8 @@ class AccesoSolicitadoTest extends TestCase
         parent::setUp();
 
         $this->empresa = Empresa::create(['nombre' => 'Empresa Uno', 'sigla' => 'UNO']);
-        $this->bloque = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
-        $this->grupo = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 1']);
+        $this->proceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
+        $this->grupo = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 1']);
         $this->sap = Aplicativo::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'SAP']);
         $this->admin = $this->usuario(RolApp::Admin);
         $this->consultor = $this->usuario(RolApp::Consultor, $this->empresa);
@@ -177,9 +177,9 @@ class AccesoSolicitadoTest extends TestCase
         $this->assertSame(0, AccesoSolicitado::count());
     }
 
-    public function test_la_pantalla_filtra_por_bloque_y_grupo(): void
+    public function test_la_pantalla_filtra_por_proceso_y_grupo(): void
     {
-        $otro = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 2']);
+        $otro = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 2']);
         $this->participante('Ana');
         $this->participante('Bruno', $otro);
         $this->participante('Baja', null, false);
@@ -306,8 +306,8 @@ class AccesoSolicitadoTest extends TestCase
     public function test_el_consultor_solo_trabaja_con_su_empresa(): void
     {
         $ajena = Empresa::create(['nombre' => 'Ajena', 'sigla' => 'AJE']);
-        $bloqueAjeno = Bloque::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Pagos']);
-        $grupoAjeno = Grupo::create(['id_bloque' => $bloqueAjeno->id_bloque, 'nombre' => 'G']);
+        $procesoAjeno = Proceso::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Pagos']);
+        $grupoAjeno = Grupo::create(['id_proceso' => $procesoAjeno->id_proceso, 'nombre' => 'G']);
         $ajeno = $this->participante('Ajeno', $grupoAjeno);
         $accesoAjeno = $this->acceso($ajeno, EstadoAcceso::Solicitado, Aplicativo::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'ERP']));
 

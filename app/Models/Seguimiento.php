@@ -22,12 +22,12 @@ class Seguimiento extends Model
     const UPDATED_AT = 'fecha_actualizacion';
 
     /**
-     * Equipo del bloque: estos datos son los mismos en todos los seguimientos de un bloque.
-     * Se guardan en cada seguimiento, pero se capturan una sola vez por bloque
-     * (EquipoDeBloqueController) y los seguimientos nuevos los copian (GeneradorDeSeguimientos).
+     * Equipo del proceso: estos datos son los mismos en todos los seguimientos de un proceso.
+     * Se guardan en cada seguimiento, pero se capturan una sola vez por proceso
+     * (EquipoDeProcesoController) y los seguimientos nuevos los copian (GeneradorDeSeguimientos).
      * El experto no está aquí: es individual de cada seguimiento.
      */
-    public const CAMPOS_DEL_BLOQUE = [
+    public const CAMPOS_DEL_PROCESO = [
         'responsable' => 'Responsable',
         'documentador' => 'Documentador',
         'lider_transferencia' => 'Líder de transferencia',
@@ -86,7 +86,7 @@ class Seguimiento extends Model
 
     /**
      * Quien hizo la última captura o corrección. NULL mientras nadie lo haya editado.
-     * El equipo del bloque no cuenta como captura: no cambia el autor.
+     * El equipo del proceso no cuenta como captura: no cambia el autor.
      */
     public function autor(): BelongsTo
     {
@@ -178,11 +178,11 @@ class Seguimiento extends Model
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
-        // La empresa sale del propio registro (actividad.bloque.empresa), nunca de la asignación del usuario:
+        // La empresa sale del propio registro (actividad.proceso.empresa), nunca de la asignación del usuario:
         // si a un consultor lo cambian de empresa, lo que capturó se queda en la empresa original.
         return $usuario->esChazey()
             ? $consulta
-            : $consulta->whereHas('actividad.bloque', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
+            : $consulta->whereHas('actividad.proceso', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
     }
 
     /**
@@ -197,11 +197,11 @@ class Seguimiento extends Model
     }
 
     /**
-     * Todos los seguimientos de un bloque, también los de grupos o actividades de baja.
+     * Todos los seguimientos de un proceso, también los de grupos o actividades de baja.
      */
-    public function scopeDelBloque(Builder $consulta, int $idBloque): Builder
+    public function scopeDelProceso(Builder $consulta, int $idProceso): Builder
     {
-        return $consulta->whereHas('grupo', fn ($q) => $q->where('id_bloque', $idBloque));
+        return $consulta->whereHas('grupo', fn ($q) => $q->where('id_proceso', $idProceso));
     }
 
     /**

@@ -44,15 +44,15 @@
             <div>
                 <dt>Grupo</dt>
                 <dd>
-                    {{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}
+                    {{ $seguimiento->grupo->proceso->nombre }} › {{ $seguimiento->grupo->nombre }}
                     <a href="{{ route('grupos.fases', $seguimiento->grupo) }}" class="ms-1">Ver fases del grupo</a>
-                    {{-- El equipo es uno por bloque: se ve y se cambia en la lista filtrada por el bloque. --}}
-                    · <a href="{{ route('seguimientos.index', ['id_bloque' => $seguimiento->grupo->id_bloque]) }}#equipo">Ver equipo del proceso</a>
+                    {{-- El equipo es uno por proceso: se ve y se cambia en la lista filtrada por el proceso. --}}
+                    · <a href="{{ route('seguimientos.index', ['id_proceso' => $seguimiento->grupo->id_proceso]) }}#equipo">Ver equipo del proceso</a>
                 </dd>
             </div>
             <div>
                 <dt>Empresa</dt>
-                <dd>{{ $seguimiento->grupo->bloque->empresa->nombre }}</dd>
+                <dd>{{ $seguimiento->grupo->proceso->empresa->nombre }}</dd>
             </div>
             <div>
                 <dt>Fase</dt>

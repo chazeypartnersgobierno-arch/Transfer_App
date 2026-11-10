@@ -22,7 +22,7 @@ class Actividad extends Model
 
     protected $fillable = [
         'id_empresa',
-        'id_bloque',
+        'id_proceso',
         'tipo',
         'macroproceso',
         'nombre',
@@ -38,11 +38,11 @@ class Actividad extends Model
     }
 
     /**
-     * Toda actividad tiene bloque: solo genera seguimientos para los grupos de ese bloque.
+     * Toda actividad tiene proceso: solo genera seguimientos para los grupos de ese proceso.
      */
-    public function bloque(): BelongsTo
+    public function proceso(): BelongsTo
     {
-        return $this->belongsTo(Bloque::class, 'id_bloque', 'id_bloque');
+        return $this->belongsTo(Proceso::class, 'id_proceso', 'id_proceso');
     }
 
     public function seguimientos(): HasMany

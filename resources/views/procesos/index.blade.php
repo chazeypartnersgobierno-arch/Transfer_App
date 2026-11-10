@@ -11,12 +11,12 @@
 
         {{-- Esto solo oculta el botón; la ruta también está protegida en el servidor. --}}
         @can('administrar')
-            <a href="{{ route('bloques.crear') }}" class="btn btn-primary">Nuevo proceso</a>
+            <a href="{{ route('procesos.crear') }}" class="btn btn-primary">Nuevo proceso</a>
         @endcan
     </div>
 
     <div class="tarjeta">
-        <form method="GET" action="{{ route('bloques.index') }}" class="herramientas">
+        <form method="GET" action="{{ route('procesos.index') }}" class="herramientas">
             <label for="buscar" class="visually-hidden">Buscar proceso</label>
             <input id="buscar" type="search" name="buscar" value="{{ $buscar }}" class="form-control buscador" placeholder="Buscar por nombre">
 
@@ -53,21 +53,21 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($bloques as $bloque)
+                    @forelse ($procesos as $proceso)
                         <tr>
-                            <td class="celda-titulo">{{ $bloque->nombre }}</td>
+                            <td class="celda-titulo">{{ $proceso->nombre }}</td>
                             @if (auth()->user()->esChazey())
-                                <td class="celda-detalle">{{ $bloque->empresa->nombre }}</td>
+                                <td class="celda-detalle">{{ $proceso->empresa->nombre }}</td>
                             @endif
-                            <td class="celda-estado"><x-estado :activo="$bloque->estado" /></td>
+                            <td class="celda-estado"><x-estado :activo="$proceso->estado" /></td>
                             @can('administrar')
                                 <td class="celda-acciones">
                                     <div class="acciones">
-                                        @if ($bloque->estado)
-                                            <a href="{{ route('bloques.editar', $bloque) }}" class="btn btn-sm btn-outline-primary">Editar</a>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#baja-{{ $bloque->id_bloque }}">Dar de baja</button>
+                                        @if ($proceso->estado)
+                                            <a href="{{ route('procesos.editar', $proceso) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#baja-{{ $proceso->id_proceso }}">Dar de baja</button>
                                         @else
-                                            <form method="POST" action="{{ route('bloques.reactivar', $bloque) }}" class="d-flex flex-fill">
+                                            <form method="POST" action="{{ route('procesos.reactivar', $proceso) }}" class="d-flex flex-fill">
                                                 @csrf
                                                 @method('PATCH')
                                                 <x-boton variante="outline-primary" class="btn-sm flex-fill">Reactivar</x-boton>
@@ -89,16 +89,16 @@
         </div>
 
         <div class="pie-tabla">
-            <span>{{ $bloques->total() }} {{ $bloques->total() === 1 ? 'proceso' : 'procesos' }}</span>
-            {{ $bloques->links() }}
+            <span>{{ $procesos->total() }} {{ $procesos->total() === 1 ? 'proceso' : 'procesos' }}</span>
+            {{ $procesos->links() }}
         </div>
     </div>
 
     {{-- Las confirmaciones van fuera de la tabla para no romper su estructura. --}}
     @can('administrar')
-        @foreach ($bloques->where('estado', true) as $bloque)
-            <x-confirmar id="baja-{{ $bloque->id_bloque }}" titulo="Dar de baja" :accion="route('bloques.baja', $bloque)" boton="Dar de baja">
-                ¿Quieres dar de baja el proceso {{ $bloque->nombre }}? Podrás reactivarlo después.
+        @foreach ($procesos->where('estado', true) as $proceso)
+            <x-confirmar id="baja-{{ $proceso->id_proceso }}" titulo="Dar de baja" :accion="route('procesos.baja', $proceso)" boton="Dar de baja">
+                ¿Quieres dar de baja el proceso {{ $proceso->nombre }}? Podrás reactivarlo después.
             </x-confirmar>
         @endforeach
     @endcan

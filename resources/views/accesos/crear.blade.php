@@ -25,11 +25,11 @@
             @endif
 
             @if ($idEmpresa !== null)
-                <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
-                <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
+                <label for="filtro_proceso" class="visually-hidden">Filtrar por proceso</label>
+                <select id="filtro_proceso" name="id_proceso" class="form-select filtro" data-enviar-al-cambiar>
                     <option value="">Todos los procesos</option>
-                    @foreach ($bloques as $id => $nombre)
-                        <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
+                    @foreach ($procesos as $id => $nombre)
+                        <option value="{{ $id }}" @selected($id === $idProceso)>{{ $nombre }}</option>
                     @endforeach
                 </select>
 
@@ -125,7 +125,7 @@
                                             {{ $participante->nombreCompleto() }}
                                             <div class="texto-secundario small">{{ $participante->correo }}</div>
                                         </td>
-                                        <td class="celda-detalle" data-etiqueta="Grupo">{{ $participante->grupo->bloque->nombre }} › {{ $participante->grupo->nombre }}</td>
+                                        <td class="celda-detalle" data-etiqueta="Grupo">{{ $participante->grupo->proceso->nombre }} › {{ $participante->grupo->nombre }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

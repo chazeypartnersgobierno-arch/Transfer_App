@@ -10,7 +10,7 @@
 
     <div class="tarjeta tarjeta-formulario">
         <x-alerta tipo="advertencia">
-            {{ \App\Models\Seguimiento::seGeneraran($porGenerar) }} en el proceso {{ $bloque->nombre }}.
+            {{ \App\Models\Seguimiento::seGeneraran($porGenerar) }} en el proceso {{ $proceso->nombre }}.
         </x-alerta>
 
         <dl class="datos-fijos mb-3">
@@ -24,7 +24,7 @@
             </div>
             <div>
                 <dt>Proceso</dt>
-                <dd>{{ $bloque->nombre }}</dd>
+                <dd>{{ $proceso->nombre }}</dd>
             </div>
             <div>
                 <dt>Actividad</dt>

@@ -6,7 +6,7 @@ use App\Enums\RolApp;
 use App\Enums\TipoActividad;
 use App\Exports\PlantillaDeCarga;
 use App\Models\Actividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Participante;
@@ -34,7 +34,7 @@ class CargaDesdeExcelTest extends TestCase
 
     private Empresa $empresa;
 
-    private Bloque $tesoreria;
+    private Proceso $tesoreria;
 
     private Grupo $grupo1;
 
@@ -52,8 +52,8 @@ class CargaDesdeExcelTest extends TestCase
         (new FaseSeeder)->run();
 
         $this->empresa = Empresa::create(['nombre' => 'Empresa Uno', 'sigla' => 'UNO']);
-        $this->tesoreria = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
-        $this->grupo1 = Grupo::create(['id_bloque' => $this->tesoreria->id_bloque, 'nombre' => 'Grupo 1']);
+        $this->tesoreria = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
+        $this->grupo1 = Grupo::create(['id_proceso' => $this->tesoreria->id_proceso, 'nombre' => 'Grupo 1']);
         $this->admin = $this->usuario();
     }
 
@@ -188,7 +188,7 @@ class CargaDesdeExcelTest extends TestCase
 
     public function test_rechaza_la_plantilla_anterior_con_columna_bloque(): void
     {
-        // Antes había una columna Bloque y otra Proceso de texto libre; ahora Proceso es el bloque.
+        // Antes había una columna Bloque y otra Proceso de texto libre; ahora Proceso es el proceso.
         $anterior = ['Macroproceso', 'Proceso', 'Actividad', 'Bloque', 'Tipo'];
 
         $this->revisar($this->archivo([['', 'Pagos', 'Tarea', 'Tesorería', 'Onboarding']], [], $anterior))
@@ -219,10 +219,10 @@ class CargaDesdeExcelTest extends TestCase
 
     public function test_carga_actividades_en_orden_y_genera_sus_seguimientos(): void
     {
-        Grupo::create(['id_bloque' => $this->tesoreria->id_bloque, 'nombre' => 'Grupo 2']);
-        Grupo::create(['id_bloque' => $this->tesoreria->id_bloque, 'nombre' => 'De baja', 'estado' => false]);
-        $otro = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
-        Grupo::create(['id_bloque' => $otro->id_bloque, 'nombre' => 'Grupo P']);
+        Grupo::create(['id_proceso' => $this->tesoreria->id_proceso, 'nombre' => 'Grupo 2']);
+        Grupo::create(['id_proceso' => $this->tesoreria->id_proceso, 'nombre' => 'De baja', 'estado' => false]);
+        $otro = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
+        Grupo::create(['id_proceso' => $otro->id_proceso, 'nombre' => 'Grupo P']);
 
         $archivo = $this->archivo([
             ['Finanzas', 'Tesorería', 'Zeta conciliar', 'Transición'],
@@ -248,7 +248,7 @@ class CargaDesdeExcelTest extends TestCase
 
         $primera = Actividad::where('nombre', 'Zeta conciliar')->sole();
         $this->assertSame(TipoActividad::Transicion, $primera->tipo);
-        $this->assertSame($this->tesoreria->id_bloque, $primera->id_bloque);
+        $this->assertSame($this->tesoreria->id_proceso, $primera->id_proceso);
         $this->assertTrue($primera->estado);
         $this->assertNull(Actividad::where('nombre', 'Alfa inducción')->sole()->macroproceso);
         $this->assertSame(9, Seguimiento::count());
@@ -257,12 +257,12 @@ class CargaDesdeExcelTest extends TestCase
         $this->assertSame([], $this->archivosPendientes());
     }
 
-    public function test_el_bloque_es_obligatorio_y_debe_existir_activo(): void
+    public function test_el_proceso_es_obligatorio_y_debe_existir_activo(): void
     {
-        Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Viejo', 'estado' => false]);
+        Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Viejo', 'estado' => false]);
 
         $this->revisar($this->archivo([
-            ['', '', 'Sin bloque', 'Onboarding'],
+            ['', '', 'Sin proceso', 'Onboarding'],
             ['', 'Todos', 'Para todos', 'Onboarding'],
             ['', 'Nómina', 'Inexistente', 'Onboarding'],
             ['', 'Viejo', 'De baja', 'Transición'],
@@ -303,7 +303,7 @@ class CargaDesdeExcelTest extends TestCase
         $this->confirmar()->assertSessionHas('exito');
 
         $actividad = Actividad::sole();
-        $this->assertSame($this->tesoreria->id_bloque, $actividad->id_bloque);
+        $this->assertSame($this->tesoreria->id_proceso, $actividad->id_proceso);
         $this->assertSame(TipoActividad::Transicion, $actividad->tipo);
         // Se guarda limpio, con sus mayúsculas.
         $this->assertSame('Conciliar cuentas', $actividad->nombre);
@@ -322,17 +322,17 @@ class CargaDesdeExcelTest extends TestCase
             ->assertDontSee('Confirmar y guardar');
     }
 
-    public function test_se_carga_una_sola_vez_por_bloque_y_tipo(): void
+    public function test_se_carga_una_sola_vez_por_proceso_y_tipo(): void
     {
         Actividad::create([
             'id_empresa' => $this->empresa->id_empresa,
-            'id_bloque' => $this->tesoreria->id_bloque,
+            'id_proceso' => $this->tesoreria->id_proceso,
             'tipo' => TipoActividad::Onboarding,
             'nombre' => 'Creada a mano y dada de baja',
             'estado' => false,
         ]);
-        $pagos = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
-        Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'id_bloque' => $pagos->id_bloque, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Otro proceso']);
+        $pagos = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
+        Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'id_proceso' => $pagos->id_proceso, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Otro proceso']);
 
         $this->revisar($this->archivo([
             ['', 'Tesorería', 'Nueva de onboarding', 'Onboarding'],
@@ -341,7 +341,7 @@ class CargaDesdeExcelTest extends TestCase
             ->assertSee('El proceso Tesorería ya tiene actividades de tipo Onboarding.')
             ->assertDontSee('Confirmar y guardar');
 
-        // El mismo bloque con el otro tipo sí se puede cargar.
+        // El mismo proceso con el otro tipo sí se puede cargar.
         $this->revisar($this->archivo([
             ['', 'Tesorería', 'Nueva de transición', 'Transición'],
         ]))->assertSee('Confirmar y guardar');
@@ -394,12 +394,12 @@ class CargaDesdeExcelTest extends TestCase
     public function test_un_correo_existente_en_cualquier_empresa_es_duplicado(): void
     {
         $otra = Empresa::create(['nombre' => 'Otra', 'sigla' => 'OTR']);
-        $grupoAjeno = Grupo::create(['id_bloque' => Bloque::create(['id_empresa' => $otra->id_empresa, 'nombre' => 'B'])->id_bloque, 'nombre' => 'G']);
+        $grupoAjeno = Grupo::create(['id_proceso' => Proceso::create(['id_empresa' => $otra->id_empresa, 'nombre' => 'B'])->id_proceso, 'nombre' => 'G']);
         Participante::create(['id_grupo' => $grupoAjeno->id_grupo, 'nombre' => 'Ya', 'apellidos' => 'Existe', 'correo' => 'ya@existe.com', 'rol' => 'Analista']);
 
         $this->revisar($this->archivo([], [
             // Duplicado: no se revisan sus otros datos porque no se va a insertar.
-            ['Ya', 'Existe', 'YA@existe.com', '', 'Bloque que no existe', 'X', 'Analista'],
+            ['Ya', 'Existe', 'YA@existe.com', '', 'Proceso que no existe', 'X', 'Analista'],
             ['Nueva', 'Persona', 'nueva@empresa.com', '', 'Tesorería', 'Grupo 1', 'Analista'],
         ]))
             ->assertSee('Ya existe un participante con este correo: no se vuelve a insertar.')
@@ -424,7 +424,7 @@ class CargaDesdeExcelTest extends TestCase
 
     public function test_valida_los_datos_del_participante(): void
     {
-        Grupo::create(['id_bloque' => $this->tesoreria->id_bloque, 'nombre' => 'Grupo viejo', 'estado' => false]);
+        Grupo::create(['id_proceso' => $this->tesoreria->id_proceso, 'nombre' => 'Grupo viejo', 'estado' => false]);
 
         $this->revisar($this->archivo([], [
             ['', '', 'no-es-correo', '31/02/2026', 'Tesorería', 'Grupo 9', str_repeat('r', 51)],
@@ -496,7 +496,7 @@ class CargaDesdeExcelTest extends TestCase
 
     // ===== Base de datos =====
 
-    public function test_la_base_rechaza_una_actividad_sin_bloque(): void
+    public function test_la_base_rechaza_una_actividad_sin_proceso(): void
     {
         $this->expectException(QueryException::class);
 

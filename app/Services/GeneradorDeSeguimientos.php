@@ -12,12 +12,12 @@ use Illuminate\Support\Facades\DB;
 /**
  * Único lugar con la regla de qué seguimientos debe tener cada grupo.
  *
- * - Qué actividades: las de su bloque (toda actividad tiene bloque).
+ * - Qué actividades: las de su proceso (toda actividad tiene proceso).
  * - Cuántos seguimientos: uno por cada fase del tipo de la actividad
  *   (Onboarding: 1; Transición: 3, uno por Transferencia, Validación y Estabilización).
  *
  * Solo genera combinaciones con grupo y actividad activos, y nunca toca lo que ya existe.
- * Los seguimientos nuevos copian el equipo de su bloque (Seguimiento::CAMPOS_DEL_BLOQUE).
+ * Los seguimientos nuevos copian el equipo de su proceso (Seguimiento::CAMPOS_DEL_PROCESO).
  */
 class GeneradorDeSeguimientos
 {
@@ -30,7 +30,7 @@ class GeneradorDeSeguimientos
     {
         $actividades = Actividad::query()
             ->where('estado', true)
-            ->where('id_bloque', $grupo->id_bloque)
+            ->where('id_proceso', $grupo->id_proceso)
             ->orderBy('id_actividad')
             ->get();
 
@@ -47,7 +47,7 @@ class GeneradorDeSeguimientos
     {
         $grupos = Grupo::query()
             ->where('estado', true)
-            ->where('id_bloque', $actividad->id_bloque)
+            ->where('id_proceso', $actividad->id_proceso)
             ->orderBy('id_grupo')
             ->get();
 
@@ -105,15 +105,15 @@ class GeneradorDeSeguimientos
     }
 
     /**
-     * Equipo actual de un bloque, tomado de su seguimiento más reciente.
-     * Si el bloque todavía no tiene seguimientos, el equipo queda vacío.
+     * Equipo actual de un proceso, tomado de su seguimiento más reciente.
+     * Si el proceso todavía no tiene seguimientos, el equipo queda vacío.
      *
      * @return array<string, ?string>
      */
-    public function equipoDelBloque(int $idBloque): array
+    public function equipoDelProceso(int $idProceso): array
     {
-        $campos = array_keys(Seguimiento::CAMPOS_DEL_BLOQUE);
-        $ultimo = Seguimiento::delBloque($idBloque)->latest('id_seguimiento')->first($campos);
+        $campos = array_keys(Seguimiento::CAMPOS_DEL_PROCESO);
+        $ultimo = Seguimiento::delProceso($idProceso)->latest('id_seguimiento')->first($campos);
 
         return $ultimo?->only($campos) ?? array_fill_keys($campos, null);
     }
@@ -123,13 +123,13 @@ class GeneradorDeSeguimientos
      */
     private function crear(Collection $combinaciones): int
     {
-        // Bloque de cada grupo, para copiar el equipo que ya tiene ese bloque.
-        $bloquePorGrupo = Grupo::whereIn('id_grupo', $combinaciones->pluck('id_grupo')->unique())->pluck('id_bloque', 'id_grupo');
-        $equipos = $bloquePorGrupo->unique()->mapWithKeys(fn ($idBloque) => [$idBloque => $this->equipoDelBloque($idBloque)]);
+        // Proceso de cada grupo, para copiar el equipo que ya tiene ese proceso.
+        $procesoPorGrupo = Grupo::whereIn('id_grupo', $combinaciones->pluck('id_grupo')->unique())->pluck('id_proceso', 'id_grupo');
+        $equipos = $procesoPorGrupo->unique()->mapWithKeys(fn ($idProceso) => [$idProceso => $this->equipoDelProceso($idProceso)]);
 
-        return DB::transaction(function () use ($combinaciones, $bloquePorGrupo, $equipos) {
+        return DB::transaction(function () use ($combinaciones, $procesoPorGrupo, $equipos) {
             foreach ($combinaciones as $combinacion) {
-                Seguimiento::create([...$combinacion, ...$equipos[$bloquePorGrupo[$combinacion['id_grupo']]]]);
+                Seguimiento::create([...$combinacion, ...$equipos[$procesoPorGrupo[$combinacion['id_grupo']]]]);
             }
 
             return $combinaciones->count();

@@ -118,7 +118,7 @@ class SesionController extends Controller
      */
     public function editar(Sesion $sesion): View
     {
-        $seguimiento = $sesion->seguimiento->load(['actividad', 'grupo.bloque.empresa', 'fase']);
+        $seguimiento = $sesion->seguimiento->load(['actividad', 'grupo.proceso.empresa', 'fase']);
         $asistencias = $sesion->asistencias()->get()->keyBy('id_participante');
         // La pantalla oculta a quien todavía no había ingresado en la fecha de la sesión.
         $seguimiento->grupo->setRelation('participantes', $this->participantesDelFormulario($seguimiento->id_grupo, $asistencias->keys()->all()));

@@ -5,10 +5,10 @@ use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\AplicativoController;
 use App\Http\Controllers\AsignacionEmpresaController;
 use App\Http\Controllers\AvanceValidacionController;
-use App\Http\Controllers\BloqueController;
+use App\Http\Controllers\ProcesoController;
 use App\Http\Controllers\CargaController;
 use App\Http\Controllers\EmpresaController;
-use App\Http\Controllers\EquipoDeBloqueController;
+use App\Http\Controllers\EquipoDeProcesoController;
 use App\Http\Controllers\FaseController;
 use App\Http\Controllers\FasesDelGrupoController;
 use App\Http\Controllers\GrupoController;
@@ -48,7 +48,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
     });
 
     // Consultas de catálogos por empresa: cada usuario solo ve lo que le corresponde.
-    Route::get('/bloques', [BloqueController::class, 'index'])->name('bloques.index');
+    Route::get('/procesos', [ProcesoController::class, 'index'])->name('procesos.index');
     Route::get('/grupos', [GrupoController::class, 'index'])->name('grupos.index');
     Route::get('/aplicativos', [AplicativoController::class, 'index'])->name('aplicativos.index');
     Route::get('/actividades', [ActividadController::class, 'index'])->name('actividades.index');
@@ -94,12 +94,12 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::post('/carga/confirmar', [CargaController::class, 'confirmar'])->name('carga.confirmar');
         Route::post('/carga/cancelar', [CargaController::class, 'cancelar'])->name('carga.cancelar');
 
-        Route::get('/bloques/crear', [BloqueController::class, 'crear'])->name('bloques.crear');
-        Route::post('/bloques', [BloqueController::class, 'guardar'])->name('bloques.guardar');
-        Route::get('/bloques/{bloque}/editar', [BloqueController::class, 'editar'])->name('bloques.editar');
-        Route::put('/bloques/{bloque}', [BloqueController::class, 'actualizar'])->name('bloques.actualizar');
-        Route::patch('/bloques/{bloque}/baja', [BloqueController::class, 'darDeBaja'])->name('bloques.baja');
-        Route::patch('/bloques/{bloque}/reactivar', [BloqueController::class, 'reactivar'])->name('bloques.reactivar');
+        Route::get('/procesos/crear', [ProcesoController::class, 'crear'])->name('procesos.crear');
+        Route::post('/procesos', [ProcesoController::class, 'guardar'])->name('procesos.guardar');
+        Route::get('/procesos/{proceso}/editar', [ProcesoController::class, 'editar'])->name('procesos.editar');
+        Route::put('/procesos/{proceso}', [ProcesoController::class, 'actualizar'])->name('procesos.actualizar');
+        Route::patch('/procesos/{proceso}/baja', [ProcesoController::class, 'darDeBaja'])->name('procesos.baja');
+        Route::patch('/procesos/{proceso}/reactivar', [ProcesoController::class, 'reactivar'])->name('procesos.reactivar');
 
         Route::get('/grupos/crear', [GrupoController::class, 'crear'])->name('grupos.crear');
         Route::post('/grupos', [GrupoController::class, 'guardar'])->name('grupos.guardar');
@@ -144,9 +144,9 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::get('/avances/{avance}/editar', [AvanceValidacionController::class, 'editar'])->name('avances.editar');
         Route::put('/avances/{avance}', [AvanceValidacionController::class, 'actualizar'])->name('avances.actualizar');
 
-        // Equipo del bloque: responsable, documentador y líderes, iguales en todo el bloque.
-        // Se muestra en la lista de seguimientos al filtrar por bloque; aquí solo se guarda.
-        Route::put('/seguimientos/bloques/{bloque}/equipo', [EquipoDeBloqueController::class, 'actualizar'])->name('seguimientos.equipo.actualizar');
+        // Equipo del proceso: responsable, documentador y líderes, iguales en todo el proceso.
+        // Se muestra en la lista de seguimientos al filtrar por proceso; aquí solo se guarda.
+        Route::put('/seguimientos/procesos/{proceso}/equipo', [EquipoDeProcesoController::class, 'actualizar'])->name('seguimientos.equipo.actualizar');
     });
 
     // Cambios en empresas: quien no cumple el Gate recibe error 403.

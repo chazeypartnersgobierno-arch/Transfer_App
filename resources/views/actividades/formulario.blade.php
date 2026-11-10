@@ -1,4 +1,4 @@
-{{-- Se usa para crear y para editar. Al editar, empresa, tipo y bloque quedan fijos. --}}
+{{-- Se usa para crear y para editar. Al editar, empresa, tipo y proceso quedan fijos. --}}
 @extends('layouts.app')
 
 @php
@@ -14,7 +14,7 @@
     </div>
 
     <div class="tarjeta tarjeta-formulario">
-        {{-- data-formulario-actividad: app.js muestra solo los bloques de la empresa elegida. --}}
+        {{-- data-formulario-actividad: app.js muestra solo los procesos de la empresa elegida. --}}
         <form method="POST" action="{{ $esNueva ? route('actividades.guardar') : route('actividades.actualizar', $actividad) }}" @if ($esNueva) data-formulario-actividad @endif>
             @csrf
 
@@ -31,13 +31,13 @@
                 <x-lista name="tipo" label="Tipo" :opciones="\App\Enums\TipoActividad::opciones()" :value="old('tipo')" vacia="Elige un tipo" required />
                 <p class="ayuda-campo">Onboarding genera 1 seguimiento por grupo. Transición genera 3: Transferencia, Validación y Estabilización.</p>
 
-                {{-- data-empresa indica de qué empresa es cada bloque. --}}
+                {{-- data-empresa indica de qué empresa es cada proceso. --}}
                 <x-lista
-                    name="id_bloque"
+                    name="id_proceso"
                     label="Proceso"
-                    :opciones="$bloques->pluck('nombre', 'id_bloque')->all()"
-                    :value="old('id_bloque')"
-                    :datos="$bloques->mapWithKeys(fn ($bloque) => [$bloque->id_bloque => ['data-empresa' => $bloque->id_empresa]])->all()"
+                    :opciones="$procesos->pluck('nombre', 'id_proceso')->all()"
+                    :value="old('id_proceso')"
+                    :datos="$procesos->mapWithKeys(fn ($proceso) => [$proceso->id_proceso => ['data-empresa' => $proceso->id_empresa]])->all()"
                     vacia="Elige un proceso"
                     required
                 />
@@ -61,7 +61,7 @@
                     </div>
                     <div>
                         <dt>Proceso</dt>
-                        <dd>{{ $actividad->bloque->nombre }}</dd>
+                        <dd>{{ $actividad->proceso->nombre }}</dd>
                     </div>
                 </dl>
             @endunless

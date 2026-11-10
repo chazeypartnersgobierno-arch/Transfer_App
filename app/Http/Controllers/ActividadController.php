@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\TipoActividad;
 use App\Models\Actividad;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Seguimiento;
 use App\Services\GeneradorDeSeguimientos;
@@ -28,35 +28,35 @@ class ActividadController extends Controller
         // Solo Chazey ve varias empresas, así que solo a Chazey se le muestra ese filtro.
         $empresas = $usuario->esChazey() ? Empresa::orderBy('nombre')->pluck('nombre', 'id_empresa') : collect();
 
-        // Si no se eligió empresa, Chazey ve bloques de varias: la sigla ayuda a distinguirlos.
+        // Si no se eligió empresa, Chazey ve procesos de varias: la sigla ayuda a distinguirlos.
         $conSigla = $usuario->esChazey() && $idEmpresa === null;
-        $bloques = Bloque::visiblePara($usuario)
+        $procesos = Proceso::visiblePara($usuario)
             ->with('empresa')
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
             ->orderBy('nombre')
             ->get()
-            ->mapWithKeys(fn (Bloque $b) => [$b->id_bloque => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
+            ->mapWithKeys(fn (Proceso $b) => [$b->id_proceso => $conSigla ? "{$b->nombre} ({$b->empresa->sigla})" : $b->nombre]);
 
-        // Un bloque que ya no está en la lista (por ejemplo, al cambiar de empresa) se ignora.
-        $idBloque = $this->numeroDeLaUrl($request, 'id_bloque');
-        $idBloque = $idBloque !== null && $bloques->has($idBloque) ? $idBloque : null;
+        // Un proceso que ya no está en la lista (por ejemplo, al cambiar de empresa) se ignora.
+        $idProceso = $this->numeroDeLaUrl($request, 'id_proceso');
+        $idProceso = $idProceso !== null && $procesos->has($idProceso) ? $idProceso : null;
 
         $actividades = Actividad::visiblePara($usuario)
-            ->with(['empresa', 'bloque']) // trae todo de una vez, sin una consulta por cada fila
+            ->with(['empresa', 'proceso']) // trae todo de una vez, sin una consulta por cada fila
             ->withCount('seguimientos') // agrega seguimientos_count a cada actividad
             ->when(! $verBajas, fn ($consulta) => $consulta->where('estado', true))
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->where('id_empresa', $idEmpresa))
             ->when($tipo !== null, fn ($consulta) => $consulta->where('tipo', $tipo))
-            ->when($idBloque !== null, fn ($consulta) => $consulta->where('id_bloque', $idBloque))
+            ->when($idProceso !== null, fn ($consulta) => $consulta->where('id_proceso', $idProceso))
             ->when($buscar !== '', function ($consulta) use ($buscar) {
                 // addcslashes: para que % y _ se busquen como texto normal.
                 $texto = '%'.addcslashes($buscar, '%_\\').'%';
 
-                // El proceso es el bloque: se busca por su nombre.
+                // También se busca por el nombre del proceso.
                 $consulta->where(fn ($q) => $q
                     ->where('nombre', 'like', $texto)
                     ->orWhere('macroproceso', 'like', $texto)
-                    ->orWhereHas('bloque', fn ($b) => $b->where('nombre', 'like', $texto)));
+                    ->orWhereHas('proceso', fn ($b) => $b->where('nombre', 'like', $texto)));
             })
             // En el orden en que se cargaron.
             ->orderBy('id_actividad')
@@ -68,7 +68,7 @@ class ActividadController extends Controller
             ->reject(fn (Actividad $actividad) => $actividad->estado)
             ->mapWithKeys(fn (Actividad $actividad) => [$actividad->id_actividad => $generador->faltantesDeActividad($actividad)->count()]);
 
-        return view('actividades.index', compact('actividades', 'buscar', 'verBajas', 'idEmpresa', 'tipo', 'idBloque', 'empresas', 'bloques', 'faltantes'));
+        return view('actividades.index', compact('actividades', 'buscar', 'verBajas', 'idEmpresa', 'tipo', 'idProceso', 'empresas', 'procesos', 'faltantes'));
     }
 
     public function crear(Request $request): View|RedirectResponse
@@ -82,8 +82,8 @@ class ActividadController extends Controller
             return redirect()->route('actividades.index')->with('error', 'Primero registra una empresa activa.');
         }
 
-        // Bloques activos de empresas activas. app.js muestra solo los de la empresa elegida.
-        $bloques = Bloque::visiblePara($usuario)
+        // Procesos activos de empresas activas. app.js muestra solo los de la empresa elegida.
+        $procesos = Proceso::visiblePara($usuario)
             ->where('estado', true)
             ->whereHas('empresa', fn ($consulta) => $consulta->where('estado', true))
             ->orderBy('nombre')
@@ -92,7 +92,7 @@ class ActividadController extends Controller
         return view('actividades.formulario', [
             'actividad' => new Actividad,
             'empresas' => $empresas,
-            'bloques' => $bloques,
+            'procesos' => $procesos,
         ]);
     }
 
@@ -112,11 +112,11 @@ class ActividadController extends Controller
         $datos = $request->validate([
             'id_empresa' => ['required', 'integer', Rule::exists('empresas', 'id_empresa')->where('estado', true)],
             'tipo' => ['required', Rule::enum(TipoActividad::class)],
-            // Toda actividad lleva bloque: debe estar activo y ser de la misma empresa.
-            'id_bloque' => [
+            // Toda actividad lleva proceso: debe estar activo y ser de la misma empresa.
+            'id_proceso' => [
                 'required',
                 'integer',
-                Rule::exists('bloques', 'id_bloque')->where('id_empresa', $idEmpresa)->where('estado', true),
+                Rule::exists('procesos', 'id_proceso')->where('id_empresa', $idEmpresa)->where('estado', true),
             ],
             ...$this->reglasDeTextos(),
         ], $this->mensajes());
@@ -130,7 +130,7 @@ class ActividadController extends Controller
                 'datos' => $datos,
                 'porGenerar' => $porGenerar,
                 'empresa' => Empresa::find($datos['id_empresa']),
-                'bloque' => Bloque::find($datos['id_bloque']),
+                'proceso' => Proceso::find($datos['id_proceso']),
             ]);
         }
 
@@ -154,12 +154,12 @@ class ActividadController extends Controller
         return view('actividades.formulario', [
             'actividad' => $actividad,
             'empresas' => collect(),
-            'bloques' => collect(),
+            'procesos' => collect(),
         ]);
     }
 
     /**
-     * Solo se pueden cambiar los textos: empresa, tipo y bloque quedan fijos al crearla.
+     * Solo se pueden cambiar los textos: empresa, tipo y proceso quedan fijos al crearla.
      */
     public function actualizar(Request $request, Actividad $actividad): RedirectResponse
     {
@@ -169,7 +169,7 @@ class ActividadController extends Controller
             ...$datos,
             'id_empresa' => $actividad->id_empresa,
             'tipo' => $actividad->tipo->value,
-            'id_bloque' => $actividad->id_bloque,
+            'id_proceso' => $actividad->id_proceso,
         ], $actividad);
 
         $actividad->update($datos);
@@ -196,7 +196,7 @@ class ActividadController extends Controller
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su empresa está dada de baja.");
         }
 
-        if (! $actividad->bloque->estado) {
+        if (! $actividad->proceso->estado) {
             return back()->with('error', "No se puede reactivar {$actividad->nombre}: su proceso está dado de baja.");
         }
 
@@ -213,7 +213,7 @@ class ActividadController extends Controller
 
     /**
      * Cada actividad se registra una sola vez. La tabla no lo impide por sí sola, así que
-     * se revisa aquí: se repite si coinciden empresa, tipo, bloque, macroproceso y nombre,
+     * se revisa aquí: se repite si coinciden empresa, tipo, proceso, macroproceso y nombre,
      * incluso con una dada de baja.
      */
     private function validarQueNoSeRepita(array $datos, ?Actividad $actividad = null): void
@@ -221,7 +221,7 @@ class ActividadController extends Controller
         $repetida = Actividad::query()
             ->where('id_empresa', $datos['id_empresa'])
             ->where('tipo', $datos['tipo'])
-            ->where('id_bloque', $datos['id_bloque'])
+            ->where('id_proceso', $datos['id_proceso'])
             ->where('macroproceso', $datos['macroproceso'] ?? null)
             ->where('nombre', $datos['nombre'])
             ->when($actividad, fn ($consulta) => $consulta->whereKeyNot($actividad->id_actividad))
@@ -250,9 +250,9 @@ class ActividadController extends Controller
             'id_empresa.exists' => 'La empresa no existe o está dada de baja.',
             'tipo.required' => 'Elige un tipo.',
             'tipo.enum' => 'Elige un tipo de la lista.',
-            'id_bloque.required' => 'Elige un proceso.',
-            'id_bloque.integer' => 'Elige un proceso de la lista.',
-            'id_bloque.exists' => 'El proceso no existe, está dado de baja o es de otra empresa.',
+            'id_proceso.required' => 'Elige un proceso.',
+            'id_proceso.integer' => 'Elige un proceso de la lista.',
+            'id_proceso.exists' => 'El proceso no existe, está dado de baja o es de otra empresa.',
             'macroproceso.max' => 'El macroproceso no puede tener más de 255 caracteres.',
             'nombre.required' => 'Escribe el nombre de la actividad.',
             'nombre.max' => 'El nombre no puede tener más de 500 caracteres.',

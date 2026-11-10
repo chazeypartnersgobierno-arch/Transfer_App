@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\RolApp;
 use App\Exports\HojaDePlantilla;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Grupo;
 use App\Models\Usuario;
@@ -43,9 +43,9 @@ class PlantillaDeCargaTest extends TestCase
         ]), $empresa);
     }
 
-    private function bloque(string $nombre, ?Empresa $empresa = null, bool $estado = true): Bloque
+    private function proceso(string $nombre, ?Empresa $empresa = null, bool $estado = true): Proceso
     {
-        return Bloque::create(['id_empresa' => ($empresa ?? $this->empresa)->id_empresa, 'nombre' => $nombre, 'estado' => $estado]);
+        return Proceso::create(['id_empresa' => ($empresa ?? $this->empresa)->id_empresa, 'nombre' => $nombre, 'estado' => $estado]);
     }
 
     /**
@@ -185,14 +185,14 @@ class PlantillaDeCargaTest extends TestCase
 
     public function test_las_listas_traen_solo_el_catalogo_activo_de_la_empresa(): void
     {
-        $zeta = $this->bloque('Zeta');
-        $alfa = $this->bloque('Alfa');
-        $this->bloque('Bloque inactivo', null, false);
-        $this->bloque('De otra empresa', Empresa::create(['nombre' => 'Otra', 'sigla' => 'OTR']));
-        Grupo::create(['id_bloque' => $zeta->id_bloque, 'nombre' => 'Grupo 1']);
-        Grupo::create(['id_bloque' => $alfa->id_bloque, 'nombre' => 'Grupo 1']);
-        Grupo::create(['id_bloque' => $alfa->id_bloque, 'nombre' => 'Grupo 2']);
-        Grupo::create(['id_bloque' => $alfa->id_bloque, 'nombre' => 'Grupo inactivo', 'estado' => false]);
+        $zeta = $this->proceso('Zeta');
+        $alfa = $this->proceso('Alfa');
+        $this->proceso('Proceso inactivo', null, false);
+        $this->proceso('De otra empresa', Empresa::create(['nombre' => 'Otra', 'sigla' => 'OTR']));
+        Grupo::create(['id_proceso' => $zeta->id_proceso, 'nombre' => 'Grupo 1']);
+        Grupo::create(['id_proceso' => $alfa->id_proceso, 'nombre' => 'Grupo 1']);
+        Grupo::create(['id_proceso' => $alfa->id_proceso, 'nombre' => 'Grupo 2']);
+        Grupo::create(['id_proceso' => $alfa->id_proceso, 'nombre' => 'Grupo inactivo', 'estado' => false]);
 
         $libro = $this->abrir($this->actingAs($this->usuario())->get('/carga/plantilla?id_empresa='.$this->empresa->id_empresa));
 
@@ -203,8 +203,8 @@ class PlantillaDeCargaTest extends TestCase
 
     public function test_las_columnas_con_lista_desplegable_apuntan_a_la_hoja_listas(): void
     {
-        $bloque = $this->bloque('Tesorería');
-        Grupo::create(['id_bloque' => $bloque->id_bloque, 'nombre' => 'Grupo 1']);
+        $proceso = $this->proceso('Tesorería');
+        Grupo::create(['id_proceso' => $proceso->id_proceso, 'nombre' => 'Grupo 1']);
 
         $libro = $this->abrir($this->actingAs($this->usuario())->get('/carga/plantilla?id_empresa='.$this->empresa->id_empresa));
         $actividades = $libro->getSheetByName('Actividades');
@@ -229,7 +229,7 @@ class PlantillaDeCargaTest extends TestCase
         $this->assertNull($this->validacion($participantes, 'G'));
     }
 
-    public function test_sin_bloques_ni_grupos_la_plantilla_se_genera_igual(): void
+    public function test_sin_procesos_ni_grupos_la_plantilla_se_genera_igual(): void
     {
         $libro = $this->abrir($this->actingAs($this->usuario())->get('/carga/plantilla?id_empresa='.$this->empresa->id_empresa));
 
@@ -241,7 +241,7 @@ class PlantillaDeCargaTest extends TestCase
 
     public function test_un_nombre_que_parece_formula_se_guarda_como_texto(): void
     {
-        $this->bloque('=1+1');
+        $this->proceso('=1+1');
 
         $libro = $this->abrir($this->actingAs($this->usuario())->get('/carga/plantilla?id_empresa='.$this->empresa->id_empresa));
 

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Persona que recibe la transferencia. Pertenece a un grupo; la empresa se obtiene
- * por grupo → bloque → empresa. Su correo es único en toda la base.
+ * por grupo → proceso → empresa. Su correo es único en toda la base.
  * No es un usuario de la app: no inicia sesión.
  */
 class Participante extends Model
@@ -58,13 +58,13 @@ class Participante extends Model
 
     /**
      * Filtra los participantes que un usuario puede ver: el admin, todos; el consultor,
-     * los de las empresas de su asignación activa. La empresa sale del grupo → bloque.
+     * los de las empresas de su asignación activa. La empresa sale del grupo → proceso.
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {
         return $usuario->esChazey()
             ? $consulta
-            : $consulta->whereHas('grupo.bloque', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
+            : $consulta->whereHas('grupo.proceso', fn ($q) => $q->whereIn('id_empresa', $usuario->idsEmpresasVisibles()));
     }
 
     /**

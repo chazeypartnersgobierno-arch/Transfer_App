@@ -30,11 +30,11 @@
                 </select>
             @endif
 
-            <label for="filtro_bloque" class="visually-hidden">Filtrar por proceso</label>
-            <select id="filtro_bloque" name="id_bloque" class="form-select filtro" data-enviar-al-cambiar>
+            <label for="filtro_proceso" class="visually-hidden">Filtrar por proceso</label>
+            <select id="filtro_proceso" name="id_proceso" class="form-select filtro" data-enviar-al-cambiar>
                 <option value="">Todos los procesos</option>
-                @foreach ($bloques as $id => $nombre)
-                    <option value="{{ $id }}" @selected($id === $idBloque)>{{ $nombre }}</option>
+                @foreach ($procesos as $id => $nombre)
+                    <option value="{{ $id }}" @selected($id === $idProceso)>{{ $nombre }}</option>
                 @endforeach
             </select>
 
@@ -76,9 +76,9 @@
                             <td class="celda-detalle" data-etiqueta="Correo">{{ $participante->correo }}</td>
                             <td class="celda-detalle" data-etiqueta="Rol">{{ $participante->rol }}</td>
                             <td class="celda-detalle" data-etiqueta="Grupo">
-                                {{ $participante->grupo->bloque->nombre }} › {{ $participante->grupo->nombre }}
+                                {{ $participante->grupo->proceso->nombre }} › {{ $participante->grupo->nombre }}
                                 @if (auth()->user()->esChazey())
-                                    <span class="texto-secundario">({{ $participante->grupo->bloque->empresa->sigla }})</span>
+                                    <span class="texto-secundario">({{ $participante->grupo->proceso->empresa->sigla }})</span>
                                 @endif
                             </td>
                             <td class="celda-detalle" data-etiqueta="Ingreso">{{ $participante->fecha_ingreso?->format('d/m/Y') ?? '—' }}</td>

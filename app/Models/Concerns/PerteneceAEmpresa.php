@@ -21,7 +21,7 @@ trait PerteneceAEmpresa
     /**
      * Filtra los registros que un usuario puede ver: Chazey (admin) ve todos; el consultor,
      * solo los de las empresas de su asignación activa.
-     * Se usa así: Bloque::visiblePara($usuario)->get()
+     * Se usa así: Proceso::visiblePara($usuario)->get()
      */
     public function scopeVisiblePara(Builder $consulta, Usuario $usuario): Builder
     {

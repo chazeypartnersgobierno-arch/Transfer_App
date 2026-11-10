@@ -96,9 +96,9 @@
                                     <span class="texto-secundario small">(de baja)</span>
                                 @endunless
                                 <div class="texto-secundario small">
-                                    {{ $acceso->participante->grupo->bloque->nombre }} › {{ $acceso->participante->grupo->nombre }}
+                                    {{ $acceso->participante->grupo->proceso->nombre }} › {{ $acceso->participante->grupo->nombre }}
                                     @if (auth()->user()->esChazey())
-                                        ({{ $acceso->participante->grupo->bloque->empresa->sigla }})
+                                        ({{ $acceso->participante->grupo->proceso->empresa->sigla }})
                                     @endif
                                 </div>
                             </td>

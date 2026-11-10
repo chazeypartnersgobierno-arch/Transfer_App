@@ -6,7 +6,7 @@ use App\Enums\RolApp;
 use App\Enums\TipoActividad;
 use App\Models\Actividad;
 use App\Models\AsignacionEmpresa;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -54,14 +54,14 @@ class AsignacionEmpresaTest extends TestCase
         ]);
     }
 
-    /** Un seguimiento de una actividad del bloque "Bloque <sigla>" de la empresa. */
+    /** Un seguimiento de una actividad del proceso "Proceso <sigla>" de la empresa. */
     private function seguimiento(Empresa $empresa, string $actividad): Seguimiento
     {
-        $bloque = Bloque::firstOrCreate(['id_empresa' => $empresa->id_empresa, 'nombre' => "Bloque {$empresa->sigla}"]);
-        $grupo = Grupo::firstOrCreate(['id_bloque' => $bloque->id_bloque, 'nombre' => 'Grupo 1']);
+        $proceso = Proceso::firstOrCreate(['id_empresa' => $empresa->id_empresa, 'nombre' => "Proceso {$empresa->sigla}"]);
+        $grupo = Grupo::firstOrCreate(['id_proceso' => $proceso->id_proceso, 'nombre' => 'Grupo 1']);
         $actividad = Actividad::create([
             'id_empresa' => $empresa->id_empresa,
-            'id_bloque' => $bloque->id_bloque,
+            'id_proceso' => $proceso->id_proceso,
             'tipo' => TipoActividad::Onboarding,
             'nombre' => $actividad,
         ]);
@@ -201,7 +201,7 @@ class AsignacionEmpresaTest extends TestCase
         $this->asignador->asignar($consultor, $uno, today());
 
         $this->actingAs($consultor)->get('/seguimientos')->assertSee('Conciliar UNO')->assertDontSee('Conciliar DOS');
-        $this->actingAs($consultor)->get('/grupos')->assertSee('Bloque UNO')->assertDontSee('Bloque DOS');
+        $this->actingAs($consultor)->get('/grupos')->assertSee('Proceso UNO')->assertDontSee('Proceso DOS');
         $this->actingAs($consultor)->get('/')->assertSee('Trabajas con Empresa UNO.')->assertDontSee('No tienes una empresa asignada');
     }
 

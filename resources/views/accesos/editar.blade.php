@@ -15,7 +15,7 @@
     <div class="pagina-encabezado">
         <div>
             <h1 class="pagina-titulo">Solicitud de {{ $acceso->aplicativo->nombre }}</h1>
-            <p class="pagina-subtitulo">{{ $acceso->participante->nombreCompleto() }} · {{ $acceso->participante->grupo->bloque->nombre }} › {{ $acceso->participante->grupo->nombre }}</p>
+            <p class="pagina-subtitulo">{{ $acceso->participante->nombreCompleto() }} · {{ $acceso->participante->grupo->proceso->nombre }} › {{ $acceso->participante->grupo->nombre }}</p>
         </div>
     </div>
 

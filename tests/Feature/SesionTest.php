@@ -7,7 +7,7 @@ use App\Enums\RolApp;
 use App\Enums\TipoActividad;
 use App\Models\Actividad;
 use App\Models\Asistencia;
-use App\Models\Bloque;
+use App\Models\Proceso;
 use App\Models\Empresa;
 use App\Models\Fase;
 use App\Models\Grupo;
@@ -27,7 +27,7 @@ class SesionTest extends TestCase
 
     private Empresa $empresa;
 
-    private Bloque $bloque;
+    private Proceso $proceso;
 
     private Grupo $grupo1;
 
@@ -48,12 +48,12 @@ class SesionTest extends TestCase
 
         (new FaseSeeder)->run();
         $this->empresa = Empresa::create(['nombre' => 'Empresa Uno', 'sigla' => 'UNO']);
-        $this->bloque = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
-        $this->grupo1 = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 1']);
-        $this->grupo2 = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 2']);
+        $this->proceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Tesorería']);
+        $this->grupo1 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 1']);
+        $this->grupo2 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 2']);
         $this->actividad = Actividad::create([
             'id_empresa' => $this->empresa->id_empresa,
-            'id_bloque' => $this->bloque->id_bloque,
+            'id_proceso' => $this->proceso->id_proceso,
             'tipo' => TipoActividad::Transicion,
             'nombre' => 'Conciliar cuentas',
         ]);
@@ -159,7 +159,7 @@ class SesionTest extends TestCase
 
     public function test_onboarding_si_registra_sesiones(): void
     {
-        $onboarding = Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'id_bloque' => $this->bloque->id_bloque, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Inducción']);
+        $onboarding = Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'id_proceso' => $this->proceso->id_proceso, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Inducción']);
         $seguimiento = $this->seguimiento($this->grupo1, 1, $onboarding);
 
         $this->crearSesion(['seguimientos' => [$seguimiento->id_seguimiento]], $seguimiento)->assertSessionHas('exito');
@@ -217,11 +217,11 @@ class SesionTest extends TestCase
     {
         $ana = $this->participante($this->grupo1, 'Ana');
         $eva = $this->participante($this->grupo2, 'Eva');
-        $grupo3 = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 3']);
+        $grupo3 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 3']);
         $seguimiento3 = $this->seguimiento($grupo3);
         // No se ofrecen: otra fase, y un grupo de baja.
         $this->seguimiento($this->grupo1, 3);
-        $deBaja = $this->seguimiento(Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo de baja', 'estado' => false]));
+        $deBaja = $this->seguimiento(Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo de baja', 'estado' => false]));
 
         $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento1->id_seguimiento}/sesiones/crear")
             ->assertSeeInOrder(['Grupo 1', 'Grupo 2', 'Grupo 3'])
@@ -511,7 +511,7 @@ class SesionTest extends TestCase
     public function test_con_varios_grupos_la_fecha_debe_caber_en_las_fechas_de_cada_uno(): void
     {
         $this->seguimiento2->update(['fecha_inicio' => '2027-03-15', 'fecha_fin' => '2027-04-15']);
-        $grupo3 = Grupo::create(['id_bloque' => $this->bloque->id_bloque, 'nombre' => 'Grupo 3']);
+        $grupo3 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 3']);
         $sinFechas = $this->seguimiento($grupo3, 2, null, ['fecha_inicio' => null, 'fecha_fin' => null]);
         $ambos = [$this->seguimiento1->id_seguimiento, $this->seguimiento2->id_seguimiento];
 

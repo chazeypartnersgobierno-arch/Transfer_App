@@ -15,8 +15,8 @@ use Illuminate\Support\Collection;
  * - La primera fase siempre está habilitada. Las demás, solo cuando todas las anteriores están completas.
  * - Una fase está completa cuando todos sus seguimientos en trabajo del grupo están en Completada.
  *   Una fase sin seguimientos cuenta como completa (no tiene nada pendiente).
- * - Cada grupo avanza por su cuenta: no depende de los otros grupos del bloque.
- *   (Un grupo pertenece a un solo bloque, por eso basta con el grupo).
+ * - Cada grupo avanza por su cuenta: no depende de los otros grupos del proceso.
+ *   (Un grupo pertenece a un solo proceso, por eso basta con el grupo).
  *
  * Uso: $avance = app(AvanceDeFases::class); $avance->faseHabilitada($fase, $grupo).
  * Guarda los cálculos mientras vive el objeto: créalo de nuevo después de cambiar estados.
@@ -96,7 +96,7 @@ class AvanceDeFases
 
         ['terminadas' => $terminadas, 'total' => $total] = $this->avance($anterior, $grupo);
 
-        return "Esta fase se habilitará cuando concluya {$anterior->nombre} del proceso {$grupo->bloque->nombre} – {$grupo->nombre} "
+        return "Esta fase se habilitará cuando concluya {$anterior->nombre} del proceso {$grupo->proceso->nombre} – {$grupo->nombre} "
             ."({$terminadas} de {$total} ".($total === 1 ? 'actividad terminada' : 'actividades terminadas').').';
     }
 
