@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  *
  * - Qué actividades: las de su bloque (toda actividad tiene bloque).
  * - Cuántos seguimientos: uno por cada fase del tipo de la actividad
- *   (Onboarding: 1; Transición: 3, uno por Transferencia, Estabilización y Validación).
+ *   (Onboarding: 1; Transición: 3, uno por Transferencia, Validación y Estabilización).
  *
  * Solo genera combinaciones con grupo y actividad activos, y nunca toca lo que ya existe.
  * Los seguimientos nuevos copian el equipo de su bloque (Seguimiento::CAMPOS_DEL_BLOQUE).

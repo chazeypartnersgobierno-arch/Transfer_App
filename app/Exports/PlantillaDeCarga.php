@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Events\AfterSheet;
  */
 class PlantillaDeCarga implements Export, WithMultipleSheets
 {
-    public const ENCABEZADOS_ACTIVIDADES = ['Macroproceso', 'Proceso', 'Subproceso', 'Actividad', 'Bloque', 'Tipo'];
+    public const ENCABEZADOS_ACTIVIDADES = ['Macroproceso', 'Proceso', 'Actividad', 'Bloque', 'Tipo'];
 
     public const ENCABEZADOS_PARTICIPANTES = ['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Bloque', 'Grupo', 'Rol'];
 
@@ -54,10 +54,10 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
                 'Actividades',
                 [self::ENCABEZADOS_ACTIVIDADES],
                 listas: array_filter([
-                    'E' => $this->rango('A', $bloques),
-                    'F' => $this->rango('C', $tipos),
+                    'D' => $this->rango('A', $bloques),
+                    'E' => $this->rango('C', $tipos),
                 ]),
-                anchos: ['A' => 28, 'B' => 28, 'C' => 28, 'D' => 60, 'E' => 28, 'F' => 16],
+                anchos: ['A' => 28, 'B' => 28, 'C' => 60, 'D' => 28, 'E' => 16],
             ),
             new HojaDePlantilla(
                 'Participantes',
@@ -91,7 +91,7 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
             [],
             ['Reglas'],
             ['• Tipo Onboarding: la actividad genera 1 seguimiento por grupo, en la fase Onboarding.'],
-            ['• Tipo Transición: la actividad pasa por las tres fases (Transferencia, Estabilización y Validación) y genera 3 seguimientos por grupo.'],
+            ['• Tipo Transición: la actividad pasa por las tres fases (Transferencia, Validación y Estabilización) y genera 3 seguimientos por grupo.'],
             ['• Toda actividad lleva un bloque de la empresa, también las de Onboarding: cada bloque tiene su propio Onboarding.'],
             ['• Las actividades se cargan una sola vez por bloque y tipo: si el bloque ya tiene actividades de ese tipo, se rechaza la carga.'],
             ['  Los cambios posteriores se hacen en la app.'],
@@ -102,7 +102,6 @@ class PlantillaDeCarga implements Export, WithMultipleSheets
             ['Hoja', 'Columna', 'Obligatoria', 'Qué va', 'Ejemplo'],
             ['Actividades', 'Macroproceso', 'No', 'Macroproceso al que pertenece la actividad.', 'Finanzas'],
             ['Actividades', 'Proceso', 'No', 'Proceso dentro del macroproceso.', 'Tesorería'],
-            ['Actividades', 'Subproceso', 'No', 'Subproceso; puede quedar vacío.', 'Conciliaciones'],
             ['Actividades', 'Actividad', 'Sí', 'Nombre de la actividad (hasta 500 caracteres).', 'Conciliar cuentas bancarias'],
             ['Actividades', 'Bloque', 'Sí', 'Bloque de la lista.', 'Tesorería'],
             ['Actividades', 'Tipo', 'Sí', 'Onboarding o Transición.', 'Transición'],

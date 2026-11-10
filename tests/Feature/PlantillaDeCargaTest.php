@@ -150,7 +150,7 @@ class PlantillaDeCargaTest extends TestCase
 
         $this->assertSame(['Instrucciones', 'Actividades', 'Participantes', 'Listas'], $libro->getSheetNames());
         $this->assertSame('Instrucciones', $libro->getActiveSheet()->getTitle());
-        $this->assertSame(['Macroproceso', 'Proceso', 'Subproceso', 'Actividad', 'Bloque', 'Tipo'], $this->encabezados($libro->getSheetByName('Actividades')));
+        $this->assertSame(['Macroproceso', 'Proceso', 'Actividad', 'Bloque', 'Tipo'], $this->encabezados($libro->getSheetByName('Actividades')));
         $this->assertSame(['Nombre', 'Apellidos', 'Correo', 'Fecha de ingreso', 'Bloque', 'Grupo', 'Rol'], $this->encabezados($libro->getSheetByName('Participantes')));
         $this->assertSame(Worksheet::SHEETSTATE_HIDDEN, $libro->getSheetByName('Listas')->getSheetState());
         $this->assertNull($libro->getSheetByName('Capacitaciones'));
@@ -176,9 +176,11 @@ class PlantillaDeCargaTest extends TestCase
         $this->assertStringNotContainsString('Todos', $texto);
         $this->assertStringContainsString('una sola vez por bloque y tipo', $texto);
 
-        foreach (['Macroproceso', 'Subproceso', 'Apellidos', 'Fecha de ingreso', 'Rol'] as $columna) {
+        foreach (['Macroproceso', 'Apellidos', 'Fecha de ingreso', 'Rol'] as $columna) {
             $this->assertStringContainsString($columna, $texto);
         }
+
+        $this->assertStringNotContainsString('Subproceso', $texto);
     }
 
     public function test_las_listas_traen_solo_el_catalogo_activo_de_la_empresa(): void
@@ -209,8 +211,8 @@ class PlantillaDeCargaTest extends TestCase
         $participantes = $libro->getSheetByName('Participantes');
 
         $esperadas = [
-            [$actividades, 'E', "'Listas'!\$A\$2:\$A\$2"],
-            [$actividades, 'F', "'Listas'!\$C\$2:\$C\$3"],
+            [$actividades, 'D', "'Listas'!\$A\$2:\$A\$2"],
+            [$actividades, 'E', "'Listas'!\$C\$2:\$C\$3"],
             [$participantes, 'E', "'Listas'!\$A\$2:\$A\$2"],
             [$participantes, 'F', "'Listas'!\$B\$2:\$B\$2"],
         ];
@@ -233,8 +235,8 @@ class PlantillaDeCargaTest extends TestCase
 
         $this->assertSame([], $this->lista($libro, 'A'));
         $this->assertNull($this->validacion($libro->getSheetByName('Participantes'), 'E'));
-        $this->assertNull($this->validacion($libro->getSheetByName('Actividades'), 'E'));
-        $this->assertNotNull($this->validacion($libro->getSheetByName('Actividades'), 'F'));
+        $this->assertNull($this->validacion($libro->getSheetByName('Actividades'), 'D'));
+        $this->assertNotNull($this->validacion($libro->getSheetByName('Actividades'), 'E'));
     }
 
     public function test_un_nombre_que_parece_formula_se_guarda_como_texto(): void

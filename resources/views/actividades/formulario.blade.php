@@ -29,7 +29,7 @@
                 @endif
 
                 <x-lista name="tipo" label="Tipo" :opciones="\App\Enums\TipoActividad::opciones()" :value="old('tipo')" vacia="Elige un tipo" required />
-                <p class="ayuda-campo">Onboarding genera 1 seguimiento por grupo. Transición genera 3: Transferencia, Estabilización y Validación.</p>
+                <p class="ayuda-campo">Onboarding genera 1 seguimiento por grupo. Transición genera 3: Transferencia, Validación y Estabilización.</p>
 
                 {{-- data-empresa indica de qué empresa es cada bloque. --}}
                 <x-lista
@@ -48,7 +48,6 @@
 
             <x-campo name="macroproceso" label="Macroproceso (opcional)" :value="old('macroproceso', $actividad->macroproceso)" maxlength="255" />
             <x-campo name="proceso" label="Proceso (opcional)" :value="old('proceso', $actividad->proceso)" maxlength="255" />
-            <x-campo name="subproceso" label="Subproceso (opcional)" :value="old('subproceso', $actividad->subproceso)" maxlength="255" />
             <x-campo name="nombre" label="Nombre" :value="old('nombre', $actividad->nombre)" maxlength="500" required />
 
             @unless ($esNueva)

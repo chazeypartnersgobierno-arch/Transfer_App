@@ -26,7 +26,6 @@ class Actividad extends Model
         'tipo',
         'macroproceso',
         'proceso',
-        'subproceso',
         'nombre',
         'estado',
     ];
@@ -53,10 +52,10 @@ class Actividad extends Model
     }
 
     /**
-     * Macroproceso, proceso y subproceso en una sola línea, omitiendo los vacíos.
+     * Macroproceso y proceso en una sola línea, omitiendo los vacíos.
      */
     public function rutaDeProceso(): string
     {
-        return collect([$this->macroproceso, $this->proceso, $this->subproceso])->filter()->implode(' › ');
+        return collect([$this->macroproceso, $this->proceso])->filter()->implode(' › ');
     }
 }

@@ -55,8 +55,7 @@ class ActividadController extends Controller
                 $consulta->where(fn ($q) => $q
                     ->where('nombre', 'like', $texto)
                     ->orWhere('macroproceso', 'like', $texto)
-                    ->orWhere('proceso', 'like', $texto)
-                    ->orWhere('subproceso', 'like', $texto));
+                    ->orWhere('proceso', 'like', $texto));
             })
             // En el orden en que se cargaron.
             ->orderBy('id_actividad')
@@ -224,7 +223,6 @@ class ActividadController extends Controller
             ->where('id_bloque', $datos['id_bloque'])
             ->where('macroproceso', $datos['macroproceso'] ?? null)
             ->where('proceso', $datos['proceso'] ?? null)
-            ->where('subproceso', $datos['subproceso'] ?? null)
             ->where('nombre', $datos['nombre'])
             ->when($actividad, fn ($consulta) => $consulta->whereKeyNot($actividad->id_actividad))
             ->exists();
@@ -241,7 +239,6 @@ class ActividadController extends Controller
         return [
             'macroproceso' => ['nullable', 'string', 'max:255'],
             'proceso' => ['nullable', 'string', 'max:255'],
-            'subproceso' => ['nullable', 'string', 'max:255'],
             'nombre' => ['required', 'string', 'max:500'],
         ];
     }
@@ -259,7 +256,6 @@ class ActividadController extends Controller
             'id_bloque.exists' => 'El bloque no existe, está dado de baja o es de otra empresa.',
             'macroproceso.max' => 'El macroproceso no puede tener más de 255 caracteres.',
             'proceso.max' => 'El proceso no puede tener más de 255 caracteres.',
-            'subproceso.max' => 'El subproceso no puede tener más de 255 caracteres.',
             'nombre.required' => 'Escribe el nombre de la actividad.',
             'nombre.max' => 'El nombre no puede tener más de 500 caracteres.',
         ];

@@ -181,7 +181,7 @@ class CargaDesdeExcelTest extends TestCase
             ->assertSee('Falta la hoja Actividades.')
             ->assertDontSee('Confirmar y guardar');
 
-        $sinTipo = ['Macroproceso', 'Proceso', 'Subproceso', 'Actividad', 'Bloque'];
+        $sinTipo = ['Macroproceso', 'Proceso', 'Actividad', 'Bloque'];
         $this->revisar($this->archivo([], [], $sinTipo))
             ->assertSee('En la hoja Actividades faltan las columnas: Tipo.');
     }
@@ -195,7 +195,7 @@ class CargaDesdeExcelTest extends TestCase
 
     public function test_las_columnas_se_buscan_por_nombre_y_las_de_mas_se_ignoran(): void
     {
-        // Otro orden, encabezados en mayúsculas y columnas ID y Fecha que no se usan.
+        // Otro orden, encabezados en mayúsculas y columnas que no se usan: ID, Fecha y Subproceso (plantillas viejas).
         $encabezados = ['ID', 'TIPO', 'actividad', 'Bloque', 'Fecha inicio', 'Macroproceso', 'Proceso', 'Subproceso'];
 
         $this->revisar($this->archivo([[99, 'Onboarding', 'Inducción', 'Tesorería', '01/01/2027', '', '', '']], [], $encabezados))
@@ -215,10 +215,10 @@ class CargaDesdeExcelTest extends TestCase
         Grupo::create(['id_bloque' => $otro->id_bloque, 'nombre' => 'Grupo P']);
 
         $archivo = $this->archivo([
-            ['Finanzas', 'Tesorería', 'Bancos', 'Zeta conciliar', 'Tesorería', 'Transición'],
-            ['', '', '', 'Alfa inducción', 'Tesorería', 'Onboarding'],
+            ['Finanzas', 'Tesorería', 'Zeta conciliar', 'Tesorería', 'Transición'],
+            ['', '', 'Alfa inducción', 'Tesorería', 'Onboarding'],
             [],
-            ['', '', '', 'Onboarding de pagos', 'Pagos', 'Onboarding'],
+            ['', '', 'Onboarding de pagos', 'Pagos', 'Onboarding'],
         ]);
 
         // 2 grupos activos de Tesorería × (3 + 1) + 1 grupo de Pagos × 1 = 9.
@@ -239,7 +239,7 @@ class CargaDesdeExcelTest extends TestCase
         $primera = Actividad::where('nombre', 'Zeta conciliar')->sole();
         $this->assertSame(TipoActividad::Transicion, $primera->tipo);
         $this->assertSame($this->tesoreria->id_bloque, $primera->id_bloque);
-        $this->assertSame('Bancos', $primera->subproceso);
+        $this->assertSame('Tesorería', $primera->proceso);
         $this->assertTrue($primera->estado);
         $this->assertNull(Actividad::where('nombre', 'Alfa inducción')->sole()->macroproceso);
         $this->assertSame(9, Seguimiento::count());
@@ -253,10 +253,10 @@ class CargaDesdeExcelTest extends TestCase
         Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Viejo', 'estado' => false]);
 
         $this->revisar($this->archivo([
-            ['', '', '', 'Sin bloque', '', 'Onboarding'],
-            ['', '', '', 'Para todos', 'Todos', 'Onboarding'],
-            ['', '', '', 'Inexistente', 'Nómina', 'Onboarding'],
-            ['', '', '', 'De baja', 'Viejo', 'Transición'],
+            ['', '', 'Sin bloque', '', 'Onboarding'],
+            ['', '', 'Para todos', 'Todos', 'Onboarding'],
+            ['', '', 'Inexistente', 'Nómina', 'Onboarding'],
+            ['', '', 'De baja', 'Viejo', 'Transición'],
         ]))
             ->assertSee('Falta el bloque.')
             ->assertSee('Ya no se usa «Todos»: cada actividad lleva un bloque de la empresa.')
@@ -273,10 +273,10 @@ class CargaDesdeExcelTest extends TestCase
     public function test_valida_actividad_tipo_y_largos(): void
     {
         $this->revisar($this->archivo([
-            ['', '', '', '', 'Tesorería', 'Onboarding'],
-            ['', '', '', 'Algo', 'Tesorería', ''],
-            ['', '', '', 'Algo más', 'Tesorería', 'Capacitación'],
-            [str_repeat('m', 256), '', '', str_repeat('a', 501), 'Tesorería', 'Onboarding'],
+            ['', '', '', 'Tesorería', 'Onboarding'],
+            ['', '', 'Algo', 'Tesorería', ''],
+            ['', '', 'Algo más', 'Tesorería', 'Capacitación'],
+            [str_repeat('m', 256), '', str_repeat('a', 501), 'Tesorería', 'Onboarding'],
         ]))
             ->assertSee('Falta la actividad.')
             ->assertSee('Falta el tipo.')
@@ -288,7 +288,7 @@ class CargaDesdeExcelTest extends TestCase
     public function test_compara_sin_mayusculas_acentos_ni_espacios_de_mas(): void
     {
         $this->revisar($this->archivo([
-            ['  Finanzas ', 'Pagos   a  proveedores', '', 'Conciliar   cuentas ', '  TESORERIA ', 'transicion'],
+            ['  Finanzas ', 'Pagos   a  proveedores', 'Conciliar   cuentas ', '  TESORERIA ', 'transicion'],
         ]))->assertSee('Confirmar y guardar');
 
         $this->confirmar()->assertSessionHas('exito');
@@ -305,9 +305,9 @@ class CargaDesdeExcelTest extends TestCase
     public function test_las_filas_repetidas_son_error(): void
     {
         $this->revisar($this->archivo([
-            ['Finanzas', '', '', 'Conciliar', 'Tesorería', 'Onboarding'],
-            ['Otra', '', '', 'Conciliar', 'Tesorería', 'Onboarding'],
-            ['finanzas ', '', '', 'CONCILIAR', 'tesoreria', 'Onboarding'],
+            ['Finanzas', '', 'Conciliar', 'Tesorería', 'Onboarding'],
+            ['Otra', '', 'Conciliar', 'Tesorería', 'Onboarding'],
+            ['finanzas ', '', 'CONCILIAR', 'tesoreria', 'Onboarding'],
         ]))
             ->assertSee('Repite la fila 2.')
             ->assertDontSee('Repite la fila 3.')
@@ -327,7 +327,7 @@ class CargaDesdeExcelTest extends TestCase
         Actividad::create(['id_empresa' => $this->empresa->id_empresa, 'id_bloque' => $pagos->id_bloque, 'tipo' => TipoActividad::Onboarding, 'nombre' => 'Otro bloque']);
 
         $this->revisar($this->archivo([
-            ['', '', '', 'Nueva de onboarding', 'Tesorería', 'Onboarding'],
+            ['', '', 'Nueva de onboarding', 'Tesorería', 'Onboarding'],
         ]))
             ->assertSee('El bloque Tesorería ya tiene 1 actividad de tipo Onboarding (se cuentan también las dadas de baja y las creadas a mano).')
             ->assertSee('El bloque Tesorería ya tiene actividades de tipo Onboarding.')
@@ -335,7 +335,7 @@ class CargaDesdeExcelTest extends TestCase
 
         // El mismo bloque con el otro tipo sí se puede cargar.
         $this->revisar($this->archivo([
-            ['', '', '', 'Nueva de transición', 'Tesorería', 'Transición'],
+            ['', '', 'Nueva de transición', 'Tesorería', 'Transición'],
         ]))->assertSee('Confirmar y guardar');
     }
 
@@ -350,7 +350,7 @@ class CargaDesdeExcelTest extends TestCase
         });
 
         $this->revisar($this->archivo(
-            [['', '', '', 'Tarea', 'Tesorería', 'Onboarding']],
+            [['', '', 'Tarea', 'Tesorería', 'Onboarding']],
             [['Ana', 'Gómez', 'ana@empresa.com', '', 'Tesorería', 'Grupo 1', 'Analista']],
         ));
 
@@ -442,7 +442,7 @@ class CargaDesdeExcelTest extends TestCase
 
     public function test_cancelar_borra_el_archivo_y_la_vista_previa(): void
     {
-        $this->subir($this->archivo([['', '', '', 'Tarea', 'Tesorería', 'Onboarding']]));
+        $this->subir($this->archivo([['', '', 'Tarea', 'Tesorería', 'Onboarding']]));
         $this->assertCount(1, $this->archivosPendientes());
 
         $this->actingAs($this->admin)->post('/carga/cancelar')
@@ -459,10 +459,10 @@ class CargaDesdeExcelTest extends TestCase
 
     public function test_subir_otro_archivo_borra_el_anterior(): void
     {
-        $this->subir($this->archivo([['', '', '', 'Primera', 'Tesorería', 'Onboarding']]));
+        $this->subir($this->archivo([['', '', 'Primera', 'Tesorería', 'Onboarding']]));
         $primero = $this->archivosPendientes();
 
-        $this->subir($this->archivo([['', '', '', 'Segunda', 'Tesorería', 'Onboarding']]));
+        $this->subir($this->archivo([['', '', 'Segunda', 'Tesorería', 'Onboarding']]));
 
         $this->assertCount(1, $this->archivosPendientes());
         $this->assertNotSame($primero, $this->archivosPendientes());

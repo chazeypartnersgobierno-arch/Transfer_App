@@ -162,7 +162,6 @@ class CargaDesdeExcel
         foreach ($filas as ['fila' => $numero, 'valores' => $valores]) {
             $macroproceso = Texto::limpiar($valores['Macroproceso']);
             $proceso = Texto::limpiar($valores['Proceso']);
-            $subproceso = Texto::limpiar($valores['Subproceso']);
             $nombre = Texto::limpiar($valores['Actividad']);
             $textoBloque = Texto::limpiar($valores['Bloque']);
             $textoTipo = Texto::limpiar($valores['Tipo']);
@@ -170,7 +169,6 @@ class CargaDesdeExcel
             $errores = [
                 ...$this->revisarLargo('El macroproceso', $macroproceso, 255),
                 ...$this->revisarLargo('El proceso', $proceso, 255),
-                ...$this->revisarLargo('El subproceso', $subproceso, 255),
             ];
 
             if ($nombre === '') {
@@ -192,7 +190,7 @@ class CargaDesdeExcel
                 }
             }
 
-            $llave = implode('|', array_map(fn ($v) => Texto::llave($v), [$textoBloque, $textoTipo, $macroproceso, $proceso, $subproceso, $nombre]));
+            $llave = implode('|', array_map(fn ($v) => Texto::llave($v), [$textoBloque, $textoTipo, $macroproceso, $proceso, $nombre]));
 
             if (isset($vistas[$llave])) {
                 $errores[] = "Repite la fila {$vistas[$llave]}.";
@@ -204,7 +202,7 @@ class CargaDesdeExcel
                 'fila' => $numero,
                 'mostrar' => [
                     'Actividad' => $nombre,
-                    'Proceso' => collect([$macroproceso, $proceso, $subproceso])->filter()->implode(' › '),
+                    'Proceso' => collect([$macroproceso, $proceso])->filter()->implode(' › '),
                     'Bloque' => $textoBloque,
                     'Tipo' => $tipo?->value ?? $textoTipo,
                 ],
@@ -217,7 +215,6 @@ class CargaDesdeExcel
                     'tipo' => $tipo?->value,
                     'macroproceso' => $macroproceso === '' ? null : $macroproceso,
                     'proceso' => $proceso === '' ? null : $proceso,
-                    'subproceso' => $subproceso === '' ? null : $subproceso,
                     'nombre' => $nombre,
                 ],
             ];
