@@ -9,6 +9,7 @@ use App\Models\Fase;
 use App\Models\Grupo;
 use App\Models\Seguimiento;
 use App\Services\AvanceDeFases;
+use App\Services\GeneradorDeSeguimientos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -95,10 +96,39 @@ class SeguimientoController extends Controller
             ->pluck('id_seguimiento')
             ->flip();
 
+        // Con un bloque elegido, arriba de la tabla se muestra (y se cambia) su equipo.
+        $equipo = $idBloque !== null ? $this->equipoDelBloque(Bloque::findOrFail($idBloque)) : null;
+
         return view('seguimientos.index', compact(
             'seguimientos', 'buscar', 'verBajas', 'idEmpresa', 'idBloque', 'idGrupo', 'idFase', 'estado',
-            'empresas', 'bloques', 'grupos', 'fases', 'estados', 'bloqueados'
+            'empresas', 'bloques', 'grupos', 'fases', 'estados', 'bloqueados', 'equipo'
         ));
+    }
+
+    /**
+     * Datos de la tarjeta "Equipo del bloque": el bloque, sus valores actuales, cuántos
+     * seguimientos se actualizarán al guardar y en qué campos hay valores distintos.
+     * Se guarda con EquipoDeBloqueController.
+     */
+    private function equipoDelBloque(Bloque $bloque): array
+    {
+        $consulta = Seguimiento::delBloque($bloque->id_bloque);
+
+        // Si los seguimientos tienen valores distintos (por ejemplo, de antes de esta regla),
+        // se avisa: al guardar se igualan. distinct() cuenta también el vacío (NULL) como un valor.
+        $distintos = collect(Seguimiento::CAMPOS_DEL_BLOQUE)
+            ->filter(fn ($etiqueta, $campo) => (clone $consulta)->select($campo)->distinct()->get()->count() > 1)
+            ->values();
+
+        $total = (clone $consulta)->count();
+
+        return [
+            'bloque' => $bloque,
+            'valores' => app(GeneradorDeSeguimientos::class)->equipoDelBloque($bloque->id_bloque),
+            'total' => $total,
+            'distintos' => $distintos,
+            'editable' => $bloque->estado && $total > 0,
+        ];
     }
 
     /**

@@ -145,7 +145,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::put('/avances/{avance}', [AvanceValidacionController::class, 'actualizar'])->name('avances.actualizar');
 
         // Equipo del bloque: responsable, documentador y líderes, iguales en todo el bloque.
-        Route::get('/seguimientos/bloques/{bloque}/equipo', [EquipoDeBloqueController::class, 'editar'])->name('seguimientos.equipo');
+        // Se muestra en la lista de seguimientos al filtrar por bloque; aquí solo se guarda.
         Route::put('/seguimientos/bloques/{bloque}/equipo', [EquipoDeBloqueController::class, 'actualizar'])->name('seguimientos.equipo.actualizar');
     });
 

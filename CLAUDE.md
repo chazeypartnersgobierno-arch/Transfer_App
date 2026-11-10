@@ -100,7 +100,7 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 - `porcentaje_esperado`: solo 0, 25, 50, 75 o 100. `porcentaje_real`: de 0 a 100.
 - `fecha_fin` no puede ser menor que `fecha_inicio`.
 - `fecha_cierre` se llena sola al pasar a Completada y se vacía al reabrir; vuelve a llenarse al pasar otra vez a Completada.
-- En `seguimientos`, `responsable`, `experto`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son texto libre de hasta 255 caracteres. `responsable`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son el equipo del bloque: iguales en todos los seguimientos de un bloque. Se guardan en cada seguimiento, se capturan una vez por bloque (pantalla Equipo del bloque, que actualiza todos sus seguimientos, también los de baja) y los seguimientos nuevos los copian. `experto` es individual de cada seguimiento.
+- En `seguimientos`, `responsable`, `experto`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son texto libre de hasta 255 caracteres. `responsable`, `documentador`, `lider_transferencia` y `lider_transferencia_gbs` son el equipo del bloque: iguales en todos los seguimientos de un bloque. Se guardan en cada seguimiento, se capturan una vez por bloque (tarjeta Equipo del bloque, arriba de la lista de Seguimientos al filtrar por bloque; sus campos se abren con "Editar" y al guardar actualiza todos sus seguimientos, también los de baja) y los seguimientos nuevos los copian. `experto` es individual de cada seguimiento.
 - `documentacion` es texto libre de hasta 500 caracteres.
 - Un seguimiento de un grupo o una actividad dados de baja solo se consulta: no se edita.
 
@@ -119,7 +119,7 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión, y si ya estaba dentro sale en su siguiente clic (middleware `activo`, `App\Http\Middleware\UsuarioActivo`).
 - El correo del usuario se guarda en minúsculas y no se repite, aunque el otro esté de baja. La contraseña la pone el admin al crear (opcional al editar, mínimo 8 caracteres) y cada usuario la cambia en "Mi contraseña" escribiendo la actual.
 - Un admin no puede quitarse su propio rol ni darse de baja. Si un consultor pasa a admin, sus asignaciones se cierran; si un admin pasa a consultor, se le elige empresa en el mismo formulario.
-- Autor: `seguimientos.id_usuario` y `sesiones.id_usuario` guardan quien hizo la última captura o corrección (como en `avances_validacion`). La asistencia toma el autor de su sesión. Los seguimientos generados por la app quedan sin autor y la pantalla Equipo del bloque no cambia el autor.
+- Autor: `seguimientos.id_usuario` y `sesiones.id_usuario` guardan quien hizo la última captura o corrección (como en `avances_validacion`). La asistencia toma el autor de su sesión. Los seguimientos generados por la app quedan sin autor y guardar el Equipo del bloque no cambia el autor.
 
 ## Asignaciones de empresa
 

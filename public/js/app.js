@@ -152,6 +152,41 @@ document.querySelectorAll('[data-aviso-mayus]').forEach((aviso) => {
     campo.addEventListener('blur', () => { aviso.hidden = true; });
 });
 
+// Equipo del bloque (lista de seguimientos): los campos empiezan bloqueados y se abren con "Editar".
+// "Cancelar" regresa los valores guardados (data-original) y los vuelve a bloquear.
+// Sin JavaScript los campos quedan abiertos y se puede guardar igual.
+document.querySelectorAll('form[data-equipo-bloque]').forEach((formulario) => {
+    const campos = formulario.querySelector('fieldset');
+    const editar = formulario.querySelector('[data-equipo-editar]');
+    const cancelar = formulario.querySelector('[data-equipo-cancelar]');
+    const acciones = formulario.querySelector('[data-equipo-acciones]');
+
+    const abrir = (abierto) => {
+        campos.disabled = !abierto;
+        editar.hidden = abierto;
+        cancelar.hidden = !abierto;
+        acciones.hidden = !abierto;
+    };
+
+    editar.addEventListener('click', () => {
+        abrir(true);
+        campos.querySelector('input')?.focus();
+    });
+
+    cancelar.addEventListener('click', () => {
+        campos.querySelectorAll('input[data-original]').forEach((campo) => {
+            campo.value = campo.dataset.original;
+            campo.classList.remove('is-invalid');
+            campo.removeAttribute('aria-invalid');
+        });
+        formulario.querySelectorAll('.invalid-feedback').forEach((error) => error.remove());
+        abrir(false);
+    });
+
+    // Si el guardado falló por una validación, la tarjeta vuelve abierta para corregir.
+    abrir(formulario.hasAttribute('data-abierto'));
+});
+
 // Al enviar, desactiva el botón y muestra el progreso. Evita envíos dobles por un doble clic.
 document.querySelectorAll('form[data-enviando]').forEach((formulario) => {
     const boton = formulario.querySelector('button[type="submit"]');

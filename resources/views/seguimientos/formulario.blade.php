@@ -46,6 +46,8 @@
                 <dd>
                     {{ $seguimiento->grupo->bloque->nombre }} › {{ $seguimiento->grupo->nombre }}
                     <a href="{{ route('grupos.fases', $seguimiento->grupo) }}" class="ms-1">Ver fases del grupo</a>
+                    {{-- El equipo es uno por bloque: se ve y se cambia en la lista filtrada por el bloque. --}}
+                    · <a href="{{ route('seguimientos.index', ['id_bloque' => $seguimiento->grupo->id_bloque]) }}#equipo">Ver equipo del bloque</a>
                 </dd>
             </div>
             <div>
@@ -69,22 +71,6 @@
                 <dd>{{ $seguimiento->autor?->nombre ?? '—' }}</dd>
             </div>
         </dl>
-
-        {{-- Equipo del bloque: igual en todos sus seguimientos, por eso aquí solo se muestra. --}}
-        <div class="equipo-bloque mb-3">
-            <div class="equipo-bloque-encabezado">
-                <h2 class="tarjeta-titulo mb-0">Equipo del bloque {{ $seguimiento->grupo->bloque->nombre }}</h2>
-                <a href="{{ route('seguimientos.equipo', $seguimiento->grupo->bloque) }}" class="btn btn-sm btn-outline-primary">{{ $seguimiento->grupo->bloque->estado ? 'Cambiar equipo' : 'Ver equipo' }}</a>
-            </div>
-            <dl class="datos-fijos mb-0">
-                @foreach (\App\Models\Seguimiento::CAMPOS_DEL_BLOQUE as $campo => $etiqueta)
-                    <div>
-                        <dt>{{ $etiqueta }}</dt>
-                        <dd>{{ $seguimiento->{$campo} ?? '—' }}</dd>
-                    </div>
-                @endforeach
-            </dl>
-        </div>
 
         <form method="POST" action="{{ route('seguimientos.actualizar', $seguimiento) }}">
             @csrf

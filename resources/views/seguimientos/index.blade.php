@@ -8,12 +8,63 @@
             <h1 class="pagina-titulo">Seguimientos</h1>
             <p class="pagina-subtitulo">Cada actividad en cada grupo y fase.</p>
         </div>
-
-        {{-- El equipo (responsable, documentador y líderes) es uno por bloque: se cambia desde aquí. --}}
-        @if ($idBloque !== null)
-            <a href="{{ route('seguimientos.equipo', $idBloque) }}" class="btn btn-outline-primary">Equipo del bloque</a>
-        @endif
     </div>
+
+    {{--
+        Equipo del bloque (responsable, documentador y líderes): uno por bloque, por eso se
+        muestra una sola vez aquí, al filtrar por bloque. Los campos empiezan bloqueados y se
+        abren con "Editar" (public/js/app.js); sin JavaScript quedan abiertos y se puede guardar.
+    --}}
+    @if ($equipo !== null)
+        @php($conErrores = $errors->hasAny(array_keys(\App\Models\Seguimiento::CAMPOS_DEL_BLOQUE)))
+        <div class="tarjeta equipo-bloque mb-3" id="equipo">
+            @if (! $equipo['bloque']->estado)
+                <x-alerta tipo="advertencia">El bloque está dado de baja: su equipo solo se puede consultar.</x-alerta>
+            @elseif ($equipo['total'] === 0)
+                <x-alerta tipo="advertencia">Este bloque todavía no tiene seguimientos.</x-alerta>
+            @elseif ($equipo['distintos']->isNotEmpty())
+                <x-alerta tipo="advertencia">
+                    Hay valores distintos en: {{ $equipo['distintos']->implode(', ') }}. Al guardar, todos quedan iguales.
+                </x-alerta>
+            @endif
+
+            <form method="POST" action="{{ route('seguimientos.equipo.actualizar', $equipo['bloque']) }}"
+                @if ($equipo['editable']) data-equipo-bloque @if ($conErrores) data-abierto @endif @endif>
+                @csrf
+                @method('PUT')
+
+                <div class="equipo-bloque-encabezado">
+                    <h2 class="tarjeta-titulo mb-0">Equipo del bloque {{ $equipo['bloque']->nombre }}</h2>
+                    @if ($equipo['editable'])
+                        {{-- Empieza oculto: el JavaScript lo muestra. --}}
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-equipo-editar hidden>Editar</button>
+                    @endif
+                </div>
+
+                <fieldset @disabled(! $equipo['editable'])>
+                    <div class="row">
+                        @foreach (\App\Models\Seguimiento::CAMPOS_DEL_BLOQUE as $campo => $etiqueta)
+                            <div class="col-sm-6 col-xl-3">
+                                {{-- data-original: el valor guardado, para que "Cancelar" lo regrese. --}}
+                                <x-campo :name="$campo" :label="$etiqueta" :value="old($campo, $equipo['valores'][$campo])" maxlength="255"
+                                    data-original="{{ $equipo['valores'][$campo] }}" />
+                            </div>
+                        @endforeach
+                    </div>
+                </fieldset>
+
+                @if ($equipo['editable'])
+                    <div class="equipo-bloque-acciones" data-equipo-acciones>
+                        <span class="texto-secundario small">
+                            Se {{ $equipo['total'] === 1 ? 'actualizará 1 seguimiento' : "actualizarán {$equipo['total']} seguimientos" }}.
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-equipo-cancelar hidden>Cancelar</button>
+                        <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                    </div>
+                @endif
+            </form>
+        </div>
+    @endif
 
     <div class="tarjeta">
         <form method="GET" action="{{ route('seguimientos.index') }}" class="herramientas">

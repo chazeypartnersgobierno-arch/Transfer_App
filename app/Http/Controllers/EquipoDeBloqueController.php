@@ -4,38 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Bloque;
 use App\Models\Seguimiento;
-use App\Services\GeneradorDeSeguimientos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 /**
  * Equipo del bloque: responsable, documentador, líder de transferencia y líder de
  * transferencia GBS. Son los mismos para todos los seguimientos de un bloque, así que
- * se capturan aquí una vez y se copian a todos sus seguimientos.
+ * se capturan una vez y se copian a todos sus seguimientos.
+ * Se muestra en la lista de seguimientos al filtrar por bloque (SeguimientoController::index).
  * Admin y consultor (Gate dar-seguimiento); cada uno solo ve los bloques de su empresa.
  */
 class EquipoDeBloqueController extends Controller
 {
-    public function editar(Bloque $bloque, GeneradorDeSeguimientos $generador): View
-    {
-        $consulta = Seguimiento::delBloque($bloque->id_bloque);
-
-        // Si los seguimientos tienen valores distintos (por ejemplo, de antes de esta regla),
-        // se avisa: al guardar se igualan.
-        $distintos = collect(Seguimiento::CAMPOS_DEL_BLOQUE)
-            // distinct() cuenta también el vacío (NULL) como un valor.
-            ->filter(fn ($etiqueta, $campo) => (clone $consulta)->select($campo)->distinct()->get()->count() > 1)
-            ->values();
-
-        return view('seguimientos.equipo', [
-            'bloque' => $bloque->load('empresa'),
-            'equipo' => $generador->equipoDelBloque($bloque->id_bloque),
-            'totalSeguimientos' => (clone $consulta)->count(),
-            'distintos' => $distintos,
-        ]);
-    }
-
     public function actualizar(Request $request, Bloque $bloque): RedirectResponse
     {
         if (! $bloque->estado) {
@@ -55,8 +35,8 @@ class EquipoDeBloqueController extends Controller
         // actividades de baja: así, si se reactivan, ya tienen el equipo correcto.
         Seguimiento::delBloque($bloque->id_bloque)->update($datos);
 
-        return redirect()->route('seguimientos.equipo', $bloque)
-            ->with('exito', "Se guardó el equipo del bloque {$bloque->nombre}. "
-                .($total === 1 ? 'Se actualizó 1 seguimiento.' : "Se actualizaron {$total} seguimientos."));
+        // De vuelta a la lista, con los filtros con los que se estaba trabajando.
+        return back()->with('exito', "Se guardó el equipo del bloque {$bloque->nombre}. "
+            .($total === 1 ? 'Se actualizó 1 seguimiento.' : "Se actualizaron {$total} seguimientos."));
     }
 }

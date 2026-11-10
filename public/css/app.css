@@ -637,12 +637,9 @@ body {
     white-space: nowrap;
 }
 
-/* Equipo del bloque dentro del formulario de un seguimiento */
+/* Equipo del bloque: tarjeta arriba de la lista de seguimientos */
 .equipo-bloque {
-    padding: 1rem;
-    border: 1px solid var(--app-borde);
-    border-radius: .5rem;
-    background: var(--app-fondo);
+    padding: 1rem 1.25rem .25rem;
 }
 
 .equipo-bloque-encabezado {
@@ -652,6 +649,19 @@ body {
     justify-content: space-between;
     gap: .5rem;
     margin-bottom: .75rem;
+}
+
+.equipo-bloque-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-bottom: .75rem;
+}
+
+.equipo-bloque-acciones .texto-secundario {
+    margin-right: auto;
 }
 
 /* Sesiones y asistencia */

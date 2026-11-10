@@ -87,15 +87,22 @@ class EquipoDeBloqueTest extends TestCase
         return '/seguimientos/bloques/'.($bloque ?? $this->bloque)->id_bloque.'/equipo';
     }
 
-    public function test_el_formulario_individual_muestra_el_equipo_pero_no_lo_cambia(): void
+    /** La lista de seguimientos filtrada por el bloque: ahí está la tarjeta del equipo. */
+    private function lista(?Bloque $bloque = null): string
+    {
+        return '/seguimientos?id_bloque='.($bloque ?? $this->bloque)->id_bloque;
+    }
+
+    public function test_el_formulario_individual_no_repite_el_equipo_ni_lo_cambia(): void
     {
         $seguimiento = $this->seguimiento($this->actividad('Uno'), null, 1, self::EQUIPO);
         $admin = $this->usuario();
 
+        // Solo un enlace a la lista filtrada por su bloque, donde está el equipo.
         $this->actingAs($admin)->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")
-            ->assertSee('Equipo del bloque Tesorería')
-            ->assertSee('Sofía')
-            ->assertSee(route('seguimientos.equipo', $this->bloque), false)
+            ->assertDontSee('Equipo del bloque Tesorería')
+            ->assertDontSee('Sofía')
+            ->assertSee(route('seguimientos.index', ['id_bloque' => $this->bloque->id_bloque]).'#equipo', false)
             ->assertDontSee('name="responsable"', false)
             ->assertDontSee('name="lider_transferencia_gbs"', false)
             ->assertSee('name="experto"', false);
@@ -128,13 +135,15 @@ class EquipoDeBloqueTest extends TestCase
         $deOtroBloque = $this->seguimiento($this->actividad('De pagos', $pagos), $grupoPagos, 1, ['responsable' => 'No cambia']);
         $consultor = $this->usuario(RolApp::Consultor, $this->empresa);
 
-        $this->actingAs($consultor)->get($this->url())
+        $this->actingAs($consultor)->get($this->lista())
             ->assertOk()
             ->assertSee('Equipo del bloque Tesorería')
+            ->assertSee('data-equipo-bloque', false)
             ->assertSee('Se actualizarán 4 seguimientos.');
 
-        $this->actingAs($consultor)->put($this->url(), self::EQUIPO)
-            ->assertRedirect(route('seguimientos.equipo', $this->bloque))
+        // Al guardar vuelve a la lista con sus filtros.
+        $this->actingAs($consultor)->from($this->lista())->put($this->url(), self::EQUIPO)
+            ->assertRedirect($this->lista())
             ->assertSessionHas('exito', 'Se guardó el equipo del bloque Tesorería. Se actualizaron 4 seguimientos.');
 
         foreach ($propios as $seguimiento) {
@@ -159,12 +168,13 @@ class EquipoDeBloqueTest extends TestCase
         $bloqueAjeno = Bloque::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Ajeno']);
         $consultor = $this->usuario(RolApp::Consultor, $this->empresa);
 
-        $this->get($this->url())->assertRedirect(route('login'));
+        $this->put($this->url(), self::EQUIPO)->assertRedirect(route('login'));
 
         $this->actingAs($consultor)->put($this->url(), ['lider_transferencia' => str_repeat('a', 256)])
             ->assertSessionHasErrors(['lider_transferencia' => 'Este campo no puede tener más de 255 caracteres.']);
 
-        $this->actingAs($consultor)->get($this->url($bloqueAjeno))->assertNotFound();
+        // Un bloque ajeno en el filtro se ignora: no aparece su equipo.
+        $this->actingAs($consultor)->get($this->lista($bloqueAjeno))->assertOk()->assertDontSee('Equipo del bloque Ajeno');
         $this->actingAs($consultor)->put($this->url($bloqueAjeno), self::EQUIPO)->assertNotFound();
     }
 
@@ -173,8 +183,9 @@ class EquipoDeBloqueTest extends TestCase
         $vacio = Bloque::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Vacío']);
         $admin = $this->usuario();
 
-        $this->actingAs($admin)->get($this->url($vacio))
-            ->assertSee('todavía no tiene seguimientos')
+        $this->actingAs($admin)->get($this->lista($vacio))
+            ->assertSee('Este bloque todavía no tiene seguimientos')
+            ->assertDontSee('data-equipo-bloque', false)
             ->assertDontSee('>Guardar<', false);
         $this->actingAs($admin)->from('/seguimientos')->put($this->url($vacio), self::EQUIPO)
             ->assertSessionHas('error', 'El bloque Vacío todavía no tiene seguimientos.');
@@ -182,9 +193,10 @@ class EquipoDeBloqueTest extends TestCase
         $seguimiento = $this->seguimiento($this->actividad('Uno'), null, 1, ['responsable' => 'Original']);
         $this->bloque->update(['estado' => false]);
 
-        $this->actingAs($admin)->get($this->url())
+        $this->actingAs($admin)->get($this->lista())
             ->assertSee('El bloque está dado de baja')
             ->assertSee('value="Original"', false)
+            ->assertDontSee('data-equipo-bloque', false)
             ->assertDontSee('>Guardar<', false);
         $this->actingAs($admin)->from('/seguimientos')->put($this->url(), self::EQUIPO)
             ->assertSessionHas('error', 'El bloque Tesorería está dado de baja: su equipo no se puede cambiar.');
@@ -197,7 +209,7 @@ class EquipoDeBloqueTest extends TestCase
         $this->seguimiento($this->actividad('Dos'), null, 1, ['responsable' => 'Luis', 'documentador' => 'Eva']);
 
         // Muestra el más reciente.
-        $this->actingAs($this->usuario())->get($this->url())
+        $this->actingAs($this->usuario())->get($this->lista())
             ->assertSee('Hay valores distintos en: Responsable.')
             ->assertSee('value="Luis"', false);
     }
@@ -235,13 +247,25 @@ class EquipoDeBloqueTest extends TestCase
         $this->assertNull(Grupo::where('nombre', 'G pagos')->sole()->seguimientos()->sole()->responsable);
     }
 
-    public function test_la_lista_ofrece_el_equipo_al_filtrar_por_bloque(): void
+    public function test_la_lista_muestra_el_equipo_solo_al_filtrar_por_bloque(): void
     {
-        $this->seguimiento($this->actividad('Uno'));
+        $this->seguimiento($this->actividad('Uno'), null, 1, self::EQUIPO);
         $admin = $this->usuario();
 
-        $this->actingAs($admin)->get('/seguimientos')->assertDontSee(route('seguimientos.equipo', $this->bloque), false);
-        $this->actingAs($admin)->get("/seguimientos?id_bloque={$this->bloque->id_bloque}")
-            ->assertSee(route('seguimientos.equipo', $this->bloque), false);
+        $this->actingAs($admin)->get('/seguimientos')->assertDontSee('Equipo del bloque');
+        $this->actingAs($admin)->get($this->lista())
+            ->assertSee('Equipo del bloque Tesorería')
+            ->assertSee('value="Sofía"', false)
+            ->assertSee('data-original="Sofía"', false)
+            ->assertSee(route('seguimientos.equipo.actualizar', $this->bloque), false)
+            ->assertDontSee('data-abierto', false);
+
+        // Si el guardado falla, la tarjeta vuelve abierta con lo que se escribió.
+        $this->actingAs($admin)->from($this->lista())
+            ->put($this->url(), [...self::EQUIPO, 'responsable' => str_repeat('a', 256)])
+            ->assertRedirect($this->lista());
+        $this->actingAs($admin)->get($this->lista())
+            ->assertSee('data-abierto', false)
+            ->assertSee('Este campo no puede tener más de 255 caracteres.');
     }
 }
