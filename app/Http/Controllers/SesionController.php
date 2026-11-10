@@ -99,7 +99,11 @@ class SesionController extends Controller
                     'id_seguimiento' => $elegido->id_seguimiento,
                     'id_usuario' => $request->user()->id_usuario,
                 ]);
-                $this->guardarAsistencia($sesion, $elegido->grupo->participantes, $request->input("asistencia.{$elegido->id_seguimiento}", []));
+                $this->guardarAsistencia(
+                    $sesion,
+                    $this->participantesDeLaAsistencia($elegido->id_grupo, $datos['fecha'], []),
+                    $request->input("asistencia.{$elegido->id_seguimiento}", []),
+                );
             }
         });
 
@@ -116,7 +120,8 @@ class SesionController extends Controller
     {
         $seguimiento = $sesion->seguimiento->load(['actividad', 'grupo.bloque.empresa', 'fase']);
         $asistencias = $sesion->asistencias()->get()->keyBy('id_participante');
-        $seguimiento->grupo->setRelation('participantes', $this->participantesDeLaSesion($sesion, $asistencias->keys()->all()));
+        // La pantalla oculta a quien todavía no había ingresado en la fecha de la sesión.
+        $seguimiento->grupo->setRelation('participantes', $this->participantesDelFormulario($seguimiento->id_grupo, $asistencias->keys()->all()));
 
         return view('sesiones.formulario', [
             'sesion' => $sesion,
@@ -160,7 +165,11 @@ class SesionController extends Controller
                 ->with('repetidas', [$seguimiento->grupo->nombre]);
         }
 
-        $participantes = $this->participantesDeLaSesion($sesion, $sesion->asistencias()->pluck('id_participante')->all());
+        $participantes = $this->participantesDeLaAsistencia(
+            $seguimiento->id_grupo,
+            $datos['fecha'],
+            $sesion->asistencias()->pluck('id_participante')->all(),
+        );
 
         DB::transaction(function () use ($sesion, $datos, $participantes, $request, $seguimiento) {
             // id_usuario queda con quien hizo la última corrección.
@@ -235,15 +244,36 @@ class SesionController extends Controller
     }
 
     /**
-     * Participantes de la asistencia de una sesión: los activos de su grupo (también quien
-     * entró después) y quien ya tiene registro aunque esté de baja, para no perderlo de vista.
+     * Quién se guarda en la asistencia de una sesión con esa fecha:
+     * - los activos de su grupo que ya habían ingresado (sin fecha de ingreso, o con una
+     *   igual o anterior a la de la sesión), y
+     * - quien ya tiene registro en ella, aunque hoy esté de baja o en otro grupo,
+     *   para no perder la asistencia pasada.
      *
      * @param  list<int>  $conRegistro
      */
-    private function participantesDeLaSesion(Sesion $sesion, array $conRegistro): Collection
+    private function participantesDeLaAsistencia(int $idGrupo, string $fecha, array $conRegistro): Collection
     {
-        return Participante::where('id_grupo', $sesion->seguimiento->id_grupo)
-            ->where(fn ($q) => $q->where('estado', true)->orWhereIn('id_participante', $conRegistro))
+        return Participante::where(fn ($q) => $q->where('id_grupo', $idGrupo)
+            ->where('estado', true)
+            ->where(fn ($f) => $f->whereNull('fecha_ingreso')->orWhereDate('fecha_ingreso', '<=', $fecha)))
+            ->orWhereIn('id_participante', $conRegistro)
+            ->orderBy('apellidos')
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    /**
+     * Quién aparece en el formulario de una sesión: los activos de su grupo con cualquier
+     * fecha de ingreso (la pantalla oculta a quien aún no había ingresado, porque la fecha
+     * puede cambiar al editar) y quien ya tiene registro en ella.
+     *
+     * @param  list<int>  $conRegistro
+     */
+    private function participantesDelFormulario(int $idGrupo, array $conRegistro): Collection
+    {
+        return Participante::where(fn ($q) => $q->where('id_grupo', $idGrupo)->where('estado', true))
+            ->orWhereIn('id_participante', $conRegistro)
             ->orderBy('apellidos')
             ->orderBy('nombre')
             ->get();

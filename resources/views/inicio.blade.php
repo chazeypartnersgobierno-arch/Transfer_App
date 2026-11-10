@@ -21,6 +21,7 @@
         ['fases.index', 'fase', 'Fases'],
         ['bloques.index', 'bloque', 'Bloques'],
         ['grupos.index', 'grupo', 'Grupos'],
+        ['participantes.index', 'participante', 'Participantes'],
         ['aplicativos.index', 'aplicativo', 'Aplicativos'],
         ['actividades.index', 'actividad', 'Actividades'],
     ];

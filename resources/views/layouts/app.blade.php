@@ -57,6 +57,7 @@
                     <li><x-menu-enlace ruta="fases.index" activo-en="fases.*" icono="fase">Fases</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="bloques.index" activo-en="bloques.*" icono="bloque">Bloques</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="grupos.index" activo-en="grupos.*" icono="grupo">Grupos</x-menu-enlace></li>
+                    <li><x-menu-enlace ruta="participantes.index" activo-en="participantes.*" icono="participante">Participantes</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="aplicativos.index" activo-en="aplicativos.*" icono="aplicativo">Aplicativos</x-menu-enlace></li>
                     <li><x-menu-enlace ruta="actividades.index" activo-en="actividades.*" icono="actividad">Actividades</x-menu-enlace></li>
                 </ul>

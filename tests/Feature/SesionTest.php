@@ -87,7 +87,7 @@ class SesionTest extends TestCase
         ]);
     }
 
-    private function participante(Grupo $grupo, string $nombre, bool $estado = true): Participante
+    private function participante(Grupo $grupo, string $nombre, bool $estado = true, ?string $ingreso = null): Participante
     {
         return Participante::create([
             'id_grupo' => $grupo->id_grupo,
@@ -95,6 +95,7 @@ class SesionTest extends TestCase
             'apellidos' => 'Prueba',
             'correo' => strtolower($nombre).'@empresa.com',
             'rol' => 'Analista',
+            'fecha_ingreso' => $ingreso,
             'estado' => $estado,
         ]);
     }
@@ -398,6 +399,75 @@ class SesionTest extends TestCase
 
         $this->assertSame('Conciliación bancaria', $sesion->fresh()->tema);
         $this->assertSame(1, Sesion::count());
+    }
+
+    // ===== Fecha de ingreso y cambio de grupo =====
+
+    public function test_la_asistencia_solo_lleva_a_quien_ya_habia_ingresado(): void
+    {
+        $antes = $this->participante($this->grupo1, 'Antes', true, '2027-02-15');
+        $mismoDia = $this->participante($this->grupo1, 'Mismodia', true, '2027-03-10');
+        $sinFecha = $this->participante($this->grupo1, 'Sinfecha');
+        $despues = $this->participante($this->grupo1, 'Despues', true, '2027-03-20');
+
+        // La pantalla marca la fecha de ingreso para que se oculte según la fecha elegida.
+        $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento1->id_seguimiento}/sesiones/crear")
+            ->assertSee('data-ingreso="2027-03-20"', false)
+            ->assertSee('data-fecha-sesion', false);
+
+        // Aunque llegue en el formulario, quien ingresa después de la sesión no se guarda.
+        $this->crearSesion(['asistencia' => [$this->seguimiento1->id_seguimiento => [
+            $despues->id_participante => ['asistio' => '1'],
+        ]]])->assertSessionHas('exito');
+
+        $registrados = Asistencia::pluck('id_participante')->sort()->values()->all();
+        $this->assertSame([$antes->id_participante, $mismoDia->id_participante, $sinFecha->id_participante], $registrados);
+
+        // Al editar, quien aún no había ingresado aparece oculto y sin poder marcarse.
+        $sesion = Sesion::sole();
+        $html = $this->actingAs($this->admin)->get("/sesiones/{$sesion->id_sesion}/editar")->getContent();
+        $this->assertMatchesRegularExpression('/data-ingreso="2027-03-20"\s+hidden/', $html);
+        $this->assertMatchesRegularExpression('/asistencia\['.$this->seguimiento1->id_seguimiento.'\]\['.$despues->id_participante.'\]\[asistio\]"[^>]*disabled/', $html);
+
+        // Si la sesión pasa a una fecha posterior a su ingreso, ya se le registra.
+        $this->actingAs($this->admin)->put("/sesiones/{$sesion->id_sesion}", [
+            ...$this->datos(['fecha' => '2027-03-25']),
+            'asistencia' => [$this->seguimiento1->id_seguimiento => [$despues->id_participante => ['asistio' => '1']]],
+        ])->assertSessionHas('exito');
+
+        $this->assertTrue(Asistencia::where('id_participante', $despues->id_participante)->sole()->asistio);
+        $this->assertSame(4, Asistencia::count());
+    }
+
+    public function test_quien_cambia_de_grupo_conserva_su_asistencia_pasada(): void
+    {
+        $ana = $this->participante($this->grupo1, 'Ana');
+        $this->crearSesion(['asistencia' => [$this->seguimiento1->id_seguimiento => [$ana->id_participante => ['asistio' => '1']]]]);
+        $sesion = Sesion::sole();
+
+        $ana->update(['id_grupo' => $this->grupo2->id_grupo]);
+
+        // En la sesión vieja sigue apareciendo, con su registro y la nota de que cambió de grupo.
+        $this->actingAs($this->admin)->get("/sesiones/{$sesion->id_sesion}/editar")
+            ->assertSee('Ana Prueba')
+            ->assertSee('(ahora en otro grupo)');
+
+        // Al corregir la sesión, su registro se actualiza en lugar de perderse.
+        $this->actingAs($this->admin)->put("/sesiones/{$sesion->id_sesion}", [
+            ...$this->datos(),
+            'asistencia' => [$this->seguimiento1->id_seguimiento => [$ana->id_participante => ['comentarios' => 'Llegó tarde']]],
+        ])->assertSessionHas('exito');
+
+        $registro = Asistencia::sole();
+        $this->assertSame($ana->id_participante, $registro->id_participante);
+        $this->assertFalse($registro->asistio);
+        $this->assertSame('Llegó tarde', $registro->comentarios);
+
+        // En las sesiones nuevas aparece en su grupo nuevo, no en el anterior.
+        $this->crearSesion(['fecha' => '2027-03-12', 'seguimientos' => [$this->seguimiento1->id_seguimiento, $this->seguimiento2->id_seguimiento]]);
+        $nuevas = Sesion::whereDate('fecha', '2027-03-12')->get()->keyBy('id_seguimiento');
+        $this->assertSame(0, $nuevas[$this->seguimiento1->id_seguimiento]->asistencias()->count());
+        $this->assertSame(1, $nuevas[$this->seguimiento2->id_seguimiento]->asistencias()->count());
     }
 
     // ===== Fechas del seguimiento =====

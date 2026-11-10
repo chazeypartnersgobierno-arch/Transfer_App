@@ -58,7 +58,7 @@
                     <div class="col-sm-6">
                         {{-- min y max: el calendario solo deja elegir fechas del seguimiento. El servidor también lo valida. --}}
                         <x-campo name="fecha" label="Fecha" type="date" :value="old('fecha', $sesion->fecha?->format('Y-m-d'))" required
-                            :min="$seguimiento->fecha_inicio?->format('Y-m-d')" :max="$seguimiento->fecha_fin?->format('Y-m-d')" />
+                            :min="$seguimiento->fecha_inicio?->format('Y-m-d')" :max="$seguimiento->fecha_fin?->format('Y-m-d')" data-fecha-sesion />
                     </div>
                     <div class="col-sm-6">
                         <x-lista name="modalidad" label="Modalidad" :opciones="\App\Enums\Modalidad::opciones()" :value="old('modalidad', $sesion->modalidad?->value)" vacia="Elige una modalidad" required />
@@ -113,7 +113,11 @@
             @endif
 
             @foreach ($opciones as $opcion)
-                @include('sesiones.asistencia', ['opcion' => $opcion, 'asistencias' => $asistencias])
+                @include('sesiones.asistencia', [
+                    'opcion' => $opcion,
+                    'asistencias' => $asistencias,
+                    'fechaSesion' => old('fecha', $sesion->fecha?->format('Y-m-d')),
+                ])
             @endforeach
         </fieldset>
 

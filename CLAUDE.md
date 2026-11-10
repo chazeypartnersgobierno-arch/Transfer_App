@@ -76,6 +76,14 @@ En la app se capturan con lista desplegable (nunca texto libre) y Laravel valida
 
 `participantes.rol` es la excepción: por ahora es texto libre, obligatorio y de hasta 50 caracteres.
 
+### Participantes
+
+- Los administran el admin y el consultor (alta, edición, baja y reactivar; Gate `administrar-participantes`), porque el consultor es quien sabe quién entra o sale del grupo. Cada usuario solo ve los de su empresa (grupo → bloque → empresa).
+- Nombre, apellidos y rol se guardan sin espacios de más, igual que en la carga; el correo, en minúsculas y único en todas las empresas, aunque el otro esté de baja.
+- `fecha_ingreso` es opcional y puede ser futura, igual que en la carga.
+- Puede cambiar de grupo, solo a otro de su misma empresa. Puede quedarse en su grupo aunque ese grupo esté de baja, pero no se reactiva a un participante cuyo grupo está de baja.
+- No son usuarios de la app y no tienen relación con `usuarios`.
+
 ### Otras reglas
 
 - Todas las FK con ON DELETE RESTRICT.
@@ -93,9 +101,9 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 | Código | Etiqueta | Permisos |
 |---|---|---|
 | admin | Administrador | Todo: usuarios, catálogos (empresas, fases, bloques, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
-| consultor | Consultor | Seguimientos, sesiones, asistencia y avances de validación (crear, editar, consultar); catálogos solo lectura |
+| consultor | Consultor | Seguimientos, sesiones, asistencia, avances de validación y participantes (crear, editar, consultar; participantes también baja y reactivar); los demás catálogos solo lectura |
 
-- Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla) y `dar-seguimiento` (admin y consultor), no solo ocultando botones.
+- Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla), `dar-seguimiento` y `administrar-participantes` (admin y consultor), no solo ocultando botones.
 - El administrador siempre es de Chazey y ve todas las empresas (`Usuario::esChazey()`). No existen admins de empresa.
 - El consultor solo ve los datos de las empresas de su asignación activa (`Usuario::idsEmpresasVisibles()`); sin asignación activa no ve datos. Esto también se valida en el servidor.
 - Los usuarios no se borran: se desactivan con `estado = 0`. Un usuario desactivado no puede iniciar sesión, y si ya estaba dentro sale en su siguiente clic (middleware `activo`, `App\Http\Middleware\UsuarioActivo`).
@@ -130,7 +138,8 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 - Una sesión se captura una vez y se eligen uno o varios grupos (seguimientos de la misma actividad y fase, en trabajo): la app crea una sesión por grupo con su propia asistencia, en una transacción. Después, cada sesión se edita por separado.
 - La fecha de una sesión debe estar entre la `fecha_inicio` y la `fecha_fin` de su seguimiento (ambas incluidas). Sin las dos fechas no se registran sesiones; con varios grupos, la fecha debe caber en las fechas de cada uno. Un seguimiento con sesiones no puede quitar sus fechas ni cambiarlas dejando sesiones fuera.
 - Las sesiones no se borran: se corrigen editándolas. Si ya hay una sesión con la misma fecha en ese seguimiento, se avisa y se pide confirmación antes de guardar.
-- La asistencia guarda un registro por participante activo del grupo (asistió sí o no; la casilla empieza sin marcar). Al editar aparecen también quienes entraron después y quienes ya tenían registro aunque estén de baja.
+- La asistencia guarda un registro por participante activo del grupo que ya había ingresado en la fecha de la sesión (`fecha_ingreso` vacía, o igual o anterior a la fecha de la sesión); asistió sí o no, la casilla empieza sin marcar. La pantalla oculta a quien todavía no había ingresado y lo vuelve a revisar si cambia la fecha; el servidor lo valida al guardar.
+- Al editar una sesión aparecen también quienes entraron después al grupo (si ya habían ingresado en esa fecha) y quienes ya tienen registro en ella, aunque hoy estén de baja o en otro grupo: su asistencia pasada no se pierde.
 - El % actual de una actividad de Validación es su captura más reciente (la de fecha de corte mayor).
 - Los avances de validación se capturan un grupo (un seguimiento) a la vez. La fecha de corte debe estar entre la `fecha_inicio` y la `fecha_fin` del seguimiento (ambas incluidas) y no puede ser futura; sin las dos fechas no se registran avances. Un seguimiento con avances no puede quitar sus fechas ni cambiarlas dejando avances fuera.
 - No hay dos avances con la misma fecha de corte en un seguimiento: si ya existe, se avisa y se corrige editando el existente. Los avances no se borran: se corrigen editándolos, e `id_usuario` queda con quien hizo la última captura o corrección.

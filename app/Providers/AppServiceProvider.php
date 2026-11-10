@@ -46,6 +46,14 @@ class AppServiceProvider extends ServiceProvider
             true
         ));
 
+        // Alta, edición, baja y reactivación de participantes: admin y consultor,
+        // porque el consultor es quien sabe quién entra o sale del grupo.
+        Gate::define('administrar-participantes', fn (Usuario $usuario) => in_array(
+            $usuario->rol_app,
+            [RolApp::Admin, RolApp::Consultor],
+            true
+        ));
+
         // Vista propia para los enlaces de paginación, con Bootstrap y en español.
         Paginator::defaultView('paginacion');
 

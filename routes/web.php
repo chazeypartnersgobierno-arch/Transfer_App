@@ -13,6 +13,7 @@ use App\Http\Controllers\FasesDelGrupoController;
 use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MiContrasenaController;
+use App\Http\Controllers\ParticipanteController;
 use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\SesionController;
 use App\Http\Controllers\UsuarioController;
@@ -50,6 +51,17 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::get('/grupos', [GrupoController::class, 'index'])->name('grupos.index');
     Route::get('/aplicativos', [AplicativoController::class, 'index'])->name('aplicativos.index');
     Route::get('/actividades', [ActividadController::class, 'index'])->name('actividades.index');
+    Route::get('/participantes', [ParticipanteController::class, 'index'])->name('participantes.index');
+
+    // Participantes: admin y consultor (el consultor sabe quién entra o sale del grupo).
+    Route::middleware('can:administrar-participantes')->group(function () {
+        Route::get('/participantes/crear', [ParticipanteController::class, 'crear'])->name('participantes.crear');
+        Route::post('/participantes', [ParticipanteController::class, 'guardar'])->name('participantes.guardar');
+        Route::get('/participantes/{participante}/editar', [ParticipanteController::class, 'editar'])->name('participantes.editar');
+        Route::put('/participantes/{participante}', [ParticipanteController::class, 'actualizar'])->name('participantes.actualizar');
+        Route::patch('/participantes/{participante}/baja', [ParticipanteController::class, 'darDeBaja'])->name('participantes.baja');
+        Route::patch('/participantes/{participante}/reactivar', [ParticipanteController::class, 'reactivar'])->name('participantes.reactivar');
+    });
 
     // Cambios en catálogos por empresa: solo admin. Quien no cumple el Gate recibe error 403.
     Route::middleware('can:administrar')->group(function () {

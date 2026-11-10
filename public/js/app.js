@@ -46,6 +46,34 @@ document.querySelectorAll('[data-asistencia]').forEach((seccion) => {
     });
 });
 
+// Asistencia: solo aparece quien ya había ingresado en la fecha de la sesión.
+// Es solo una ayuda: el servidor guarda la asistencia solo de ellos.
+document.querySelectorAll('input[data-fecha-sesion]').forEach((campoFecha) => {
+    const filtrar = () => {
+        const fecha = campoFecha.value; // formato aaaa-mm-dd: se puede comparar como texto
+
+        document.querySelectorAll('[data-asistencia]').forEach((seccion) => {
+            const filas = seccion.querySelectorAll('tr[data-participante]');
+            let visibles = 0;
+
+            filas.forEach((fila) => {
+                const fuera = Boolean(fecha && fila.dataset.ingreso && fila.dataset.ingreso > fecha);
+                fila.hidden = fuera;
+                fila.querySelectorAll('input').forEach((campo) => { campo.disabled = fuera; });
+                visibles += fuera ? 0 : 1;
+            });
+
+            const aviso = seccion.querySelector('[data-nadie-ingresado]');
+            if (aviso) {
+                aviso.hidden = filas.length === 0 || visibles > 0;
+            }
+        });
+    };
+
+    campoFecha.addEventListener('change', filtrar);
+    filtrar();
+});
+
 // Nueva sesión: solo se ve la asistencia de los grupos elegidos.
 // Es solo una ayuda: el servidor ignora la asistencia de los grupos no elegidos.
 document.querySelectorAll('[data-elegir-grupo]').forEach((casilla) => {
