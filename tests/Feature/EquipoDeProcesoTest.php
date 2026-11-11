@@ -98,11 +98,11 @@ class EquipoDeProcesoTest extends TestCase
         $seguimiento = $this->seguimiento($this->actividad('Uno'), null, 1, self::EQUIPO);
         $admin = $this->usuario();
 
-        // Solo un enlace a la lista filtrada por su proceso, donde está el equipo.
+        // El equipo no aparece aquí: se ve y se cambia en la lista filtrada por el proceso.
         $this->actingAs($admin)->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")
             ->assertDontSee('Equipo del proceso Tesorería')
             ->assertDontSee('Sofía')
-            ->assertSee(route('seguimientos.index', ['id_proceso' => $this->proceso->id_proceso]).'#equipo', false)
+            ->assertDontSee('#equipo', false)
             ->assertDontSee('name="responsable"', false)
             ->assertDontSee('name="lider_transferencia_gbs"', false)
             ->assertSee('name="experto"', false);

@@ -46,8 +46,6 @@
                 <dd>
                     {{ $seguimiento->grupo->proceso->nombre }} › {{ $seguimiento->grupo->nombre }}
                     <a href="{{ route('grupos.fases', $seguimiento->grupo) }}" class="ms-1">Ver fases del grupo</a>
-                    {{-- El equipo es uno por proceso: se ve y se cambia en la lista filtrada por el proceso. --}}
-                    · <a href="{{ route('seguimientos.index', ['id_proceso' => $seguimiento->grupo->id_proceso]) }}#equipo">Ver equipo del proceso</a>
                 </dd>
             </div>
             <div>
