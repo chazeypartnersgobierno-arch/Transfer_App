@@ -210,7 +210,7 @@ class SesionTest extends TestCase
         $this->actingAs($this->admin)->get("/seguimientos/{$this->seguimiento1->id_seguimiento}/editar")
             ->assertSee('Conciliación bancaria')
             ->assertSee('1 de 2');
-        $this->actingAs($this->admin)->get('/seguimientos')->assertSee('data-etiqueta="Sesiones">1<', false);
+        $this->actingAs($this->admin)->get('/seguimientos?id_fase='.$this->seguimiento1->id_fase)->assertSee('data-etiqueta="Sesiones">1<', false);
     }
 
     public function test_una_captura_crea_una_sesion_por_grupo_elegido(): void

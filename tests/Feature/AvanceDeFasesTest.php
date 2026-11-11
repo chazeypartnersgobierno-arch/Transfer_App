@@ -242,10 +242,15 @@ class AvanceDeFasesTest extends TestCase
     {
         $this->completar($this->grupo1, 1);
 
-        $respuesta = $this->actingAs($this->admin)->get('/seguimientos?id_grupo='.$this->grupo1->id_grupo)->assertOk();
-        // Onboarding y Transferencia: Editar. Validación y Estabilización: bloqueadas.
-        $this->assertSame(2, substr_count($respuesta->getContent(), 'Fase bloqueada: falta concluir la fase anterior'));
-        $respuesta->assertSee('>Editar</a>', false)->assertSee('>Consultar</a>', false);
+        $lista = fn (int $orden) => $this->actingAs($this->admin)
+            ->get('/seguimientos?id_grupo='.$this->grupo1->id_grupo.'&id_fase='.$this->fase($orden)->id_fase)
+            ->assertOk();
+
+        // Transferencia ya se habilitó: Editar. Validación y Estabilización siguen bloqueadas: Consultar.
+        $lista(2)->assertDontSee('Fase bloqueada para este grupo')->assertSee('>Editar</a>', false);
+        foreach ([3, 4] as $orden) {
+            $lista($orden)->assertSee('Fase bloqueada para este grupo')->assertSee('>Consultar</a>', false)->assertDontSee('>Editar</a>', false);
+        }
     }
 
     public function test_no_se_registran_sesiones_en_una_fase_bloqueada(): void

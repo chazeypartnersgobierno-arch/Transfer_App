@@ -26,13 +26,16 @@ class SeguimientoController extends Controller
     /** Valor del filtro de estado para ver los retrasados (no es un estado guardado). */
     public const RETRASADO = 'Retrasado';
 
+    /**
+     * Cada fase es su propia pantalla: /seguimientos?id_fase=N (el menú lateral tiene una opción
+     * por fase). Sin fase, o con una que no existe, se muestra la primera (orden 1).
+     */
     public function index(Request $request): View
     {
         $usuario = $request->user();
         $buscar = is_string($request->query('buscar')) ? $request->query('buscar') : '';
         $verBajas = $request->boolean('ver_bajas');
         $idEmpresa = $this->numeroDeLaUrl($request, 'id_empresa');
-        $idFase = $this->numeroDeLaUrl($request, 'id_fase');
         $estado = is_string($request->query('estado')) ? $request->query('estado') : '';
         $estado = $estado === self::RETRASADO || EstadoActividad::tryFrom($estado) ? $estado : '';
 
@@ -63,8 +66,7 @@ class SeguimientoController extends Controller
         $idGrupo = $this->numeroDeLaUrl($request, 'id_grupo');
         $idGrupo = $idGrupo !== null && $grupos->has($idGrupo) ? $idGrupo : null;
 
-        $fases = Fase::orderBy('orden')->pluck('nombre', 'id_fase');
-        $idFase = $idFase !== null && $fases->has($idFase) ? $idFase : null;
+        $fase = Fase::elegidaOPrimera($this->numeroDeLaUrl($request, 'id_fase'));
 
         $seguimientos = Seguimiento::visiblePara($usuario)
             ->with(['actividad', 'grupo.proceso.empresa', 'fase']) // todo de una vez, sin una consulta por fila
@@ -75,13 +77,13 @@ class SeguimientoController extends Controller
             ->when($idEmpresa !== null, fn ($consulta) => $consulta->whereHas('actividad', fn ($q) => $q->where('id_empresa', $idEmpresa)))
             ->when($idProceso !== null, fn ($consulta) => $consulta->whereHas('grupo', fn ($q) => $q->where('id_proceso', $idProceso)))
             ->when($idGrupo !== null, fn ($consulta) => $consulta->where('id_grupo', $idGrupo))
-            ->when($idFase !== null, fn ($consulta) => $consulta->where('id_fase', $idFase))
+            // Solo la fase de esta pantalla. Si no hay fases en la base, no hay seguimientos que mostrar.
+            ->where('id_fase', $fase?->id_fase)
             ->when($estado === self::RETRASADO, fn ($consulta) => $consulta->retrasados())
             ->when($estado !== '' && $estado !== self::RETRASADO, fn ($consulta) => $consulta->conEstado(EstadoActividad::from($estado)))
             // addcslashes: para que % y _ se busquen como texto normal.
             ->when($buscar !== '', fn ($consulta) => $consulta->whereHas('actividad', fn ($q) => $q->where('nombre', 'like', '%'.addcslashes($buscar, '%_\\').'%')))
-            // Por fase (según su orden), luego en el orden en que se cargaron las actividades, luego por grupo.
-            ->orderBy(Fase::select('orden')->whereColumn('fases.id_fase', 'seguimientos.id_fase'))
+            // En el orden en que se cargaron las actividades, luego por grupo.
             ->orderBy('id_actividad')
             ->orderBy('id_grupo')
             ->paginate(20)
@@ -96,39 +98,18 @@ class SeguimientoController extends Controller
             ->pluck('id_seguimiento')
             ->flip();
 
-        // Con un proceso elegido, arriba de la tabla se muestra (y se cambia) su equipo.
-        $equipo = $idProceso !== null ? $this->equipoDelProceso(Proceso::findOrFail($idProceso)) : null;
+        // Con un proceso elegido, arriba de la tabla se muestra su equipo (solo lectura; se cambia
+        // en la pantalla Equipos de proceso, EquipoDeProcesoController).
+        $equipo = $idProceso !== null ? [
+            'proceso' => $proceso = Proceso::findOrFail($idProceso),
+            'valores' => app(GeneradorDeSeguimientos::class)->equipoDelProceso($idProceso),
+            'editable' => $proceso->estado && Seguimiento::delProceso($idProceso)->exists(),
+        ] : null;
 
         return view('seguimientos.index', compact(
-            'seguimientos', 'buscar', 'verBajas', 'idEmpresa', 'idProceso', 'idGrupo', 'idFase', 'estado',
-            'empresas', 'procesos', 'grupos', 'fases', 'estados', 'bloqueados', 'equipo'
+            'seguimientos', 'buscar', 'verBajas', 'idEmpresa', 'idProceso', 'idGrupo', 'fase', 'estado',
+            'empresas', 'procesos', 'grupos', 'estados', 'bloqueados', 'equipo'
         ));
-    }
-
-    /**
-     * Datos de la tarjeta "Equipo del proceso": el proceso, sus valores actuales, cuántos
-     * seguimientos se actualizarán al guardar y en qué campos hay valores distintos.
-     * Se guarda con EquipoDeProcesoController.
-     */
-    private function equipoDelProceso(Proceso $proceso): array
-    {
-        $consulta = Seguimiento::delProceso($proceso->id_proceso);
-
-        // Si los seguimientos tienen valores distintos (por ejemplo, de antes de esta regla),
-        // se avisa: al guardar se igualan. distinct() cuenta también el vacío (NULL) como un valor.
-        $distintos = collect(Seguimiento::CAMPOS_DEL_PROCESO)
-            ->filter(fn ($etiqueta, $campo) => (clone $consulta)->select($campo)->distinct()->get()->count() > 1)
-            ->values();
-
-        $total = (clone $consulta)->count();
-
-        return [
-            'proceso' => $proceso,
-            'valores' => app(GeneradorDeSeguimientos::class)->equipoDelProceso($proceso->id_proceso),
-            'total' => $total,
-            'distintos' => $distintos,
-            'editable' => $proceso->estado && $total > 0,
-        ];
     }
 
     /**
@@ -201,7 +182,7 @@ class SeguimientoController extends Controller
         // id_usuario queda con quien hizo la última captura o corrección.
         $seguimiento->update([...$datos, 'id_usuario' => $request->user()->id_usuario]);
 
-        $respuesta = redirect()->to($this->urlDeRegreso($request))
+        $respuesta = redirect()->to($this->urlDeRegreso($request, $seguimiento))
             ->with('exito', "Se guardó el seguimiento de {$seguimiento->actividad->nombre} ({$seguimiento->grupo->nombre}, {$seguimiento->fase->nombre}).");
 
         // Se permite reabrir una fase completa, pero se avisa: las fases siguientes vuelven a bloquearse.
@@ -256,15 +237,16 @@ class SeguimientoController extends Controller
     /**
      * Vuelve a la lista con los mismos filtros con los que se abrió el formulario.
      * Solo se acepta una dirección de la lista de seguimientos, nunca otra página u otro sitio.
+     * Si no hay una válida, vuelve a la pantalla de la fase del seguimiento.
      */
-    private function urlDeRegreso(Request $request): string
+    private function urlDeRegreso(Request $request, Seguimiento $seguimiento): string
     {
         $lista = route('seguimientos.index');
         $volverA = $request->input('volver_a');
 
         return is_string($volverA) && ($volverA === $lista || str_starts_with($volverA, $lista.'?'))
             ? $volverA
-            : $lista;
+            : route('seguimientos.index', ['id_fase' => $seguimiento->id_fase]);
     }
 
     /**

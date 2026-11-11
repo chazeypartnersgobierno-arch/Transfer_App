@@ -145,8 +145,10 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::put('/avances/{avance}', [AvanceValidacionController::class, 'actualizar'])->name('avances.actualizar');
 
         // Equipo del proceso: responsable, documentador y líderes, iguales en todo el proceso.
-        // Se muestra en la lista de seguimientos al filtrar por proceso; aquí solo se guarda.
-        Route::put('/seguimientos/procesos/{proceso}/equipo', [EquipoDeProcesoController::class, 'actualizar'])->name('seguimientos.equipo.actualizar');
+        // Pantalla propia (menú Seguimientos › Equipos de proceso).
+        Route::get('/equipos-de-proceso', [EquipoDeProcesoController::class, 'index'])->name('equipos.index');
+        Route::get('/equipos-de-proceso/{proceso}/editar', [EquipoDeProcesoController::class, 'editar'])->name('equipos.editar');
+        Route::put('/equipos-de-proceso/{proceso}', [EquipoDeProcesoController::class, 'actualizar'])->name('equipos.actualizar');
     });
 
     // Cambios en empresas: quien no cumple el Gate recibe error 403.

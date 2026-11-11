@@ -9,10 +9,13 @@
     $enTrabajo = $seguimiento->estaEnTrabajo();
     $editable = $enTrabajo && $bloqueo === null;
     $titulo = $editable ? 'Editar seguimiento' : 'Consultar seguimiento';
-    // A dónde volver: la lista con los filtros con los que se abrió esta pantalla.
+    // A dónde volver: la lista con los filtros con los que se abrió esta pantalla;
+    // si se llegó de otra página, la pantalla de la fase de este seguimiento.
     $lista = route('seguimientos.index');
     $anterior = url()->previous();
-    $volverA = old('volver_a', $anterior === $lista || str_starts_with($anterior, $lista.'?') ? $anterior : $lista);
+    $volverA = old('volver_a', $anterior === $lista || str_starts_with($anterior, $lista.'?')
+        ? $anterior
+        : route('seguimientos.index', ['id_fase' => $seguimiento->id_fase]));
 @endphp
 
 @section('titulo', $titulo)

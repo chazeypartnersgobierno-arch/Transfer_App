@@ -99,7 +99,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
     {
         $lista = route('seguimientos.index', ['id_proceso' => $this->proceso->id_proceso]);
         $this->actingAs($this->consultor)->from($lista)
-            ->put(route('seguimientos.equipo.actualizar', $this->proceso), $this->equipo())
+            ->put(route('equipos.actualizar', $this->proceso), [...$this->equipo(), 'volver_a' => $lista])
             ->assertRedirect($lista)
             ->assertSessionHas('exito', fn ($m) => str_contains($m, '18 seguimientos'));
 
@@ -368,7 +368,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
         $this->assertSame(30, $avance->refresh()->porcentaje_real, 'Lo capturado queda intacto.');
 
         // El equipo del proceso sí se edita aunque haya fases bloqueadas.
-        $this->put(route('seguimientos.equipo.actualizar', $this->proceso), $this->equipo())->assertSessionHas('exito');
+        $this->put(route('equipos.actualizar', $this->proceso), $this->equipo())->assertSessionHas('exito');
 
         // Al completar otra vez, fecha_cierre se vuelve a llenar y todo se desbloquea.
         $this->travelTo('2027-04-16 09:00:00');
@@ -394,7 +394,7 @@ class FlujoSeleccionYContratacionTest extends TestCase
         $this->put(route('seguimientos.actualizar', $seguimiento), ['estado_actividad' => 'Completada'])->assertNotFound();
         $this->get(route('sesiones.editar', $sesion))->assertNotFound();
         $this->get(route('grupos.fases', $this->grupo1))->assertNotFound();
-        $this->put(route('seguimientos.equipo.actualizar', $this->proceso), $this->equipo())->assertNotFound();
+        $this->put(route('equipos.actualizar', $this->proceso), $this->equipo())->assertNotFound();
         $this->get(route('participantes.editar', $this->participantes['ana']))->assertNotFound();
 
         // El consultor no administra catálogos.

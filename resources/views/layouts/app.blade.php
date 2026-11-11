@@ -47,7 +47,49 @@
                 @can('dar-seguimiento')
                     <p class="menu-titulo">Seguimiento</p>
                     <ul class="menu-lista">
-                        <li><x-menu-enlace ruta="seguimientos.index" activo-en="seguimientos.*" icono="seguimiento">Seguimientos</x-menu-enlace></li>
+                        {{--
+                            Seguimientos: una pantalla por fase (las da App\View\Composers\MenuDeSeguimientos).
+                            <details> abre y cierra el submenú sin JavaScript; aparece abierto mientras se
+                            trabaja en una fase. Si ya se está en la lista, al cambiar de fase se conservan los filtros.
+                        --}}
+                        @if ($menuFases->isNotEmpty())
+                            <li>
+                                @php($enEquipos = request()->routeIs('equipos.*'))
+                                @php($abierto = $menuFaseActual !== null || $enEquipos)
+                                <details class="menu-grupo" @if ($abierto) open @endif>
+                                    <summary @class(['menu-enlace', 'menu-enlace-padre' => $abierto])>
+                                        <x-icono nombre="seguimiento" />
+                                        Seguimientos
+                                        <span class="menu-flecha"><x-icono nombre="flecha" :tamano="16" /></span>
+                                    </summary>
+                                    <ul class="menu-sublista">
+                                        @foreach ($menuFases as $menuFase)
+                                            @php($activa = $menuFase->id_fase === $menuFaseActual)
+                                            <li>
+                                                <a href="{{ route('seguimientos.index', [...$menuFiltros, 'id_fase' => $menuFase->id_fase]) }}"
+                                                    @class(['menu-enlace', 'menu-subenlace', 'activo' => $activa])
+                                                    @if ($activa) aria-current="page" @endif>
+                                                    <span class="menu-numero" aria-hidden="true">{{ $menuFase->orden }}</span>
+                                                    {{ $menuFase->nombre }}
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                        {{-- El equipo es del proceso, no de una fase: va aparte, con icono y sin número. --}}
+                                        <li class="menu-separador" role="separator"></li>
+                                        <li>
+                                            <a href="{{ route('equipos.index') }}"
+                                                @class(['menu-enlace', 'menu-subenlace', 'activo' => $enEquipos])
+                                                @if ($enEquipos) aria-current="page" @endif>
+                                                <x-icono nombre="grupo" :tamano="18" />
+                                                Equipos de proceso
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </details>
+                            </li>
+                        @else
+                            <li><x-menu-enlace ruta="seguimientos.index" activo-en="seguimientos.*" icono="seguimiento">Seguimientos</x-menu-enlace></li>
+                        @endif
                         @can('administrar-accesos')
                             <li><x-menu-enlace ruta="accesos.index" activo-en="accesos.*" icono="acceso">Accesos</x-menu-enlace></li>
                         @endcan

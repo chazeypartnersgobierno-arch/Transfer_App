@@ -21,6 +21,15 @@ class Fase extends Model
 
     protected $fillable = ['nombre', 'orden', 'tiene_sesiones'];
 
+    /**
+     * La fase con ese id; si no existe (o no se pidió ninguna), la primera según su orden.
+     * La usa la lista de seguimientos, donde cada fase es su propia pantalla.
+     */
+    public static function elegidaOPrimera(?int $idFase): ?self
+    {
+        return ($idFase !== null ? static::find($idFase) : null) ?? static::orderBy('orden')->first();
+    }
+
     protected function casts(): array
     {
         return [

@@ -14,6 +14,7 @@ use App\Models\Seguimiento;
 use App\Models\Usuario;
 use Database\Seeders\FaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -101,7 +102,8 @@ class SeguimientoPantallaTest extends TestCase
         $this->actingAs($consultor)->get('/seguimientos')->assertOk()->assertSee('Conciliar');
         $this->actingAs($consultor)->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")->assertOk()->assertSee('Guardar');
         $this->actingAs($consultor)->put("/seguimientos/{$seguimiento->id_seguimiento}", $this->datos(['experto' => 'Ana']))
-            ->assertRedirect(route('seguimientos.index'))
+            // Sin una lista de origen, regresa a la pantalla de su fase.
+            ->assertRedirect(route('seguimientos.index', ['id_fase' => $seguimiento->id_fase]))
             ->assertSessionHas('exito');
 
         $this->assertSame('Ana', $seguimiento->fresh()->experto);
@@ -137,7 +139,7 @@ class SeguimientoPantallaTest extends TestCase
 
     // ===== Lista =====
 
-    public function test_lista_por_fase_y_en_el_orden_de_carga(): void
+    public function test_cada_fase_es_su_propia_pantalla(): void
     {
         $transicion = $this->actividad('Zeta transición', null, TipoActividad::Transicion);
         $onboarding = $this->actividad('Alfa onboarding');
@@ -145,12 +147,40 @@ class SeguimientoPantallaTest extends TestCase
         $this->seguimiento($transicion, null, 2);
         $this->seguimiento($onboarding, null, 1);
         Fase::where('orden', 2)->update(['nombre' => 'Fase dos']);
-        Fase::where('orden', 3)->update(['nombre' => 'Fase tres']);
+        $admin = $this->usuario();
+        $fase2 = Fase::where('orden', 2)->sole();
+
+        // Solo los de esa fase, con su nombre en el título y sin el filtro de fase.
+        $this->actingAs($admin)->get("/seguimientos?id_fase={$fase2->id_fase}")
+            ->assertOk()
+            ->assertSee('<h1 class="pagina-titulo">Seguimientos de Fase dos</h1>', false)
+            ->assertSee('Zeta transición')
+            ->assertDontSee('Alfa onboarding')
+            ->assertSee('1 seguimiento')
+            ->assertSee('<input type="hidden" name="id_fase" value="'.$fase2->id_fase.'">', false)
+            ->assertDontSee('name="id_fase" class="form-select', false)
+            ->assertSee('<th scope="col">Sesiones</th>', false);
+
+        // Sin fase, o con una que no existe, se abre la primera.
+        foreach (['/seguimientos', '/seguimientos?id_fase=999'] as $url) {
+            $this->actingAs($admin)->get($url)
+                ->assertSee('Seguimientos de Onboarding')
+                ->assertSee('Alfa onboarding')
+                ->assertDontSee('Zeta transición');
+        }
+    }
+
+    public function test_dentro_de_una_fase_se_ordena_como_se_cargaron_las_actividades(): void
+    {
+        $zeta = $this->actividad('Zeta');
+        $alfa = $this->actividad('Alfa');
+        $grupo2 = Grupo::create(['id_proceso' => $this->proceso->id_proceso, 'nombre' => 'Grupo 2']);
+        $this->seguimiento($alfa, $grupo2);
+        $this->seguimiento($alfa);
+        $this->seguimiento($zeta);
 
         $this->actingAs($this->usuario())->get('/seguimientos')
-            ->assertOk()
-            ->assertSeeInOrder(['Alfa onboarding', 'Zeta transición', 'Fase dos', 'Zeta transición', 'Fase tres'])
-            ->assertSee('3 seguimientos');
+            ->assertSeeInOrder(['Zeta', 'Alfa', 'Grupo 1', 'Alfa', 'Grupo 2']);
     }
 
     public function test_por_defecto_oculta_los_de_grupos_o_actividades_de_baja(): void
@@ -173,7 +203,7 @@ class SeguimientoPantallaTest extends TestCase
             ->assertSee('Consultar');
     }
 
-    public function test_filtros_por_proceso_grupo_fase_y_busqueda(): void
+    public function test_filtros_por_proceso_grupo_y_busqueda(): void
     {
         $otroProceso = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
         $grupoPagos = Grupo::create(['id_proceso' => $otroProceso->id_proceso, 'nombre' => 'Grupo P']);
@@ -188,11 +218,11 @@ class SeguimientoPantallaTest extends TestCase
         $this->actingAs($admin)->get("/seguimientos?id_proceso={$otroProceso->id_proceso}")
             ->assertSee('De pagos')->assertDontSee('De tesorería');
 
-        $this->actingAs($admin)->get("/seguimientos?id_grupo={$grupo2->id_grupo}")
+        // Los filtros trabajan dentro de la fase de la pantalla.
+        $this->actingAs($admin)->get("/seguimientos?id_grupo={$grupo2->id_grupo}&id_fase={$fase3->id_fase}")
             ->assertSee('1 seguimiento')->assertSee('De tesorería');
-
-        $this->actingAs($admin)->get("/seguimientos?id_fase={$fase3->id_fase}")
-            ->assertSee('1 seguimiento')->assertSee($fase3->nombre);
+        $this->actingAs($admin)->get("/seguimientos?id_grupo={$grupo2->id_grupo}")
+            ->assertSee('0 seguimientos');
 
         $this->actingAs($admin)->get('/seguimientos?buscar=pagos')
             ->assertSee('De pagos')->assertDontSee('De tesorería');
@@ -202,7 +232,7 @@ class SeguimientoPantallaTest extends TestCase
             ->assertSee('Grupo P')->assertDontSee('>Grupo 2<', false);
 
         // Un valor que no corresponde se ignora en vez de dejar la lista vacía.
-        $this->actingAs($admin)->get('/seguimientos?id_fase=999&estado=Inventado')->assertSee('3 seguimientos');
+        $this->actingAs($admin)->get('/seguimientos?estado=Inventado')->assertSee('De pagos')->assertSee('1 seguimiento');
     }
 
     public function test_filtro_por_estado_incluye_pendientes_sin_valor(): void
@@ -296,7 +326,7 @@ class SeguimientoPantallaTest extends TestCase
 
         foreach (['https://otro-sitio.com', route('empresas.index'), route('seguimientos.index').'-falsa'] as $destino) {
             $this->actingAs($this->usuario())->put("/seguimientos/{$seguimiento->id_seguimiento}", $this->datos(['volver_a' => $destino]))
-                ->assertRedirect(route('seguimientos.index'));
+                ->assertRedirect(route('seguimientos.index', ['id_fase' => $seguimiento->id_fase]));
         }
     }
 
@@ -417,5 +447,77 @@ class SeguimientoPantallaTest extends TestCase
                 ->assertSee(route('seguimientos.index'), false)
                 ->assertSee('Seguimientos');
         }
+    }
+
+    // ===== Submenú de Seguimientos: una pantalla por fase =====
+
+    /** URL de la lista de una fase, tal como la escribe el menú (con & escapado en el HTML). */
+    private function enlaceDeFase(int $orden, array $filtros = []): string
+    {
+        return e(route('seguimientos.index', [...$filtros, 'id_fase' => Fase::where('orden', $orden)->sole()->id_fase]));
+    }
+
+    /** Revisa si el submenú está abierto y qué fase resalta (null: ninguna). */
+    private function assertSubmenu(TestResponse $respuesta, bool $abierto, ?int $ordenResaltado): void
+    {
+        $html = $respuesta->getContent();
+
+        $this->assertSame($abierto, (bool) preg_match('/<details class="menu-grupo"\s+open\s*>/', $html));
+        $this->assertSame($ordenResaltado === null ? 0 : 1, substr_count($html, 'menu-subenlace activo'));
+
+        if ($ordenResaltado !== null) {
+            $this->assertMatchesRegularExpression(
+                '/href="'.preg_quote($this->enlaceDeFase($ordenResaltado), '/').'"\s+class="menu-enlace menu-subenlace activo"/',
+                $html
+            );
+        }
+    }
+
+    public function test_el_submenu_trae_las_cuatro_fases_en_orden(): void
+    {
+        Fase::where('orden', 3)->update(['nombre' => 'Validación renombrada']);
+        $fases = Fase::orderBy('orden')->pluck('nombre')->all();
+
+        foreach ([$this->usuario(), $this->usuario(RolApp::Consultor, $this->empresa)] as $usuario) {
+            $respuesta = $this->actingAs($usuario)->get('/')
+                ->assertOk()
+                ->assertSeeInOrder($fases)
+                ->assertSee($this->enlaceDeFase(1), false)
+                ->assertSee($this->enlaceDeFase(4), false);
+
+            // Fuera de Seguimientos aparece cerrado y sin fase resaltada.
+            $this->assertSubmenu($respuesta, false, null);
+        }
+    }
+
+    public function test_el_submenu_resalta_la_fase_que_se_ve(): void
+    {
+        $admin = $this->usuario();
+
+        $this->assertSubmenu($this->actingAs($admin)->get('/seguimientos?id_fase='.Fase::where('orden', 2)->sole()->id_fase), true, 2);
+
+        // Sin fase en la URL se ve la primera, y es la que se resalta.
+        $this->assertSubmenu($this->actingAs($admin)->get('/seguimientos'), true, 1);
+    }
+
+    public function test_al_capturar_un_seguimiento_el_submenu_resalta_su_fase(): void
+    {
+        $seguimiento = $this->seguimiento($this->actividad('De transferencia', null, TipoActividad::Transicion), null, 2);
+
+        $respuesta = $this->actingAs($this->usuario())->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")
+            // Si no se llegó desde la lista, Volver lleva a la pantalla de su fase.
+            ->assertSee('name="volver_a" value="'.$this->enlaceDeFase(2).'"', false);
+
+        $this->assertSubmenu($respuesta, true, 2);
+    }
+
+    public function test_al_cambiar_de_fase_se_conservan_los_filtros(): void
+    {
+        $filtros = ['id_proceso' => $this->proceso->id_proceso, 'id_grupo' => $this->grupo->id_grupo, 'estado' => 'Pendiente'];
+
+        // La página no se conserva: la otra fase tiene otro número de filas.
+        $this->actingAs($this->usuario())
+            ->get(route('seguimientos.index', [...$filtros, 'id_fase' => Fase::where('orden', 1)->sole()->id_fase, 'page' => 2]))
+            ->assertSee('href="'.$this->enlaceDeFase(3, $filtros).'"', false);
     }
 }

@@ -18,6 +18,7 @@ use Tests\TestCase;
 /**
  * Equipo del proceso: responsable, documentador, líder de transferencia y líder de
  * transferencia GBS son iguales en todos los seguimientos de un proceso.
+ * Tiene su propia pantalla (menú Seguimientos › Equipos de proceso).
  */
 class EquipoDeProcesoTest extends TestCase
 {
@@ -82,12 +83,18 @@ class EquipoDeProcesoTest extends TestCase
         return $seguimiento->fresh()->only(array_keys(self::EQUIPO));
     }
 
+    /** Donde se guarda el equipo (PUT). */
     private function url(?Proceso $proceso = null): string
     {
-        return '/seguimientos/procesos/'.($proceso ?? $this->proceso)->id_proceso.'/equipo';
+        return '/equipos-de-proceso/'.($proceso ?? $this->proceso)->id_proceso;
     }
 
-    /** La lista de seguimientos filtrada por el proceso: ahí está la tarjeta del equipo. */
+    private function editar(?Proceso $proceso = null): string
+    {
+        return $this->url($proceso).'/editar';
+    }
+
+    /** La lista de seguimientos filtrada por el proceso: ahí se ve el resumen del equipo. */
     private function lista(?Proceso $proceso = null): string
     {
         return '/seguimientos?id_proceso='.($proceso ?? $this->proceso)->id_proceso;
@@ -98,11 +105,9 @@ class EquipoDeProcesoTest extends TestCase
         $seguimiento = $this->seguimiento($this->actividad('Uno'), null, 1, self::EQUIPO);
         $admin = $this->usuario();
 
-        // El equipo no aparece aquí: se ve y se cambia en la lista filtrada por el proceso.
+        // El equipo no aparece aquí: se cambia en Equipos de proceso.
         $this->actingAs($admin)->get("/seguimientos/{$seguimiento->id_seguimiento}/editar")
-            ->assertDontSee('Equipo del proceso Tesorería')
             ->assertDontSee('Sofía')
-            ->assertDontSee('#equipo', false)
             ->assertDontSee('name="responsable"', false)
             ->assertDontSee('name="lider_transferencia_gbs"', false)
             ->assertSee('name="experto"', false);
@@ -120,6 +125,45 @@ class EquipoDeProcesoTest extends TestCase
         $this->assertSame('Experto propio', $seguimiento->fresh()->experto);
     }
 
+    public function test_la_pantalla_muestra_el_equipo_de_cada_proceso(): void
+    {
+        $this->seguimiento($this->actividad('Uno'), null, 1, [...self::EQUIPO, 'documentador' => null]);
+        $pagos = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Pagos']);
+        Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Retirado', 'estado' => false]);
+        $ajena = Empresa::create(['nombre' => 'Ajena', 'sigla' => 'AJE']);
+        Proceso::create(['id_empresa' => $ajena->id_empresa, 'nombre' => 'Proceso ajeno']);
+        $consultor = $this->usuario(RolApp::Consultor, $this->empresa);
+
+        $this->get('/equipos-de-proceso')->assertRedirect(route('login'));
+
+        $this->actingAs($consultor)->get('/equipos-de-proceso')
+            ->assertOk()
+            ->assertSeeInOrder(['Pagos', 'Todavía no tiene seguimientos', 'Tesorería', 'Ana', 'Sin definir', 'Mario', 'Sofía'])
+            ->assertSee(route('equipos.editar', $this->proceso), false)
+            ->assertSee(route('equipos.editar', $pagos), false)
+            ->assertDontSee('Retirado')
+            ->assertDontSee('Proceso ajeno')
+            ->assertSee('2 procesos');
+
+        $this->actingAs($consultor)->get('/equipos-de-proceso?ver_bajas=1')->assertSee('Retirado')->assertSee('Proceso de baja');
+
+        // Chazey ve todas las empresas y puede filtrar.
+        $this->actingAs($this->usuario())->get('/equipos-de-proceso?id_empresa='.$ajena->id_empresa)
+            ->assertSee('Proceso ajeno')->assertDontSee('Tesorería');
+    }
+
+    public function test_el_menu_de_seguimientos_trae_equipos_de_proceso(): void
+    {
+        $admin = $this->usuario();
+
+        $this->actingAs($admin)->get('/')->assertSee(route('equipos.index'), false)->assertSee('Equipos de proceso');
+
+        // En su pantalla, el submenú queda abierto y la opción resaltada.
+        $html = $this->actingAs($admin)->get('/equipos-de-proceso')->getContent();
+        $this->assertMatchesRegularExpression('/<details class="menu-grupo"\s+open\s*>/', $html);
+        $this->assertMatchesRegularExpression('/href="'.preg_quote(route('equipos.index'), '/').'"\s+class="menu-enlace menu-subenlace activo"/', $html);
+    }
+
     public function test_se_guarda_en_todos_los_seguimientos_del_proceso(): void
     {
         $transicion = $this->actividad('Transición', null, TipoActividad::Transicion);
@@ -135,15 +179,15 @@ class EquipoDeProcesoTest extends TestCase
         $deOtroProceso = $this->seguimiento($this->actividad('De pagos', $pagos), $grupoPagos, 1, ['responsable' => 'No cambia']);
         $consultor = $this->usuario(RolApp::Consultor, $this->empresa);
 
-        $this->actingAs($consultor)->get($this->lista())
+        $this->actingAs($consultor)->get($this->editar())
             ->assertOk()
-            ->assertSee('Equipo del proceso Tesorería')
-            ->assertSee('data-equipo-proceso', false)
-            ->assertSee('Se actualizarán 4 seguimientos.');
+            ->assertSee('Editar equipo del proceso')
+            ->assertSee('Se actualizarán 4 seguimientos del proceso.')
+            ->assertSee('>Guardar<', false);
 
-        // Al guardar vuelve a la lista con sus filtros.
-        $this->actingAs($consultor)->from($this->lista())->put($this->url(), self::EQUIPO)
-            ->assertRedirect($this->lista())
+        // Sin una lista de origen, vuelve a Equipos de proceso.
+        $this->actingAs($consultor)->put($this->url(), self::EQUIPO)
+            ->assertRedirect(route('equipos.index'))
             ->assertSessionHas('exito', 'Se guardó el equipo del proceso Tesorería. Se actualizaron 4 seguimientos.');
 
         foreach ($propios as $seguimiento) {
@@ -161,6 +205,24 @@ class EquipoDeProcesoTest extends TestCase
         $this->assertNull($propios[1]->fresh()->responsable);
     }
 
+    public function test_vuelve_a_la_lista_de_donde_se_llego(): void
+    {
+        $this->seguimiento($this->actividad('Uno'));
+        $admin = $this->usuario();
+        $lista = route('seguimientos.index', ['id_proceso' => $this->proceso->id_proceso, 'estado' => 'Pendiente']);
+
+        // Desde la lista de seguimientos: Cancelar y Guardar regresan a ella, con sus filtros.
+        $this->actingAs($admin)->from($lista)->get($this->editar())
+            ->assertSee('name="volver_a" value="'.e($lista).'"', false)
+            ->assertSee('href="'.e($lista).'"', false);
+        $this->actingAs($admin)->put($this->url(), [...self::EQUIPO, 'volver_a' => $lista])->assertRedirect($lista);
+
+        // Nunca a otra página u otro sitio.
+        foreach (['https://otro-sitio.com', route('empresas.index'), route('equipos.index').'-falsa'] as $destino) {
+            $this->actingAs($admin)->put($this->url(), [...self::EQUIPO, 'volver_a' => $destino])->assertRedirect(route('equipos.index'));
+        }
+    }
+
     public function test_valida_y_respeta_la_empresa(): void
     {
         $this->seguimiento($this->actividad('Uno'));
@@ -169,12 +231,16 @@ class EquipoDeProcesoTest extends TestCase
         $consultor = $this->usuario(RolApp::Consultor, $this->empresa);
 
         $this->put($this->url(), self::EQUIPO)->assertRedirect(route('login'));
+        $this->get($this->editar())->assertRedirect(route('login'));
 
-        $this->actingAs($consultor)->put($this->url(), ['lider_transferencia' => str_repeat('a', 256)])
+        // Si falla la validación, vuelve al formulario con el error.
+        $this->actingAs($consultor)->from($this->editar())->put($this->url(), ['lider_transferencia' => str_repeat('a', 256)])
+            ->assertRedirect($this->editar())
             ->assertSessionHasErrors(['lider_transferencia' => 'Este campo no puede tener más de 255 caracteres.']);
 
-        // Un proceso ajeno en el filtro se ignora: no aparece su equipo.
-        $this->actingAs($consultor)->get($this->lista($procesoAjeno))->assertOk()->assertDontSee('Equipo del proceso Ajeno');
+        // Un proceso de otra empresa no existe para el consultor.
+        $this->actingAs($consultor)->get($this->lista($procesoAjeno))->assertOk()->assertDontSee('Equipo de Ajeno');
+        $this->actingAs($consultor)->get($this->editar($procesoAjeno))->assertNotFound();
         $this->actingAs($consultor)->put($this->url($procesoAjeno), self::EQUIPO)->assertNotFound();
     }
 
@@ -183,22 +249,25 @@ class EquipoDeProcesoTest extends TestCase
         $vacio = Proceso::create(['id_empresa' => $this->empresa->id_empresa, 'nombre' => 'Vacío']);
         $admin = $this->usuario();
 
-        $this->actingAs($admin)->get($this->lista($vacio))
+        $this->actingAs($admin)->get($this->editar($vacio))
+            ->assertSee('Consultar equipo del proceso')
             ->assertSee('Este proceso todavía no tiene seguimientos')
-            ->assertDontSee('data-equipo-proceso', false)
+            ->assertSee('<fieldset disabled', false)
             ->assertDontSee('>Guardar<', false);
-        $this->actingAs($admin)->from('/seguimientos')->put($this->url($vacio), self::EQUIPO)
+        $this->actingAs($admin)->put($this->url($vacio), self::EQUIPO)
+            ->assertRedirect($this->editar($vacio))
             ->assertSessionHas('error', 'El proceso Vacío todavía no tiene seguimientos.');
 
         $seguimiento = $this->seguimiento($this->actividad('Uno'), null, 1, ['responsable' => 'Original']);
         $this->proceso->update(['estado' => false]);
 
-        $this->actingAs($admin)->get($this->lista())
+        $this->actingAs($admin)->get($this->editar())
             ->assertSee('El proceso está dado de baja')
             ->assertSee('value="Original"', false)
-            ->assertDontSee('data-equipo-proceso', false)
+            ->assertSee('<fieldset disabled', false)
             ->assertDontSee('>Guardar<', false);
-        $this->actingAs($admin)->from('/seguimientos')->put($this->url(), self::EQUIPO)
+        $this->actingAs($admin)->put($this->url(), self::EQUIPO)
+            ->assertRedirect($this->editar())
             ->assertSessionHas('error', 'El proceso Tesorería está dado de baja: su equipo no se puede cambiar.');
         $this->assertSame('Original', $seguimiento->fresh()->responsable);
     }
@@ -207,11 +276,13 @@ class EquipoDeProcesoTest extends TestCase
     {
         $this->seguimiento($this->actividad('Uno'), null, 1, ['responsable' => 'Ana', 'documentador' => 'Eva']);
         $this->seguimiento($this->actividad('Dos'), null, 1, ['responsable' => 'Luis', 'documentador' => 'Eva']);
+        $admin = $this->usuario();
 
-        // Muestra el más reciente.
-        $this->actingAs($this->usuario())->get($this->lista())
+        // Muestra el más reciente, en el formulario y en la pantalla de equipos.
+        $this->actingAs($admin)->get($this->editar())
             ->assertSee('Hay valores distintos en: Responsable.')
             ->assertSee('value="Luis"', false);
+        $this->actingAs($admin)->get('/equipos-de-proceso')->assertSee('Luis')->assertDontSee('Ana');
     }
 
     public function test_los_seguimientos_nuevos_copian_el_equipo_del_proceso(): void
@@ -247,25 +318,23 @@ class EquipoDeProcesoTest extends TestCase
         $this->assertNull(Grupo::where('nombre', 'G pagos')->sole()->seguimientos()->sole()->responsable);
     }
 
-    public function test_la_lista_muestra_el_equipo_solo_al_filtrar_por_proceso(): void
+    public function test_la_lista_de_seguimientos_solo_muestra_el_equipo_al_filtrar_por_proceso(): void
     {
-        $this->seguimiento($this->actividad('Uno'), null, 1, self::EQUIPO);
+        $this->seguimiento($this->actividad('Uno'), null, 1, [...self::EQUIPO, 'documentador' => null]);
         $admin = $this->usuario();
 
-        $this->actingAs($admin)->get('/seguimientos')->assertDontSee('Equipo del proceso');
-        $this->actingAs($admin)->get($this->lista())
-            ->assertSee('Equipo del proceso Tesorería')
-            ->assertSee('value="Sofía"', false)
-            ->assertSee('data-original="Sofía"', false)
-            ->assertSee(route('seguimientos.equipo.actualizar', $this->proceso), false)
-            ->assertDontSee('data-abierto', false);
+        $this->actingAs($admin)->get('/seguimientos')->assertDontSee('Equipo de Tesorería');
 
-        // Si el guardado falla, la tarjeta vuelve abierta con lo que se escribió.
-        $this->actingAs($admin)->from($this->lista())
-            ->put($this->url(), [...self::EQUIPO, 'responsable' => str_repeat('a', 256)])
-            ->assertRedirect($this->lista());
+        // De solo lectura: sin campos, con el enlace a su pantalla.
         $this->actingAs($admin)->get($this->lista())
-            ->assertSee('data-abierto', false)
-            ->assertSee('Este campo no puede tener más de 255 caracteres.');
+            ->assertSee('Equipo de Tesorería')
+            ->assertSeeInOrder(['Responsable', 'Ana', 'Documentador', 'Sin definir', 'Líder de transferencia GBS', 'Sofía'])
+            ->assertSee('href="'.route('equipos.editar', $this->proceso).'"', false)
+            ->assertSee('Editar equipo')
+            ->assertDontSee('name="responsable"', false);
+
+        // Con el proceso de baja solo se consulta.
+        $this->proceso->update(['estado' => false]);
+        $this->actingAs($admin)->get($this->lista())->assertSee('Consultar equipo')->assertDontSee('Editar equipo');
     }
 }

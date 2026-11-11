@@ -4,11 +4,13 @@ namespace App\Providers;
 
 use App\Enums\RolApp;
 use App\Models\Usuario;
+use App\View\Composers\MenuDeSeguimientos;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -60,6 +62,9 @@ class AppServiceProvider extends ServiceProvider
             [RolApp::Admin, RolApp::Consultor],
             true
         ));
+
+        // El menú lateral recibe las fases del submenú de Seguimientos (una pantalla por fase).
+        View::composer('layouts.app', MenuDeSeguimientos::class);
 
         // Vista propia para los enlaces de paginación, con Bootstrap y en español.
         Paginator::defaultView('paginacion');

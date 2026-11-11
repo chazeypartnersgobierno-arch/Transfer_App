@@ -260,8 +260,9 @@ class AvanceValidacionTest extends TestCase
             ->assertSee('% actual: 70 %')
             ->assertSee('Nuevo avance');
 
-        $this->actingAs($this->admin)->get('/seguimientos')
+        $this->actingAs($this->admin)->get('/seguimientos?id_fase='.$this->seguimiento->id_fase)
             ->assertOk()
+            ->assertSee('<th scope="col">% actual</th>', false)
             ->assertSee('data-etiqueta="% actual">70 %', false);
     }
 

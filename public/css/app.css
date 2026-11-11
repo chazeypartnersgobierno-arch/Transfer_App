@@ -533,6 +533,72 @@ body {
     flex: none;
 }
 
+/* Submenú de Seguimientos (una opción por fase). Es un <details>: abre y cierra sin JavaScript. */
+.menu-grupo > summary {
+    cursor: pointer;
+    list-style: none; /* quita el triángulo que el navegador pone por defecto */
+}
+
+.menu-grupo > summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Se está trabajando en alguna fase: el padre se marca, sin competir con la fase resaltada. */
+.menu-enlace-padre {
+    font-weight: 600;
+}
+
+.menu-flecha {
+    display: flex;
+    margin-left: auto;
+    transition: transform .15s ease;
+}
+
+.menu-grupo[open] .menu-flecha {
+    transform: rotate(90deg);
+}
+
+.menu-sublista {
+    display: grid;
+    gap: .125rem;
+    margin: .125rem 0 .25rem 1.375rem;
+    padding: 0 0 0 .625rem;
+    border-left: 1px solid rgba(255, 255, 255, .25);
+    list-style: none;
+}
+
+.menu-subenlace {
+    gap: .625rem;
+    min-height: 2.5rem;
+    font-size: .875rem;
+}
+
+/* Separa las fases de Equipos de proceso, que no es una fase. */
+.menu-separador {
+    margin: .25rem .75rem;
+    border-top: 1px solid rgba(255, 255, 255, .25);
+}
+
+/* Número de la fase: recuerda que se avanza en orden. */
+.menu-numero {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: .75rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .menu-flecha {
+        transition: none;
+    }
+}
+
 /* Contenido */
 .contenido {
     flex: 1;
@@ -648,31 +714,42 @@ body {
     white-space: nowrap;
 }
 
-/* Equipo del proceso: tarjeta arriba de la lista de seguimientos */
-.equipo-proceso {
-    padding: 1rem 1.25rem .25rem;
-}
-
-.equipo-proceso-encabezado {
+/* Equipo del proceso: resumen de solo lectura arriba de la lista de seguimientos */
+.equipo-resumen {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    margin-bottom: .75rem;
+    gap: .5rem 1.5rem;
+    padding: .75rem 1.25rem;
 }
 
-.equipo-proceso-acciones {
+.equipo-resumen-titulo {
+    font-weight: 600;
+}
+
+.equipo-resumen-datos {
     display: flex;
+    flex: 1;
     flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: .5rem;
-    margin-bottom: .75rem;
+    gap: .25rem 1.5rem;
+    margin: 0;
 }
 
-.equipo-proceso-acciones .texto-secundario {
-    margin-right: auto;
+.equipo-resumen-datos dt {
+    color: var(--app-texto-secundario);
+    font-size: .75rem;
+    font-weight: 400;
+}
+
+.equipo-resumen-datos dd {
+    margin: 0;
+    font-size: .875rem;
+}
+
+/* Dato del equipo que todavía no se captura. */
+.equipo-sin-definir {
+    color: var(--app-texto-secundario);
+    font-style: italic;
 }
 
 /* Sesiones y asistencia */
