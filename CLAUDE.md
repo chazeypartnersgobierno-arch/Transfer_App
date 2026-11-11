@@ -112,7 +112,7 @@ Los códigos de `usuarios.rol_app` se guardan en minúsculas y están centraliza
 | Código | Etiqueta | Permisos |
 |---|---|---|
 | admin | Administrador | Todo: usuarios, catálogos (empresas, fases, procesos, grupos, aplicativos, actividades), carga desde Excel y todo lo del consultor |
-| consultor | Consultor | Seguimientos, sesiones, asistencia, avances de validación, participantes y accesos solicitados (crear, editar, consultar; participantes también baja y reactivar), siempre de su empresa asignada; los demás catálogos solo lectura |
+| consultor | Consultor | Seguimientos, sesiones, asistencia, avances de validación, participantes y accesos solicitados (crear, editar, consultar; participantes también baja y reactivar), siempre de su empresa asignada; fases, procesos, grupos y aplicativos solo lectura; no ve Empresas ni Actividades (ni en el menú ni en Inicio; la ruta da 403) |
 
 - Los permisos se validan en el servidor con los Gates `administrar`, `administrar-empresas` y `administrar-fases` (solo admin; hoy son la misma regla), `dar-seguimiento`, `administrar-participantes` y `administrar-accesos` (admin y consultor), no solo ocultando botones.
 - El administrador siempre es de Chazey y ve todas las empresas (`Usuario::esChazey()`). No existen admins de empresa.

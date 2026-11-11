@@ -19,16 +19,23 @@
         $accesos[] = ['accesos.index', 'acceso', 'Accesos'];
     }
 
+    // Empresas y Actividades solo las ve el admin: el consultor no las configura. La ruta también está protegida.
+    if (auth()->user()->can('administrar-empresas')) {
+        $accesos[] = ['empresas.index', 'empresa', 'Empresas'];
+    }
+
     $accesos = [
         ...$accesos,
-        ['empresas.index', 'empresa', 'Empresas'],
         ['fases.index', 'fase', 'Fases'],
         ['procesos.index', 'proceso', 'Procesos'],
         ['grupos.index', 'grupo', 'Grupos'],
         ['participantes.index', 'participante', 'Participantes'],
         ['aplicativos.index', 'aplicativo', 'Aplicativos'],
-        ['actividades.index', 'actividad', 'Actividades'],
     ];
+
+    if (auth()->user()->can('administrar')) {
+        $accesos[] = ['actividades.index', 'actividad', 'Actividades'];
+    }
 
     // La carga solo la ve un admin; la ruta también está protegida en el servidor.
     if (auth()->user()->can('administrar')) {

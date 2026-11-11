@@ -38,8 +38,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::put('/mi-contrasena', [MiContrasenaController::class, 'actualizar'])->name('mi-contrasena.actualizar');
 
     // Consultas: cualquier usuario con sesión.
-    Route::get('/empresas', [EmpresaController::class, 'index'])->name('empresas.index');
-    Route::get('/fases', [FaseController::class, 'index'])->name('fases.index');
+    Route::get('/fases',[FaseController::class, 'index'])->name('fases.index');
 
     // Cambiar el nombre de una fase: quien no cumple el Gate recibe error 403.
     Route::middleware('can:administrar-fases')->group(function () {
@@ -51,8 +50,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::get('/procesos', [ProcesoController::class, 'index'])->name('procesos.index');
     Route::get('/grupos', [GrupoController::class, 'index'])->name('grupos.index');
     Route::get('/aplicativos', [AplicativoController::class, 'index'])->name('aplicativos.index');
-    Route::get('/actividades', [ActividadController::class, 'index'])->name('actividades.index');
-    Route::get('/participantes', [ParticipanteController::class, 'index'])->name('participantes.index');
+    Route::get('/participantes',[ParticipanteController::class, 'index'])->name('participantes.index');
 
     // Participantes: admin y consultor (el consultor sabe quién entra o sale del grupo).
     Route::middleware('can:administrar-participantes')->group(function () {
@@ -108,6 +106,8 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::patch('/grupos/{grupo}/baja', [GrupoController::class, 'darDeBaja'])->name('grupos.baja');
         Route::patch('/grupos/{grupo}/reactivar', [GrupoController::class, 'reactivar'])->name('grupos.reactivar');
 
+        // Actividades: el consultor no las configura, así que tampoco ve la lista (las ve en sus seguimientos).
+        Route::get('/actividades', [ActividadController::class, 'index'])->name('actividades.index');
         Route::get('/actividades/crear', [ActividadController::class, 'crear'])->name('actividades.crear');
         Route::post('/actividades', [ActividadController::class, 'guardar'])->name('actividades.guardar');
         Route::get('/actividades/{actividad}/editar', [ActividadController::class, 'editar'])->name('actividades.editar');
@@ -151,7 +151,9 @@ Route::middleware(['auth', 'activo'])->group(function () {
 
     // Cambios en empresas: quien no cumple el Gate recibe error 403.
     Route::middleware('can:administrar-empresas')->group(function () {
-        Route::get('/empresas/crear', [EmpresaController::class, 'crear'])->name('empresas.crear');
+        // La lista también es solo para admin: el consultor no configura empresas.
+        Route::get('/empresas', [EmpresaController::class, 'index'])->name('empresas.index');
+        Route::get('/empresas/crear',[EmpresaController::class, 'crear'])->name('empresas.crear');
         Route::post('/empresas', [EmpresaController::class, 'guardar'])->name('empresas.guardar');
         Route::get('/empresas/{empresa}/editar', [EmpresaController::class, 'editar'])->name('empresas.editar');
         Route::put('/empresas/{empresa}', [EmpresaController::class, 'actualizar'])->name('empresas.actualizar');

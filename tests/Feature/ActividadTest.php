@@ -385,11 +385,10 @@ class ActividadTest extends TestCase
 
         $consultor = $this->usuario(RolApp::Consultor, $empresa);
 
-        $this->actingAs($consultor)->get('/actividades')
-            ->assertOk()
-            ->assertSee('Actividad uno')
-            ->assertDontSee('Nueva actividad')
-            ->assertDontSee('Dar de baja');
+        // El consultor no configura actividades: ni la lista ni la opción del menú (las ve en sus seguimientos).
+        $this->actingAs($consultor)->get('/actividades')->assertForbidden();
+        $this->actingAs($consultor)->get(route('inicio'))->assertDontSee(route('actividades.index'), false);
+        $this->actingAs($this->usuario())->get(route('inicio'))->assertSee(route('actividades.index'), false);
 
         $this->actingAs($consultor)->get('/actividades/crear')->assertForbidden();
         $this->actingAs($consultor)->post('/actividades', $this->datos($empresa, $proceso))->assertForbidden();
@@ -526,10 +525,14 @@ class ActividadTest extends TestCase
         $this->assertFalse($empresa->fresh()->estado);
     }
 
-    public function test_el_menu_y_el_inicio_muestran_actividades(): void
+    public function test_el_menu_y_el_inicio_muestran_actividades_solo_al_admin(): void
     {
-        $this->actingAs($this->usuario(RolApp::Consultor))->get('/')
+        $this->actingAs($this->usuario())->get('/')
             ->assertOk()
             ->assertSee(route('actividades.index'), false);
+
+        $this->actingAs($this->usuario(RolApp::Consultor))->get('/')
+            ->assertOk()
+            ->assertDontSee(route('actividades.index'), false);
     }
 }

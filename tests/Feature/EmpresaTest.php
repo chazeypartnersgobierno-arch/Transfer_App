@@ -118,17 +118,15 @@ class EmpresaTest extends TestCase
         $this->assertSame('EJE2', $otra->fresh()->sigla);
     }
 
-    public function test_consultor_ve_su_empresa_pero_no_cambia_nada(): void
+    public function test_consultor_no_ve_ni_cambia_empresas(): void
     {
         $empresa = $this->empresa('EJE1');
         $consultor = $this->usuario(RolApp::Consultor, $empresa);
         $url = "/empresas/{$empresa->id_empresa}";
 
-        $this->actingAs($consultor)->get('/empresas')
-            ->assertOk()
-            ->assertSee('EJE1')
-            ->assertDontSee('Nueva empresa')
-            ->assertDontSee('Dar de baja');
+        // El consultor no configura empresas: ni la lista ni la opción del menú.
+        $this->actingAs($consultor)->get('/empresas')->assertForbidden();
+        $this->actingAs($consultor)->get(route('inicio'))->assertDontSee(route('empresas.index'), false);
 
         $this->actingAs($consultor)->get('/empresas/crear')->assertForbidden();
         $this->actingAs($consultor)->post('/empresas', ['nombre' => 'X', 'sigla' => 'X'])->assertForbidden();
@@ -142,23 +140,9 @@ class EmpresaTest extends TestCase
         $this->assertSame(1, Empresa::count());
     }
 
-    public function test_consultor_solo_ve_la_empresa_de_su_asignacion_activa(): void
+    public function test_el_admin_ve_la_opcion_empresas_en_el_menu(): void
     {
-        $propia = $this->empresa('PROPIA');
-        $this->empresa('AJENA');
-
-        $this->actingAs($this->usuario(RolApp::Consultor, $propia))->get('/empresas')
-            ->assertOk()
-            ->assertSee('PROPIA')
-            ->assertDontSee('AJENA')
-            ->assertDontSee('Nueva empresa')
-            ->assertDontSee('Dar de baja');
-
-        // Sin asignación activa no ve ninguna.
-        $this->actingAs($this->usuario(RolApp::Consultor))->get('/empresas')
-            ->assertOk()
-            ->assertDontSee('PROPIA')
-            ->assertDontSee('AJENA');
+        $this->actingAs($this->usuario())->get(route('inicio'))->assertSee(route('empresas.index'), false);
     }
 
     public function test_dar_de_baja_no_borra_y_reactivar_la_recupera(): void
