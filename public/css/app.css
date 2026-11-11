@@ -606,6 +606,17 @@ body {
     padding: 1.5rem;
 }
 
+/* Editar seguimiento: ocupa el mismo ancho que la tabla de sesiones o avances de abajo. */
+.tarjeta-seguimiento {
+    padding: 1.5rem;
+}
+
+.tarjeta-seguimiento .datos-fijos {
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--app-borde);
+}
+
 .tarjeta-titulo {
     margin-bottom: .5rem;
     font-size: 1.125rem;

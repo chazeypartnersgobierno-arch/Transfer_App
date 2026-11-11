@@ -33,8 +33,8 @@
         <x-fase-bloqueada :mensaje="$bloqueo" />
     @endif
 
-    <div class="tarjeta tarjeta-formulario">
-        <dl class="datos-fijos mb-3">
+    <div class="tarjeta tarjeta-seguimiento">
+        <dl class="datos-fijos">
             @if (filled($seguimiento->actividad->macroproceso))
                 <div>
                     <dt>Macroproceso</dt>
@@ -79,24 +79,31 @@
 
             {{-- disabled: en modo consulta el navegador no deja escribir; el servidor también lo impide. --}}
             <fieldset @disabled(! $editable)>
+                {{-- Cuadrícula de Bootstrap: en pantallas medianas o más grandes los campos van en columnas; en el celular se apilan. --}}
                 <div class="row">
-                    <div class="col-sm-6">
+                    <div class="col-md-4">
                         <x-campo name="fecha_inicio" label="Fecha de inicio" type="date" :value="old('fecha_inicio', $seguimiento->fecha_inicio?->format('Y-m-d'))" />
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-md-4">
                         <x-campo name="fecha_fin" label="Fecha fin (propuesta de cierre)" type="date" :value="old('fecha_fin', $seguimiento->fecha_fin?->format('Y-m-d'))" />
+                    </div>
+                    <div class="col-md-4">
+                        <x-lista name="estado_actividad" label="Estado" :opciones="\App\Enums\EstadoActividad::opciones()" :value="old('estado_actividad', $seguimiento->estadoActual()->value)" vacia="Elige un estado" required />
                     </div>
                 </div>
 
-                <x-lista name="estado_actividad" label="Estado" :opciones="\App\Enums\EstadoActividad::opciones()" :value="old('estado_actividad', $seguimiento->estadoActual()->value)" vacia="Elige un estado" required />
-
-                <x-campo name="documentacion" label="Documentación (opcional)" :value="old('documentacion', $seguimiento->documentacion)" maxlength="500" />
-                {{-- Es texto libre: solo se ofrece abrirla si es una dirección web. --}}
-                @if (! $editable && preg_match('#^https?://#i', (string) $seguimiento->documentacion))
-                    <p class="ayuda-campo"><a href="{{ $seguimiento->documentacion }}" target="_blank" rel="noopener noreferrer">Abrir la documentación</a></p>
-                @endif
-
-                <x-campo name="experto" label="Experto (opcional)" :value="old('experto', $seguimiento->experto)" maxlength="255" />
+                <div class="row">
+                    <div class="col-md-6">
+                        <x-campo name="documentacion" label="Documentación (opcional)" :value="old('documentacion', $seguimiento->documentacion)" maxlength="500" />
+                        {{-- Es texto libre: solo se ofrece abrirla si es una dirección web. --}}
+                        @if (! $editable && preg_match('#^https?://#i', (string) $seguimiento->documentacion))
+                            <p class="ayuda-campo"><a href="{{ $seguimiento->documentacion }}" target="_blank" rel="noopener noreferrer">Abrir la documentación</a></p>
+                        @endif
+                    </div>
+                    <div class="col-md-6">
+                        <x-campo name="experto" label="Experto (opcional)" :value="old('experto', $seguimiento->experto)" maxlength="255" />
+                    </div>
+                </div>
 
                 <div class="mb-3">
                     <label for="comentarios" class="form-label">Comentarios (opcional)</label>
